@@ -1,0 +1,137 @@
+[
+  {
+    "id": 1,
+    "title": "Design new landing page layout",
+    "type": "Design",
+    "status": "In Progress",
+    "priority": "High",
+    "dueDate": "2024-01-15",
+    "assignee": "Maya Johnson"
+  },
+  {
+    "id": 2,
+    "title": "Implement user authentication system",
+    "type": "Development",
+    "status": "Completed",
+    "priority": "High",
+    "dueDate": "2024-01-10",
+    "assignee": "Eddie Lake"
+  },
+  {
+    "id": 3,
+    "title": "Conduct user research interviews",
+    "type": "Research",
+    "status": "In Progress",
+    "priority": "Medium",
+    "dueDate": "2024-01-20",
+    "assignee": "Carlos Rodriguez"
+  },
+  {
+    "id": 4,
+    "title": "Write API documentation",
+    "type": "Documentation",
+    "status": "Not Started",
+    "priority": "Medium",
+    "dueDate": "2024-01-25",
+    "assignee": "Jamik Tashpulatov"
+  },
+  {
+    "id": 5,
+    "title": "Code review for payment module",
+    "type": "Review",
+    "status": "In Progress",
+    "priority": "High",
+    "dueDate": "2024-01-12",
+    "assignee": "Eddie Lake"
+  },
+  {
+    "id": 6,
+    "title": "Plan Q1 sprint roadmap",
+    "type": "Planning",
+    "status": "Completed",
+    "priority": "Low",
+    "dueDate": "2024-01-05",
+    "assignee": "Maya Johnson"
+  },
+  {
+    "id": 7,
+    "title": "Set up automated testing pipeline",
+    "type": "Testing",
+    "status": "In Progress",
+    "priority": "High",
+    "dueDate": "2024-01-18",
+    "assignee": "Carlos Rodriguez"
+  },
+  {
+    "id": 8,
+    "title": "Client presentation preparation",
+    "type": "Meeting",
+    "status": "Not Started",
+    "priority": "High",
+    "dueDate": "2024-01-14",
+    "assignee": "Maya Johnson"
+  },
+  {
+    "id": 9,
+    "title": "Database optimization review",
+    "type": "Development",
+    "status": "In Progress",
+    "priority": "Medium",
+    "dueDate": "2024-01-22",
+    "assignee": "Jamik Tashpulatov"
+  },
+  {
+    "id": 10,
+    "title": "Update project status report",
+    "type": "Documentation",
+    "status": "Completed",
+    "priority": "Low",
+    "dueDate": "2024-01-08",
+    "assignee": "Carlos Rodriguez"
+  },
+  {
+    "id": 11,
+    "title": "Security audit for user data",
+    "type": "Review",
+    "status": "Not Started",
+    "priority": "High",
+    "dueDate": "2024-01-30",
+    "assignee": "Unassigned"
+  },
+  {
+    "id": 12,
+    "title": "Mobile app UI testing",
+    "type": "Testing",
+    "status": "In Progress",
+    "priority": "Medium",
+    "dueDate": "2024-01-16",
+    "assignee": "Maya Johnson"
+  },
+  {
+    "id": 13,
+    "title": "Team standup meeting",
+    "type": "Meeting",
+    "status": "Completed",
+    "priority": "Low",
+    "dueDate": "2024-01-09",
+    "assignee": "Eddie Lake"
+  },
+  {
+    "id": 14,
+    "title": "Performance metrics analysis",
+    "type": "Research",
+    "status": "In Progress",
+    "priority": "Medium",
+    "dueDate": "2024-01-19",
+    "assignee": "Carlos Rodriguez"
+  },
+  {
+    "id": 15,
+    "title": "Deploy staging environment",
+    "type": "Development",
+    "status": "Not Started",
+    "priority": "High",
+    "dueDate": "2024-01-13",
+    "assignee": "Jamik Tashpulatov"
+  }
+]
