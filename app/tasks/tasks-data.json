@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "title": "Complete e-commerce wireframes",
+    "projectName": "E-commerce Platform Redesign",
+    "assigneeName": "Maya Johnson",
+    "assigneeRole": "UI/UX Designer",
+    "assigneeAvatar": "/avatars/maya.jpg",
+    "status": "In Progress",
+    "priority": "High",
+    "dueDate": "2024-02-15",
+    "progress": 65
+  },
+  {
+    "id": 2,
+    "title": "Set up payment integration",
+    "projectName": "E-commerce Platform Redesign",
+    "assigneeName": "Carlos Rodriguez",
+    "assigneeRole": "Frontend Developer",
+    "assigneeAvatar": "/avatars/carlos.jpg",
+    "status": "To Do",
+    "priority": "High",
+    "dueDate": "2024-02-20",
+    "progress": 0
+  },
+  {
+    "id": 3,
+    "title": "Optimize database queries",
+    "projectName": "E-commerce Platform Redesign",
+    "assigneeName": "Sarah Chen",
+    "assigneeRole": "Backend Developer",
+    "assigneeAvatar": "/avatars/sarah.jpg",
+    "status": "Done",
+    "priority": "Medium",
+    "dueDate": "2024-02-10",
+    "progress": 100
+  },
+  {
+    "id": 4,
+    "title": "Create mobile app mockups",
+    "projectName": "Mobile App Development",
+    "assigneeName": "Lisa Wong",
+    "assigneeRole": "UI Designer",
+    "assigneeAvatar": "/avatars/lisa.jpg",
+    "status": "To Do",
+    "priority": "Medium",
+    "dueDate": "2024-02-25",
+    "progress": 0
+  },
+  {
+    "id": 5,
+    "title": "Implement user authentication",
+    "projectName": "Mobile App Development",
+    "assigneeName": "David Kim",
+    "assigneeRole": "Backend Developer",
+    "assigneeAvatar": "/avatars/david.jpg",
+    "status": "In Progress",
+    "priority": "High",
+    "dueDate": "2024-02-18",
+    "progress": 40
+  },
+  {
+    "id": 6,
+    "title": "Write API documentation",
+    "projectName": "Mobile App Development",
+    "assigneeName": "Raj Patel",
+    "assigneeRole": "DevOps Engineer",
+    "assigneeAvatar": "/avatars/raj.jpg",
+    "status": "To Do",
+    "priority": "Low",
+    "dueDate": "2024-03-01",
+    "progress": 0
+  },
+  {
+    "id": 7,
+    "title": "Conduct user testing session",
+    "projectName": "Website Migration",
+    "assigneeName": "James Wilson",
+    "assigneeRole": "QA Engineer",
+    "assigneeAvatar": "/avatars/james.jpg",
+    "status": "To Do",
+    "priority": "Medium",
+    "dueDate": "2024-02-28",
+    "progress": 0
+  },
+  {
+    "id": 8,
+    "title": "Deploy to staging environment",
+    "projectName": "Website Migration",
+    "assigneeName": "Alex Thompson",
+    "assigneeRole": "Mobile Developer",
+    "assigneeAvatar": "/avatars/alex.jpg",
+    "status": "Done",
+    "priority": "High",
+    "dueDate": "2024-02-12",
+    "progress": 100
+  },
+  {
+    "id": 9,
+    "title": "Review security protocols",
+    "projectName": "Healthcare Portal",
+    "assigneeName": "Michael Chen",
+    "assigneeRole": "Security Specialist",
+    "assigneeAvatar": "/avatars/michael.jpg",
+    "status": "In Progress",
+    "priority": "High",
+    "dueDate": "2024-02-22",
+    "progress": 75
+  },
+  {
+    "id": 10,
+    "title": "Update project timeline",
+    "projectName": "Healthcare Portal",
+    "assigneeName": "Eddie Lake",
+    "assigneeRole": "Project Manager",
+    "assigneeAvatar": "/avatars/eddie.jpg",
+    "status": "Done",
+    "priority": "Low",
+    "dueDate": "2024-02-08",
+    "progress": 100
+  }
+]

@@ -1,0 +1,242 @@
+[
+  {
+    "id": 1,
+    "name": "E-commerce Platform Redesign",
+    "clientId": 1,
+    "clientName": "Acme Corporation",
+    "status": "In Progress",
+    "dueDate": "2024-03-15",
+    "progress": 65,
+    "description": "Complete redesign of the e-commerce platform with modern UI/UX and improved performance",
+    "startDate": "2024-01-01",
+    "budget": 75000,
+    "priority": "High",
+    "teamMembers": [
+      { "id": 1, "name": "Eddie Lake", "role": "Project Manager", "avatar": "/avatars/eddie.jpg" },
+      { "id": 2, "name": "Maya Johnson", "role": "UI/UX Designer", "avatar": "/avatars/maya.jpg" },
+      { "id": 3, "name": "Carlos Rodriguez", "role": "Frontend Developer", "avatar": "/avatars/carlos.jpg" },
+      { "id": 4, "name": "Sarah Chen", "role": "Backend Developer", "avatar": "/avatars/sarah.jpg" }
+    ],
+    "tasks": [
+      { "id": 1, "title": "Initial client discovery", "status": "completed", "deliverable": "Discovery report" },
+      { "id": 2, "title": "Wireframe design", "status": "in-progress", "deliverable": "UI mockups" },
+      { "id": 3, "title": "SEO setup", "status": "pending", "deliverable": "SEO optimization" },
+      { "id": 4, "title": "Database optimization", "status": "completed", "deliverable": "Performance report" },
+      { "id": 5, "title": "Payment integration", "status": "in-progress", "deliverable": "Payment system" }
+    ],
+    "deliverables": [
+      "Homepage mockup",
+      "Product catalog redesign",
+      "Checkout system live",
+      "Mobile responsive design",
+      "Performance optimization report"
+    ],
+    "timeline": [
+      { "milestone": "Project Kickoff", "date": "2024-01-01", "status": "completed" },
+      { "milestone": "Design Phase Complete", "date": "2024-02-15", "status": "completed" },
+      { "milestone": "Development Phase", "date": "2024-03-01", "status": "in-progress" },
+      { "milestone": "Testing & QA", "date": "2024-03-10", "status": "pending" },
+      { "milestone": "Launch", "date": "2024-03-15", "status": "pending" }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Mobile App Development",
+    "clientId": 2,
+    "clientName": "Global Solutions Inc",
+    "status": "Planned",
+    "dueDate": "2024-04-30",
+    "progress": 15,
+    "description": "Native mobile application for iOS and Android with cross-platform compatibility",
+    "startDate": "2024-02-01",
+    "budget": 120000,
+    "priority": "High",
+    "teamMembers": [
+      { "id": 1, "name": "Eddie Lake", "role": "Project Manager", "avatar": "/avatars/eddie.jpg" },
+      { "id": 5, "name": "Alex Thompson", "role": "Mobile Developer", "avatar": "/avatars/alex.jpg" },
+      { "id": 6, "name": "Lisa Wong", "role": "UI Designer", "avatar": "/avatars/lisa.jpg" },
+      { "id": 7, "name": "David Kim", "role": "Backend Developer", "avatar": "/avatars/david.jpg" }
+    ],
+    "tasks": [
+      { "id": 1, "title": "Initial client discovery", "status": "completed", "deliverable": "Requirements document" },
+      { "id": 2, "title": "Wireframe design", "status": "pending", "deliverable": "App wireframes" },
+      { "id": 3, "title": "API development", "status": "pending", "deliverable": "REST API" },
+      { "id": 4, "title": "App architecture", "status": "in-progress", "deliverable": "Architecture diagram" },
+      { "id": 5, "title": "User testing", "status": "pending", "deliverable": "Test results" }
+    ],
+    "deliverables": [
+      "iOS app",
+      "Android app",
+      "Backend API",
+      "Admin dashboard",
+      "User documentation"
+    ],
+    "timeline": [
+      { "milestone": "Project Kickoff", "date": "2024-02-01", "status": "completed" },
+      { "milestone": "Design Phase", "date": "2024-02-28", "status": "pending" },
+      { "milestone": "Development Phase", "date": "2024-04-01", "status": "pending" },
+      { "milestone": "Testing Phase", "date": "2024-04-20", "status": "pending" },
+      { "milestone": "App Store Launch", "date": "2024-04-30", "status": "pending" }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Website Migration",
+    "clientId": 3,
+    "clientName": "TechStart Ventures",
+    "status": "Review",
+    "dueDate": "2024-02-28",
+    "progress": 90,
+    "description": "Migration from legacy system to modern cloud-based platform with improved security",
+    "startDate": "2023-12-01",
+    "budget": 45000,
+    "priority": "Medium",
+    "teamMembers": [
+      { "id": 1, "name": "Eddie Lake", "role": "Project Manager", "avatar": "/avatars/eddie.jpg" },
+      { "id": 8, "name": "Raj Patel", "role": "DevOps Engineer", "avatar": "/avatars/raj.jpg" },
+      { "id": 9, "name": "Maria Garcia", "role": "Backend Developer", "avatar": "/avatars/maria.jpg" },
+      { "id": 10, "name": "James Wilson", "role": "QA Engineer", "avatar": "/avatars/james.jpg" }
+    ],
+    "tasks": [
+      { "id": 1, "title": "Initial client discovery", "status": "completed", "deliverable": "Migration plan" },
+      { "id": 2, "title": "Wireframe design", "status": "completed", "deliverable": "System design" },
+      { "id": 3, "title": "SEO setup", "status": "completed", "deliverable": "SEO optimization" },
+      { "id": 4, "title": "Data migration", "status": "completed", "deliverable": "Data transfer" },
+      { "id": 5, "title": "Final testing", "status": "in-progress", "deliverable": "Test report" }
+    ],
+    "deliverables": [
+      "Migrated website",
+      "Security audit report",
+      "Performance optimization",
+      "Backup procedures",
+      "Documentation"
+    ],
+    "timeline": [
+      { "milestone": "Project Kickoff", "date": "2023-12-01", "status": "completed" },
+      { "milestone": "Analysis Complete", "date": "2023-12-15", "status": "completed" },
+      { "milestone": "Migration Phase", "date": "2024-01-15", "status": "completed" },
+      { "milestone": "Testing Phase", "date": "2024-02-15", "status": "in-progress" },
+      { "milestone": "Go Live", "date": "2024-02-28", "status": "pending" }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Healthcare Portal",
+    "clientId": 5,
+    "clientName": "HealthCare Plus",
+    "status": "Completed",
+    "dueDate": "2024-01-31",
+    "progress": 100,
+    "description": "Secure patient portal with appointment booking and medical record access",
+    "startDate": "2023-10-01",
+    "budget": 200000,
+    "priority": "High",
+    "teamMembers": [
+      { "id": 1, "name": "Eddie Lake", "role": "Project Manager", "avatar": "/avatars/eddie.jpg" },
+      { "id": 11, "name": "Dr. Sarah Johnson", "role": "Medical Consultant", "avatar": "/avatars/sarah-j.jpg" },
+      { "id": 12, "name": "Michael Chen", "role": "Security Specialist", "avatar": "/avatars/michael.jpg" },
+      { "id": 13, "name": "Emma Davis", "role": "Frontend Developer", "avatar": "/avatars/emma.jpg" }
+    ],
+    "tasks": [
+      { "id": 1, "title": "Initial client discovery", "status": "completed", "deliverable": "Requirements analysis" },
+      { "id": 2, "title": "Wireframe design", "status": "completed", "deliverable": "Portal mockups" },
+      { "id": 3, "title": "SEO setup", "status": "completed", "deliverable": "Security framework" },
+      { "id": 4, "title": "Security implementation", "status": "completed", "deliverable": "Security protocols" },
+      { "id": 5, "title": "User acceptance testing", "status": "completed", "deliverable": "UAT report" }
+    ],
+    "deliverables": [
+      "Patient portal",
+      "Admin dashboard",
+      "Security compliance report",
+      "User training materials",
+      "API documentation"
+    ],
+    "timeline": [
+      { "milestone": "Project Kickoff", "date": "2023-10-01", "status": "completed" },
+      { "milestone": "Requirements Analysis", "date": "2023-10-15", "status": "completed" },
+      { "milestone": "Design Phase", "date": "2023-11-01", "status": "completed" },
+      { "milestone": "Development Phase", "date": "2023-12-15", "status": "completed" },
+      { "milestone": "Launch", "date": "2024-01-31", "status": "completed" }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Banking System Integration",
+    "clientId": 6,
+    "clientName": "FinanceFirst Bank",
+    "status": "In Progress",
+    "dueDate": "2024-05-15",
+    "progress": 40,
+    "description": "Integration of legacy banking systems with modern cloud infrastructure",
+    "startDate": "2024-01-15",
+    "budget": 150000,
+    "priority": "High",
+    "teamMembers": [
+      { "id": 1, "name": "Eddie Lake", "role": "Project Manager", "avatar": "/avatars/eddie.jpg" },
+      { "id": 14, "name": "Priya Singh", "role": "Integration Specialist", "avatar": "/avatars/priya.jpg" },
+      { "id": 15, "name": "Thomas Wilson", "role": "System Architect", "avatar": "/avatars/thomas.jpg" },
+      { "id": 16, "name": "Nina Patel", "role": "QA Engineer", "avatar": "/avatars/nina.jpg" }
+    ],
+    "tasks": [
+      { "id": 1, "title": "Initial client discovery", "status": "completed", "deliverable": "Integration plan" },
+      { "id": 2, "title": "Wireframe design", "status": "completed", "deliverable": "System architecture" },
+      { "id": 3, "title": "SEO setup", "status": "pending", "deliverable": "API documentation" },
+      { "id": 4, "title": "System integration", "status": "in-progress", "deliverable": "Integration modules" },
+      { "id": 5, "title": "Security audit", "status": "pending", "deliverable": "Security report" }
+    ],
+    "deliverables": [
+      "Integrated system",
+      "Migration plan",
+      "Security documentation",
+      "Performance report",
+      "Training materials"
+    ],
+    "timeline": [
+      { "milestone": "Project Kickoff", "date": "2024-01-15", "status": "completed" },
+      { "milestone": "Analysis Phase", "date": "2024-02-01", "status": "completed" },
+      { "milestone": "Integration Phase", "date": "2024-04-01", "status": "in-progress" },
+      { "milestone": "Testing Phase", "date": "2024-05-01", "status": "pending" },
+      { "milestone": "Go Live", "date": "2024-05-15", "status": "pending" }
+    ]
+  },
+  {
+    "id": 6,
+    "name": "Green Energy Dashboard",
+    "clientId": 8,
+    "clientName": "GreenEnergy Corp",
+    "status": "Planned",
+    "dueDate": "2024-06-30",
+    "progress": 5,
+    "description": "Real-time monitoring dashboard for renewable energy production and consumption",
+    "startDate": "2024-03-01",
+    "budget": 75000,
+    "priority": "Medium",
+    "teamMembers": [
+      { "id": 1, "name": "Eddie Lake", "role": "Project Manager", "avatar": "/avatars/eddie.jpg" },
+      { "id": 17, "name": "Daniel Park", "role": "Data Analyst", "avatar": "/avatars/daniel.jpg" },
+      { "id": 18, "name": "Leila Ahmadi", "role": "UI Designer", "avatar": "/avatars/leila.jpg" },
+      { "id": 19, "name": "Sophia Martinez", "role": "Backend Developer", "avatar": "/avatars/sophia.jpg" }
+    ],
+    "tasks": [
+      { "id": 1, "title": "Initial client discovery", "status": "pending", "deliverable": "Requirements document" },
+      { "id": 2, "title": "Wireframe design", "status": "pending", "deliverable": "Dashboard mockups" },
+      { "id": 3, "title": "SEO setup", "status": "pending", "deliverable": "Data visualization" },
+      { "id": 4, "title": "Data pipeline setup", "status": "pending", "deliverable": "Data pipeline" },
+      { "id": 5, "title": "Dashboard development", "status": "pending", "deliverable": "Live dashboard" }
+    ],
+    "deliverables": [
+      "Real-time dashboard",
+      "Data visualization",
+      "API endpoints",
+      "Mobile app",
+      "Analytics report"
+    ],
+    "timeline": [
+      { "milestone": "Project Kickoff", "date": "2024-03-01", "status": "pending" },
+      { "milestone": "Data Analysis", "date": "2024-03-15", "status": "pending" },
+      { "milestone": "Design Phase", "date": "2024-04-01", "status": "pending" },
+      { "milestone": "Development Phase", "date": "2024-05-15", "status": "pending" },
+      { "milestone": "Launch", "date": "2024-06-30", "status": "pending" }
+    ]
+  }
+]

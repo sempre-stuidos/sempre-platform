@@ -43,22 +43,22 @@ const data = {
     },
     {
       title: "Clients",
-      url: "#",
+      url: "/clients",
       icon: IconUsers,
     },
     {
       title: "Projects",
-      url: "#",
+      url: "/projects",
       icon: IconFolder,
     },
     {
       title: "Tasks & Todos",
-      url: "#",
+      url: "/tasks",
       icon: IconListDetails,
     },
     {
       title: "Team",
-      url: "#",
+      url: "/team",
       icon: IconUsers,
     },
   ],
@@ -84,11 +84,16 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [theme, setTheme] = React.useState<'light' | 'dark'>('light')
+  const [theme, setTheme] = React.useState<'light' | 'dark'>('dark')
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light'
     setTheme(newTheme)
+    
+    // Save theme preference to localStorage
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('theme', newTheme)
+    }
     
     // Apply theme to document
     if (typeof document !== 'undefined') {
@@ -105,8 +110,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   React.useEffect(() => {
     if (typeof document !== 'undefined') {
       const root = document.documentElement
-      const isDark = root.classList.contains('dark')
-      setTheme(isDark ? 'dark' : 'light')
+      // Check if theme is already set in localStorage or document
+      const savedTheme = localStorage.getItem('theme')
+      const isDark = savedTheme ? savedTheme === 'dark' : true // Default to dark
+      
+      if (isDark) {
+        root.classList.add('dark')
+        setTheme('dark')
+      } else {
+        root.classList.remove('dark')
+        setTheme('light')
+      }
     }
   }, [])
 

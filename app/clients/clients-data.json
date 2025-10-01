@@ -1,0 +1,167 @@
+[
+  {
+    "id": 1,
+    "name": "Acme Corporation",
+    "businessType": "Technology",
+    "status": "Active",
+    "projectCount": 3,
+    "priority": "High",
+    "contactEmail": "john.doe@acme.com",
+    "lastContact": "2024-01-15",
+    "totalValue": 125000
+  },
+  {
+    "id": 2,
+    "name": "Global Solutions Inc",
+    "businessType": "Consulting",
+    "status": "Active",
+    "projectCount": 2,
+    "priority": "Medium",
+    "contactEmail": "sarah.smith@globalsolutions.com",
+    "lastContact": "2024-01-10",
+    "totalValue": 85000
+  },
+  {
+    "id": 3,
+    "name": "TechStart Ventures",
+    "businessType": "Startup",
+    "status": "Active",
+    "projectCount": 1,
+    "priority": "High",
+    "contactEmail": "mike.johnson@techstart.com",
+    "lastContact": "2024-01-12",
+    "totalValue": 45000
+  },
+  {
+    "id": 4,
+    "name": "RetailMax Stores",
+    "businessType": "Retail",
+    "status": "Past",
+    "projectCount": 0,
+    "priority": "Low",
+    "contactEmail": "lisa.brown@retailmax.com",
+    "lastContact": "2023-11-20",
+    "totalValue": 0
+  },
+  {
+    "id": 5,
+    "name": "HealthCare Plus",
+    "businessType": "Healthcare",
+    "status": "Active",
+    "projectCount": 4,
+    "priority": "High",
+    "contactEmail": "dr.williams@healthcareplus.com",
+    "lastContact": "2024-01-14",
+    "totalValue": 200000
+  },
+  {
+    "id": 6,
+    "name": "FinanceFirst Bank",
+    "businessType": "Financial Services",
+    "status": "Active",
+    "projectCount": 2,
+    "priority": "Medium",
+    "contactEmail": "robert.davis@financefirst.com",
+    "lastContact": "2024-01-08",
+    "totalValue": 150000
+  },
+  {
+    "id": 7,
+    "name": "EduTech Learning",
+    "businessType": "Education",
+    "status": "Past",
+    "projectCount": 0,
+    "priority": "Low",
+    "contactEmail": "prof.martinez@edutech.edu",
+    "lastContact": "2023-10-15",
+    "totalValue": 0
+  },
+  {
+    "id": 8,
+    "name": "GreenEnergy Corp",
+    "businessType": "Energy",
+    "status": "Active",
+    "projectCount": 1,
+    "priority": "High",
+    "contactEmail": "jennifer.green@greenenergy.com",
+    "lastContact": "2024-01-13",
+    "totalValue": 75000
+  },
+  {
+    "id": 9,
+    "name": "ManufacturingWorks",
+    "businessType": "Manufacturing",
+    "status": "Active",
+    "projectCount": 3,
+    "priority": "Medium",
+    "contactEmail": "tom.wilson@manufacturingworks.com",
+    "lastContact": "2024-01-09",
+    "totalValue": 180000
+  },
+  {
+    "id": 10,
+    "name": "MediaStream Studios",
+    "businessType": "Media & Entertainment",
+    "status": "Past",
+    "projectCount": 0,
+    "priority": "Low",
+    "contactEmail": "alex.garcia@mediastream.com",
+    "lastContact": "2023-12-05",
+    "totalValue": 0
+  },
+  {
+    "id": 11,
+    "name": "LogisticsPro",
+    "businessType": "Logistics",
+    "status": "Active",
+    "projectCount": 2,
+    "priority": "Medium",
+    "contactEmail": "maria.rodriguez@logisticspro.com",
+    "lastContact": "2024-01-11",
+    "totalValue": 95000
+  },
+  {
+    "id": 12,
+    "name": "RealEstate Partners",
+    "businessType": "Real Estate",
+    "status": "Active",
+    "projectCount": 1,
+    "priority": "High",
+    "contactEmail": "david.lee@realestatepartners.com",
+    "lastContact": "2024-01-16",
+    "totalValue": 110000
+  },
+  {
+    "id": 13,
+    "name": "FoodChain Restaurants",
+    "businessType": "Food & Beverage",
+    "status": "Past",
+    "projectCount": 0,
+    "priority": "Low",
+    "contactEmail": "chef.thompson@foodchain.com",
+    "lastContact": "2023-09-30",
+    "totalValue": 0
+  },
+  {
+    "id": 14,
+    "name": "AutoDrive Motors",
+    "businessType": "Automotive",
+    "status": "Active",
+    "projectCount": 2,
+    "priority": "High",
+    "contactEmail": "engineer.kim@autodrive.com",
+    "lastContact": "2024-01-07",
+    "totalValue": 165000
+  },
+  {
+    "id": 15,
+    "name": "TravelAgency Plus",
+    "businessType": "Travel & Tourism",
+    "status": "Past",
+    "projectCount": 0,
+    "priority": "Low",
+    "contactEmail": "agent.white@travelagency.com",
+    "lastContact": "2023-08-22",
+    "totalValue": 0
+  }
+]

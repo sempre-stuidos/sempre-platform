@@ -1,0 +1,328 @@
+[
+  {
+    "id": 1,
+    "name": "Eddie Lake",
+    "role": "Project Manager",
+    "status": "Active",
+    "email": "eddie.lake@agency.com",
+    "timezone": "PST (UTC-8)",
+    "avatar": "/avatars/eddie.jpg",
+    "skills": ["Project Management", "Agile", "Scrum", "Team Leadership", "Client Relations"],
+    "currentProjects": 3,
+    "activeTasks": 12,
+    "upcomingDeadlines": [
+      { "project": "E-commerce Platform Redesign", "deadline": "2024-03-15", "type": "Project Delivery" },
+      { "project": "Mobile App Development", "deadline": "2024-04-30", "type": "Project Kickoff" }
+    ],
+    "workload": 85
+  },
+  {
+    "id": 2,
+    "name": "Maya Johnson",
+    "role": "UI/UX Designer",
+    "status": "Active",
+    "email": "maya.johnson@agency.com",
+    "timezone": "EST (UTC-5)",
+    "avatar": "/avatars/maya.jpg",
+    "skills": ["UI Design", "UX Research", "Figma", "Prototyping", "User Testing", "Branding"],
+    "currentProjects": 2,
+    "activeTasks": 8,
+    "upcomingDeadlines": [
+      { "project": "E-commerce Platform Redesign", "deadline": "2024-03-01", "type": "Design Review" },
+      { "project": "Mobile App Development", "deadline": "2024-02-28", "type": "Wireframes" }
+    ],
+    "workload": 70
+  },
+  {
+    "id": 3,
+    "name": "Carlos Rodriguez",
+    "role": "Frontend Developer",
+    "status": "Active",
+    "email": "carlos.rodriguez@agency.com",
+    "timezone": "CST (UTC-6)",
+    "avatar": "/avatars/carlos.jpg",
+    "skills": ["React", "TypeScript", "Next.js", "Tailwind CSS", "JavaScript", "HTML/CSS"],
+    "currentProjects": 2,
+    "activeTasks": 15,
+    "upcomingDeadlines": [
+      { "project": "E-commerce Platform Redesign", "deadline": "2024-03-10", "type": "Frontend Implementation" },
+      { "project": "Website Migration", "deadline": "2024-02-25", "type": "Code Review" }
+    ],
+    "workload": 90
+  },
+  {
+    "id": 4,
+    "name": "Sarah Chen",
+    "role": "Backend Developer",
+    "status": "Active",
+    "email": "sarah.chen@agency.com",
+    "timezone": "PST (UTC-8)",
+    "avatar": "/avatars/sarah.jpg",
+    "skills": ["Node.js", "Python", "PostgreSQL", "MongoDB", "REST APIs", "GraphQL", "Docker"],
+    "currentProjects": 3,
+    "activeTasks": 10,
+    "upcomingDeadlines": [
+      { "project": "E-commerce Platform Redesign", "deadline": "2024-03-05", "type": "API Development" },
+      { "project": "Banking System Integration", "deadline": "2024-04-01", "type": "Integration Testing" }
+    ],
+    "workload": 75
+  },
+  {
+    "id": 5,
+    "name": "Alex Thompson",
+    "role": "Mobile Developer",
+    "status": "Active",
+    "email": "alex.thompson@agency.com",
+    "timezone": "EST (UTC-5)",
+    "avatar": "/avatars/alex.jpg",
+    "skills": ["React Native", "Flutter", "iOS", "Android", "Swift", "Kotlin", "Xcode"],
+    "currentProjects": 1,
+    "activeTasks": 6,
+    "upcomingDeadlines": [
+      { "project": "Mobile App Development", "deadline": "2024-04-15", "type": "App Store Submission" }
+    ],
+    "workload": 60
+  },
+  {
+    "id": 6,
+    "name": "Lisa Wong",
+    "role": "UI Designer",
+    "status": "Contractor",
+    "email": "lisa.wong@agency.com",
+    "timezone": "PST (UTC-8)",
+    "avatar": "/avatars/lisa.jpg",
+    "skills": ["UI Design", "Adobe Creative Suite", "Sketch", "Illustration", "Icon Design", "Branding"],
+    "currentProjects": 1,
+    "activeTasks": 4,
+    "upcomingDeadlines": [
+      { "project": "Mobile App Development", "deadline": "2024-02-20", "type": "Icon Set Delivery" }
+    ],
+    "workload": 40
+  },
+  {
+    "id": 7,
+    "name": "David Kim",
+    "role": "Backend Developer",
+    "status": "Active",
+    "email": "david.kim@agency.com",
+    "timezone": "KST (UTC+9)",
+    "avatar": "/avatars/david.jpg",
+    "skills": ["Java", "Spring Boot", "Microservices", "AWS", "Kubernetes", "Redis", "MySQL"],
+    "currentProjects": 2,
+    "activeTasks": 9,
+    "upcomingDeadlines": [
+      { "project": "Mobile App Development", "deadline": "2024-03-20", "type": "API Documentation" },
+      { "project": "Banking System Integration", "deadline": "2024-04-10", "type": "Security Audit" }
+    ],
+    "workload": 80
+  },
+  {
+    "id": 8,
+    "name": "Raj Patel",
+    "role": "DevOps Engineer",
+    "status": "Active",
+    "email": "raj.patel@agency.com",
+    "timezone": "IST (UTC+5:30)",
+    "avatar": "/avatars/raj.jpg",
+    "skills": ["AWS", "Docker", "Kubernetes", "Terraform", "CI/CD", "Monitoring", "Linux"],
+    "currentProjects": 2,
+    "activeTasks": 7,
+    "upcomingDeadlines": [
+      { "project": "Website Migration", "deadline": "2024-02-28", "type": "Production Deployment" },
+      { "project": "Banking System Integration", "deadline": "2024-03-15", "type": "Infrastructure Setup" }
+    ],
+    "workload": 65
+  },
+  {
+    "id": 9,
+    "name": "Maria Garcia",
+    "role": "Backend Developer",
+    "status": "Active",
+    "email": "maria.garcia@agency.com",
+    "timezone": "CST (UTC-6)",
+    "avatar": "/avatars/maria.jpg",
+    "skills": ["PHP", "Laravel", "MySQL", "Redis", "Elasticsearch", "API Design", "Testing"],
+    "currentProjects": 1,
+    "activeTasks": 5,
+    "upcomingDeadlines": [
+      { "project": "Website Migration", "deadline": "2024-02-25", "type": "Database Migration" }
+    ],
+    "workload": 50
+  },
+  {
+    "id": 10,
+    "name": "James Wilson",
+    "role": "QA Engineer",
+    "status": "Active",
+    "email": "james.wilson@agency.com",
+    "timezone": "EST (UTC-5)",
+    "avatar": "/avatars/james.jpg",
+    "skills": ["Manual Testing", "Automated Testing", "Selenium", "Jest", "Cypress", "Bug Tracking", "Test Planning"],
+    "currentProjects": 2,
+    "activeTasks": 8,
+    "upcomingDeadlines": [
+      { "project": "Website Migration", "deadline": "2024-02-28", "type": "Final Testing" },
+      { "project": "E-commerce Platform Redesign", "deadline": "2024-03-12", "type": "QA Review" }
+    ],
+    "workload": 70
+  },
+  {
+    "id": 11,
+    "name": "Dr. Sarah Johnson",
+    "role": "Medical Consultant",
+    "status": "Contractor",
+    "email": "sarah.johnson@agency.com",
+    "timezone": "EST (UTC-5)",
+    "avatar": "/avatars/sarah-j.jpg",
+    "skills": ["Healthcare Compliance", "HIPAA", "Medical Workflows", "Requirements Analysis", "User Research"],
+    "currentProjects": 0,
+    "activeTasks": 0,
+    "upcomingDeadlines": [],
+    "workload": 0
+  },
+  {
+    "id": 12,
+    "name": "Michael Chen",
+    "role": "Security Specialist",
+    "status": "Active",
+    "email": "michael.chen@agency.com",
+    "timezone": "PST (UTC-8)",
+    "avatar": "/avatars/michael.jpg",
+    "skills": ["Cybersecurity", "Penetration Testing", "Security Auditing", "Compliance", "Risk Assessment", "OWASP"],
+    "currentProjects": 2,
+    "activeTasks": 6,
+    "upcomingDeadlines": [
+      { "project": "Banking System Integration", "deadline": "2024-03-30", "type": "Security Audit" },
+      { "project": "Healthcare Portal", "deadline": "2024-02-15", "type": "Compliance Review" }
+    ],
+    "workload": 55
+  },
+  {
+    "id": 13,
+    "name": "Emma Davis",
+    "role": "Frontend Developer",
+    "status": "Past Collaborator",
+    "email": "emma.davis@agency.com",
+    "timezone": "GMT (UTC+0)",
+    "avatar": "/avatars/emma.jpg",
+    "skills": ["Vue.js", "Angular", "JavaScript", "CSS", "Webpack", "Responsive Design"],
+    "currentProjects": 0,
+    "activeTasks": 0,
+    "upcomingDeadlines": [],
+    "workload": 0
+  },
+  {
+    "id": 14,
+    "name": "Priya Singh",
+    "role": "Integration Specialist",
+    "status": "Active",
+    "email": "priya.singh@agency.com",
+    "timezone": "IST (UTC+5:30)",
+    "avatar": "/avatars/priya.jpg",
+    "skills": ["System Integration", "API Integration", "Middleware", "Data Mapping", "ETL", "SOA"],
+    "currentProjects": 1,
+    "activeTasks": 11,
+    "upcomingDeadlines": [
+      { "project": "Banking System Integration", "deadline": "2024-04-20", "type": "Integration Testing" }
+    ],
+    "workload": 85
+  },
+  {
+    "id": 15,
+    "name": "Thomas Wilson",
+    "role": "System Architect",
+    "status": "Active",
+    "email": "thomas.wilson@agency.com",
+    "timezone": "EST (UTC-5)",
+    "avatar": "/avatars/thomas.jpg",
+    "skills": ["System Architecture", "Cloud Architecture", "Microservices", "Scalability", "Performance", "Design Patterns"],
+    "currentProjects": 2,
+    "activeTasks": 7,
+    "upcomingDeadlines": [
+      { "project": "Banking System Integration", "deadline": "2024-03-05", "type": "Architecture Review" },
+      { "project": "Green Energy Dashboard", "deadline": "2024-03-15", "type": "System Design" }
+    ],
+    "workload": 75
+  },
+  {
+    "id": 16,
+    "name": "Nina Patel",
+    "role": "QA Engineer",
+    "status": "Active",
+    "email": "nina.patel@agency.com",
+    "timezone": "IST (UTC+5:30)",
+    "avatar": "/avatars/nina.jpg",
+    "skills": ["Test Automation", "Performance Testing", "Load Testing", "API Testing", "Mobile Testing", "Regression Testing"],
+    "currentProjects": 1,
+    "activeTasks": 9,
+    "upcomingDeadlines": [
+      { "project": "Banking System Integration", "deadline": "2024-05-01", "type": "Performance Testing" }
+    ],
+    "workload": 80
+  },
+  {
+    "id": 17,
+    "name": "Daniel Park",
+    "role": "Data Analyst",
+    "status": "Active",
+    "email": "daniel.park@agency.com",
+    "timezone": "KST (UTC+9)",
+    "avatar": "/avatars/daniel.jpg",
+    "skills": ["Data Analysis", "Python", "R", "SQL", "Tableau", "Power BI", "Machine Learning", "Statistics"],
+    "currentProjects": 1,
+    "activeTasks": 5,
+    "upcomingDeadlines": [
+      { "project": "Green Energy Dashboard", "deadline": "2024-03-20", "type": "Data Model Design" }
+    ],
+    "workload": 45
+  },
+  {
+    "id": 18,
+    "name": "Leila Ahmadi",
+    "role": "UI Designer",
+    "status": "Active",
+    "email": "leila.ahmadi@agency.com",
+    "timezone": "CET (UTC+1)",
+    "avatar": "/avatars/leila.jpg",
+    "skills": ["UI Design", "Data Visualization", "Dashboard Design", "Figma", "Adobe XD", "User Research"],
+    "currentProjects": 1,
+    "activeTasks": 6,
+    "upcomingDeadlines": [
+      { "project": "Green Energy Dashboard", "deadline": "2024-03-10", "type": "Dashboard Mockups" }
+    ],
+    "workload": 60
+  },
+  {
+    "id": 19,
+    "name": "Sophia Martinez",
+    "role": "Backend Developer",
+    "status": "Active",
+    "email": "sophia.martinez@agency.com",
+    "timezone": "CST (UTC-6)",
+    "avatar": "/avatars/sophia.jpg",
+    "skills": ["Python", "Django", "FastAPI", "PostgreSQL", "Redis", "Celery", "Data Processing"],
+    "currentProjects": 1,
+    "activeTasks": 8,
+    "upcomingDeadlines": [
+      { "project": "Green Energy Dashboard", "deadline": "2024-04-01", "type": "API Development" }
+    ],
+    "workload": 70
+  },
+  {
+    "id": 20,
+    "name": "Jennifer Lee",
+    "role": "SEO Specialist",
+    "status": "Active",
+    "email": "jennifer.lee@agency.com",
+    "timezone": "PST (UTC-8)",
+    "avatar": "/avatars/jennifer.jpg",
+    "skills": ["SEO", "SEM", "Google Analytics", "Keyword Research", "Content Strategy", "Technical SEO", "Link Building"],
+    "currentProjects": 2,
+    "activeTasks": 4,
+    "upcomingDeadlines": [
+      { "project": "E-commerce Platform Redesign", "deadline": "2024-03-01", "type": "SEO Audit" },
+      { "project": "Website Migration", "deadline": "2024-02-20", "type": "SEO Migration" }
+    ],
+    "workload": 50
+  }
+]
