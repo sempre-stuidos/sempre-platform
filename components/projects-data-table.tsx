@@ -63,7 +63,6 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table"
-import { toast } from "sonner"
 
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
@@ -434,7 +433,7 @@ export function ProjectsDataTable({
   }
 
   return (
-    <>
+    <div>
     <Tabs
       defaultValue="outline"
       className="w-full flex-col justify-start gap-6"
@@ -691,7 +690,8 @@ export function ProjectsDataTable({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  </>
+    </div>
+  )
 }
 
 function ProjectCellViewer({ item }: { item: Project }) {
