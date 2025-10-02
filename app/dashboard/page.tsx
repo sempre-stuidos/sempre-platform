@@ -3,15 +3,20 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable } from "@/components/data-table"
 import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
-import { SupabaseExample } from "@/components/supabase-example"
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
-import data from "./todos-data.json"
+import { getDashboardStats, getDashboardChartData, getRecentTasks } from "@/lib/dashboard"
 
-export default function Page() {
+export default async function Page() {
+  // Fetch dashboard data from database
+  const [stats, chartData, recentTasks] = await Promise.all([
+    getDashboardStats(),
+    getDashboardChartData(),
+    getRecentTasks(15)
+  ])
   return (
     <SidebarProvider
       style={
@@ -27,14 +32,11 @@ export default function Page() {
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <SectionCards />
+              <SectionCards stats={stats} />
               <div className="px-4 lg:px-6">
-                <ChartAreaInteractive />
+                <ChartAreaInteractive data={chartData} />
               </div>
-              <div className="px-4 lg:px-6">
-                <SupabaseExample />
-              </div>
-              <DataTable data={data} />
+              <DataTable data={recentTasks} />
             </div>
           </div>
         </div>
