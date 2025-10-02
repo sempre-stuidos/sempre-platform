@@ -233,7 +233,6 @@ export async function getRecentTasks(limit: number = 10) {
       priority: task.priority,
       dueDate: task.due_date,
       assignee: task.assignee_name,
-      project: task.project_name,
     })) || [];
   } catch (error) {
     console.error('Error in getRecentTasks:', error);
