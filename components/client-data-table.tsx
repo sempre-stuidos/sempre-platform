@@ -96,10 +96,21 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { AddClientModal } from "@/components/add-client-modal"
 import Link from "next/link"
 import { Client } from "@/lib/types"
-import { createClient } from "@/lib/clients"
+import { createClient, updateClient, deleteClient } from "@/lib/clients"
 
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
@@ -121,7 +132,8 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
-const columns: ColumnDef<Client>[] = [
+// Define columns outside component to avoid recreation
+const createColumns = (onEdit: (client: Client) => void, onDelete: (client: Client) => void): ColumnDef<Client>[] => [
   {
     id: "drag",
     header: () => null,
@@ -262,10 +274,15 @@ const columns: ColumnDef<Client>[] = [
           <DropdownMenuItem asChild>
             <Link href={`/clients/${row.original.id}`}>View Details</Link>
           </DropdownMenuItem>
-          <DropdownMenuItem>Edit Client</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onEdit(row.original)}>Edit Client</DropdownMenuItem>
           <DropdownMenuItem>Add Project</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Archive</DropdownMenuItem>
+          <DropdownMenuItem 
+            variant="destructive"
+            onClick={() => onDelete(row.original)}
+          >
+            Delete Client
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
@@ -315,6 +332,11 @@ export function ClientDataTable({
     pageSize: 10,
   })
   const [isAddClientModalOpen, setIsAddClientModalOpen] = React.useState(false)
+  const [isEditClientModalOpen, setIsEditClientModalOpen] = React.useState(false)
+  const [editingClient, setEditingClient] = React.useState<Client | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [clientToDelete, setClientToDelete] = React.useState<Client | null>(null)
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false)
   const sortableId = React.useId()
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
@@ -325,6 +347,92 @@ export function ClientDataTable({
   const dataIds = React.useMemo<UniqueIdentifier[]>(
     () => data?.map(({ id }) => id) || [],
     [data]
+  )
+
+  const handleUpdateClient = async (clientId: number, updates: Partial<Client>) => {
+    try {
+      const updatedClient = await updateClient(clientId, updates)
+      
+      if (updatedClient) {
+        setData(data.map(client => 
+          client.id === clientId ? updatedClient : client
+        ))
+        toast.success("Client updated successfully")
+      } else {
+        toast.error("Failed to update client")
+      }
+    } catch (error) {
+      console.error("Error updating client:", error)
+      toast.error("Failed to update client")
+    }
+  }
+
+  const handleDeleteClient = async (clientId: number) => {
+    try {
+      const success = await deleteClient(clientId)
+      
+      if (success) {
+        setData(data.filter(client => client.id !== clientId))
+        toast.success("Client deleted successfully")
+        setDeleteDialogOpen(false)
+        setClientToDelete(null)
+      } else {
+        toast.error("Failed to delete client")
+      }
+    } catch (error) {
+      console.error("Error deleting client:", error)
+      toast.error("Failed to delete client")
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    const selectedRows = table.getFilteredSelectedRowModel().rows
+    const selectedClients = selectedRows.map(row => row.original)
+    
+    try {
+      const deletePromises = selectedClients.map(client => deleteClient(client.id))
+      const results = await Promise.all(deletePromises)
+      
+      const successCount = results.filter(Boolean).length
+      if (successCount > 0) {
+        const deletedIds = selectedClients.slice(0, successCount).map(c => c.id)
+        setData(data.filter(client => !deletedIds.includes(client.id)))
+        toast.success(`${successCount} client(s) deleted successfully`)
+        table.resetRowSelection()
+      }
+      
+      if (successCount < selectedClients.length) {
+        toast.error(`Failed to delete ${selectedClients.length - successCount} client(s)`)
+      }
+    } catch (error) {
+      console.error("Error deleting clients:", error)
+      toast.error("Failed to delete clients")
+    } finally {
+      setBulkDeleteDialogOpen(false)
+    }
+  }
+
+  const openDeleteDialog = (client: Client) => {
+    setClientToDelete(client)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleEditClient = (client: Client) => {
+    setEditingClient(client)
+    setIsEditClientModalOpen(true)
+  }
+
+  const handleEditSubmit = async (updatedClient: any) => {
+    if (editingClient) {
+      await handleUpdateClient(editingClient.id, updatedClient)
+      setIsEditClientModalOpen(false)
+      setEditingClient(null)
+    }
+  }
+
+  const columns = React.useMemo(
+    () => createColumns(handleEditClient, openDeleteDialog),
+    [handleEditClient, openDeleteDialog]
   )
 
   const table = useReactTable({
@@ -373,7 +481,11 @@ export function ClientDataTable({
         priority: newClient.priority,
         contactEmail: newClient.contactEmail,
         lastContact: new Date().toISOString().split('T')[0],
-        totalValue: 0
+        totalValue: 0,
+        phone: newClient.phone,
+        address: newClient.address,
+        website: newClient.website,
+        notes: newClient.notes
       })
       
       if (client) {
@@ -615,16 +727,22 @@ export function ClientDataTable({
         value="active"
         className="flex flex-col px-4 lg:px-6"
       >
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
+        <div className="text-muted-foreground text-center py-8">
+          Active clients view - {data.filter(c => c.status === "Active").length} clients
+        </div>
       </TabsContent>
       <TabsContent value="past" className="flex flex-col px-4 lg:px-6">
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
+        <div className="text-muted-foreground text-center py-8">
+          Past clients view - {data.filter(c => c.status === "Past").length} clients
+        </div>
       </TabsContent>
       <TabsContent
         value="high-priority"
         className="flex flex-col px-4 lg:px-6"
       >
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
+        <div className="text-muted-foreground text-center py-8">
+          High priority clients view - {data.filter(c => c.priority === "High").length} clients
+        </div>
       </TabsContent>
       
       <AddClientModal
@@ -632,6 +750,106 @@ export function ClientDataTable({
         onClose={() => setIsAddClientModalOpen(false)}
         onAddClient={handleAddClient}
       />
+      
+      {editingClient && (
+        <AddClientModal
+          isOpen={isEditClientModalOpen}
+          onClose={() => {
+            setIsEditClientModalOpen(false)
+            setEditingClient(null)
+          }}
+          onAddClient={handleEditSubmit}
+          initialData={editingClient}
+          isEdit={true}
+        />
+      )}
+
+      {/* Bulk Actions Bar */}
+      {table.getFilteredSelectedRowModel().rows.length > 0 && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-background border rounded-lg shadow-lg px-4 py-3 flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              {table.getFilteredSelectedRowModel().rows.length} client(s) selected
+            </span>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setBulkDeleteDialogOpen(true)}
+            >
+              Delete Selected
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Single Delete Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Client</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{clientToDelete?.name}"? This action cannot be undone.
+              {clientToDelete?.projectCount && clientToDelete.projectCount > 0 && (
+                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
+                  <strong>Warning:</strong> This client has {clientToDelete.projectCount} active project(s). 
+                  Deleting this client may affect related projects.
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => clientToDelete && handleDeleteClient(clientToDelete.id)}
+            >
+              Delete Client
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Multiple Clients</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the following {table.getFilteredSelectedRowModel().rows.length} client(s)? This action cannot be undone.
+              
+              <div className="mt-3 max-h-32 overflow-y-auto">
+                <ul className="text-sm space-y-1">
+                  {table.getFilteredSelectedRowModel().rows.map((row) => (
+                    <li key={row.original.id} className="flex justify-between">
+                      <span>{row.original.name}</span>
+                      {row.original.projectCount > 0 && (
+                        <span className="text-yellow-600 text-xs">
+                          {row.original.projectCount} project(s)
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              {table.getFilteredSelectedRowModel().rows.some(row => row.original.projectCount > 0) && (
+                <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
+                  <strong>Warning:</strong> Some clients have active projects. Deleting these clients may affect related projects.
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleBulkDelete}
+            >
+              Delete {table.getFilteredSelectedRowModel().rows.length} Client(s)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Tabs>
   )
 }

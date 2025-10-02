@@ -13,23 +13,35 @@ function transformClientRecord(record: any): Client {
     contactEmail: record.contact_email, // Transform snake_case to camelCase
     lastContact: record.last_contact, // Transform snake_case to camelCase
     totalValue: record.total_value, // Transform snake_case to camelCase
+    phone: record.phone,
+    address: record.address,
+    website: record.website,
+    notes: record.notes,
     created_at: record.created_at,
     updated_at: record.updated_at,
   };
 }
 
 // Transform frontend interface to database record format
-function transformClientToRecord(client: Partial<Client> & { businessType?: string, projectCount?: number, contactEmail?: string, lastContact?: string, totalValue?: number }) {
-  return {
+function transformClientToRecord(client: Partial<Client> & { businessType?: string, projectCount?: number, contactEmail?: string, lastContact?: string, totalValue?: number, phone?: string, address?: string, website?: string, notes?: string }) {
+  const record: any = {
     name: client.name,
     business_type: client.businessType || client.business_type,
     status: client.status,
-    project_count: client.projectCount || client.project_count,
+    project_count: client.projectCount || client.project_count || 0,
     priority: client.priority,
     contact_email: client.contactEmail || client.contact_email,
     last_contact: client.lastContact || client.last_contact,
-    total_value: client.totalValue || client.total_value,
+    total_value: client.totalValue || client.total_value || 0,
   };
+
+  // Add optional fields if they exist
+  if (client.phone) record.phone = client.phone;
+  if (client.address) record.address = client.address;
+  if (client.website) record.website = client.website;
+  if (client.notes) record.notes = client.notes;
+
+  return record;
 }
 
 export async function getAllClients(): Promise<Client[]> {

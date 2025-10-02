@@ -35,6 +35,19 @@ import {
   IconClock,
   IconCalendar,
 } from "@tabler/icons-react"
+import { toast } from "sonner"
+import { createProject, updateProject, deleteProject } from "@/lib/projects"
+import { AddProjectModal } from "@/components/add-project-modal"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -110,7 +123,7 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
-const columns: ColumnDef<Project>[] = [
+const createColumns = (onEditProject?: (project: Project) => void, onDeleteProject?: (project: Project) => void): ColumnDef<Project>[] => [
   {
     id: "drag",
     header: () => null,
@@ -194,7 +207,7 @@ const columns: ColumnDef<Project>[] = [
     header: "Due Date",
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
-        {row.original.dueDate}
+        {row.original.dueDate || "On Going"}
       </div>
     ),
   },
@@ -232,7 +245,7 @@ const columns: ColumnDef<Project>[] = [
   },
   {
     id: "actions",
-    cell: () => (
+    cell: ({ row }) => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -246,10 +259,15 @@ const columns: ColumnDef<Project>[] = [
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
           <DropdownMenuItem>View Details</DropdownMenuItem>
-          <DropdownMenuItem>Edit Project</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onEditProject?.(row.original)}>Edit Project</DropdownMenuItem>
           <DropdownMenuItem>Duplicate</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+          <DropdownMenuItem 
+            variant="destructive"
+            onClick={() => onDeleteProject?.(row.original)}
+          >
+            Delete
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
@@ -298,6 +316,10 @@ export function ProjectsDataTable({
     pageIndex: 0,
     pageSize: 10,
   })
+  const [isAddProjectModalOpen, setIsAddProjectModalOpen] = React.useState(false)
+  const [editingProject, setEditingProject] = React.useState<Project | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [projectToDelete, setProjectToDelete] = React.useState<Project | null>(null)
   const sortableId = React.useId()
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
@@ -309,6 +331,71 @@ export function ProjectsDataTable({
     () => data?.map(({ id }) => id) || [],
     [data]
   )
+
+  const handleAddProject = async (projectData: any) => {
+    try {
+      const newProject = await createProject(projectData)
+      if (newProject) {
+        setData(prev => [...prev, newProject])
+        toast.success('Project created successfully')
+        setIsAddProjectModalOpen(false)
+      } else {
+        toast.error('Failed to create project')
+      }
+    } catch (error) {
+      console.error('Error creating project:', error)
+      toast.error('Failed to create project')
+    }
+  }
+
+  const handleUpdateProject = async (projectData: any) => {
+    if (!editingProject) return
+    
+    try {
+      const updatedProject = await updateProject(editingProject.id, projectData)
+      if (updatedProject) {
+        setData(prev => prev.map(p => p.id === editingProject.id ? updatedProject : p))
+        toast.success('Project updated successfully')
+        setEditingProject(null)
+        setIsAddProjectModalOpen(false)
+      } else {
+        toast.error('Failed to update project')
+      }
+    } catch (error) {
+      console.error('Error updating project:', error)
+      toast.error('Failed to update project')
+    }
+  }
+
+  const handleDeleteProject = async (projectId: number) => {
+    try {
+      const success = await deleteProject(projectId)
+      if (success) {
+        setData(data.filter(project => project.id !== projectId))
+        toast.success('Project deleted successfully')
+        setDeleteDialogOpen(false)
+        setProjectToDelete(null)
+      } else {
+        toast.error('Failed to delete project')
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error)
+      toast.error('Failed to delete project')
+    }
+  }
+
+  const openDeleteDialog = (project: Project) => {
+    setProjectToDelete(project)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project)
+    setIsAddProjectModalOpen(true)
+  }
+
+  const columns = React.useMemo(() => createColumns(handleEditProject, openDeleteDialog), [handleEditProject, openDeleteDialog])
+
 
   const table = useReactTable({
     data,
@@ -347,6 +434,7 @@ export function ProjectsDataTable({
   }
 
   return (
+    <>
     <Tabs
       defaultValue="outline"
       className="w-full flex-col justify-start gap-6"
@@ -414,7 +502,7 @@ export function ProjectsDataTable({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setIsAddProjectModalOpen(true)}>
             <IconPlus />
             <span className="hidden lg:inline">Add Project</span>
           </Button>
@@ -569,7 +657,41 @@ export function ProjectsDataTable({
         <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
       </TabsContent>
     </Tabs>
-  )
+
+    {/* Add/Edit Project Modal */}
+    <AddProjectModal
+      isOpen={isAddProjectModalOpen}
+      onClose={() => {
+        setIsAddProjectModalOpen(false)
+        setEditingProject(null)
+      }}
+      onAddProject={editingProject ? handleUpdateProject : handleAddProject}
+      initialData={editingProject}
+      isEdit={!!editingProject}
+    />
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Project</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete "{projectToDelete?.name}"? This action cannot be undone.
+            All related tasks, deliverables, and timeline items will also be deleted.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => projectToDelete && handleDeleteProject(projectToDelete.id)}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
 }
 
 function ProjectCellViewer({ item }: { item: Project }) {

@@ -780,10 +780,6 @@ function ServiceCellViewer({ service }: { service: z.infer<typeof serviceSchema>
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <Label htmlFor="progress">Progress (%)</Label>
-              <Input id="progress" defaultValue={service.progress.toString()} type="number" min="0" max="100" />
-            </div>
-            <div className="flex flex-col gap-3">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"

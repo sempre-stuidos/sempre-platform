@@ -26,6 +26,10 @@ export interface Client {
   contactEmail: string;
   lastContact: string;
   totalValue: number;
+  phone?: string;
+  address?: string;
+  website?: string;
+  notes?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -57,7 +61,6 @@ export interface Project {
   clientName: string;
   status: 'Completed' | 'In Progress' | 'Review' | 'Planned';
   dueDate: string;
-  progress: number;
   description: string;
   startDate: string;
   budget: number;
@@ -81,7 +84,6 @@ export interface Task {
   status: 'To Do' | 'In Progress' | 'Review' | 'Done';
   priority: 'High' | 'Medium' | 'Low';
   dueDate: string;
-  progress: number;
   created_at?: string;
   updated_at?: string;
 }

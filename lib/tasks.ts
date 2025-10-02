@@ -14,7 +14,6 @@ function transformTaskRecord(record: any): Task {
     status: record.status,
     priority: record.priority,
     dueDate: record.due_date,
-    progress: record.progress,
     created_at: record.created_at,
     updated_at: record.updated_at,
   };
@@ -32,7 +31,6 @@ function transformTaskToRecord(task: Partial<Task>) {
     status: task.status,
     priority: task.priority,
     due_date: task.dueDate,
-    progress: task.progress,
   };
 }
 

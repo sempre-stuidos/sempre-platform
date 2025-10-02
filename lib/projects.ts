@@ -10,7 +10,6 @@ function transformProjectRecord(record: any, teamMembers: any[], tasks: any[], d
     clientName: record.client_name,
     status: record.status,
     dueDate: record.due_date,
-    progress: record.progress,
     description: record.description,
     startDate: record.start_date,
     budget: record.budget,
@@ -39,18 +38,17 @@ function transformProjectRecord(record: any, teamMembers: any[], tasks: any[], d
 }
 
 // Transform frontend interface to database record format
-function transformProjectToRecord(project: Partial<Project>) {
+function transformProjectToRecord(project: any) {
   return {
-    name: project.name,
-    client_id: project.clientId,
-    client_name: project.clientName,
-    status: project.status,
-    due_date: project.dueDate,
-    progress: project.progress,
-    description: project.description,
-    start_date: project.startDate,
-    budget: project.budget,
-    priority: project.priority,
+    name: project.name, // Required field - should not be null
+    client_id: project.clientId && project.clientId !== 0 ? project.clientId : null,
+    client_name: project.clientName || null,
+    status: project.status || null,
+    due_date: project.dueDate || null,
+    description: project.description || null,
+    start_date: project.startDate || null,
+    budget: project.budget || 0,
+    priority: project.priority || null,
   };
 }
 
@@ -170,7 +168,7 @@ export async function getProjectById(id: number): Promise<Project | null> {
   }
 }
 
-export async function createProject(project: Omit<Project, 'id' | 'created_at' | 'updated_at'>): Promise<Project | null> {
+export async function createProject(project: any): Promise<Project | null> {
   try {
     // Insert project
     const { data: newProject, error: projectError } = await supabase
@@ -190,7 +188,7 @@ export async function createProject(project: Omit<Project, 'id' | 'created_at' |
 
     const projectId = newProject.id;
 
-    // Insert related data in parallel
+    // Insert related data in parallel (only if they exist)
     const insertPromises = [];
 
     if (project.teamMembers && project.teamMembers.length > 0) {

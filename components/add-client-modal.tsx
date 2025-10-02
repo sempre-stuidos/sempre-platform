@@ -13,6 +13,8 @@ interface AddClientModalProps {
   isOpen: boolean
   onClose: () => void
   onAddClient: (client: NewClient) => void
+  initialData?: any
+  isEdit?: boolean
 }
 
 interface NewClient {
@@ -21,23 +23,38 @@ interface NewClient {
   status: "Active" | "Past"
   priority: "High" | "Medium" | "Low"
   contactEmail: string
-  phone: string
-  address: string
-  website: string
-  notes: string
+  phone?: string
+  address?: string
+  website?: string
+  notes?: string
 }
 
-export function AddClientModal({ isOpen, onClose, onAddClient }: AddClientModalProps) {
-  const [formData, setFormData] = useState<NewClient>({
-    name: "",
-    businessType: "",
-    status: "Active",
-    priority: "Medium",
-    contactEmail: "",
-    phone: "",
-    address: "",
-    website: "",
-    notes: ""
+export function AddClientModal({ isOpen, onClose, onAddClient, initialData, isEdit = false }: AddClientModalProps) {
+  const [formData, setFormData] = useState<NewClient>(() => {
+    if (initialData && isEdit) {
+      return {
+        name: initialData.name || "",
+        businessType: initialData.businessType || "",
+        status: initialData.status || "Active",
+        priority: initialData.priority || "Medium",
+        contactEmail: initialData.contactEmail || "",
+        phone: initialData.phone || "",
+        address: initialData.address || "",
+        website: initialData.website || "",
+        notes: initialData.notes || ""
+      }
+    }
+    return {
+      name: "",
+      businessType: "",
+      status: "Active",
+      priority: "Medium",
+      contactEmail: "",
+      phone: "",
+      address: "",
+      website: "",
+      notes: ""
+    }
   })
 
   const [errors, setErrors] = useState<Partial<NewClient>>({})
@@ -56,8 +73,9 @@ export function AddClientModal({ isOpen, onClose, onAddClient }: AddClientModalP
     } else if (!/\S+@\S+\.\S+/.test(formData.contactEmail)) {
       newErrors.contactEmail = "Please enter a valid email"
     }
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required"
+    // Phone is optional, but validate format if provided
+    if (formData.phone && formData.phone.trim() && !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/[\s\-\(\)]/g, ''))) {
+      newErrors.phone = "Please enter a valid phone number"
     }
 
     setErrors(newErrors)
@@ -105,9 +123,12 @@ export function AddClientModal({ isOpen, onClose, onAddClient }: AddClientModalP
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Client</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit Client" : "Add New Client"}</DialogTitle>
           <DialogDescription>
-            Create a new client profile with contact information and business details.
+            {isEdit 
+              ? "Update client profile with contact information and business details."
+              : "Create a new client profile with contact information and business details."
+            }
           </DialogDescription>
         </DialogHeader>
         
@@ -169,10 +190,10 @@ export function AddClientModal({ isOpen, onClose, onAddClient }: AddClientModalP
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone *</Label>
+              <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
-                value={formData.phone}
+                value={formData.phone || ""}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="+1 (555) 123-4567"
                 className={errors.phone ? "border-red-500" : ""}
@@ -218,7 +239,7 @@ export function AddClientModal({ isOpen, onClose, onAddClient }: AddClientModalP
             <Label htmlFor="address">Address</Label>
             <Textarea
               id="address"
-              value={formData.address}
+              value={formData.address || ""}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               placeholder="Enter business address"
               rows={2}
@@ -229,7 +250,7 @@ export function AddClientModal({ isOpen, onClose, onAddClient }: AddClientModalP
             <Label htmlFor="website">Website</Label>
             <Input
               id="website"
-              value={formData.website}
+              value={formData.website || ""}
               onChange={(e) => setFormData({ ...formData, website: e.target.value })}
               placeholder="https://example.com"
             />
@@ -239,7 +260,7 @@ export function AddClientModal({ isOpen, onClose, onAddClient }: AddClientModalP
             <Label htmlFor="notes">Notes</Label>
             <Textarea
               id="notes"
-              value={formData.notes}
+              value={formData.notes || ""}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Additional notes about this client"
               rows={3}
@@ -251,7 +272,7 @@ export function AddClientModal({ isOpen, onClose, onAddClient }: AddClientModalP
               Cancel
             </Button>
             <Button type="submit">
-              Add Client
+              {isEdit ? "Update Client" : "Add Client"}
             </Button>
           </div>
         </form>

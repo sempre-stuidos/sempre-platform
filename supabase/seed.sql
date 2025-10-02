@@ -7,23 +7,27 @@ INSERT INTO clients (
     priority, 
     contact_email, 
     last_contact, 
-    total_value
+    total_value,
+    phone,
+    address,
+    website,
+    notes
 ) VALUES 
-    ('Acme Corporation', 'Technology', 'Active', 3, 'High', 'john.doe@acme.com', '2024-01-15', 125000),
-    ('Global Solutions Inc', 'Consulting', 'Active', 2, 'Medium', 'sarah.smith@globalsolutions.com', '2024-01-10', 85000),
-    ('TechStart Ventures', 'Startup', 'Active', 1, 'High', 'mike.johnson@techstart.com', '2024-01-12', 45000),
-    ('RetailMax Stores', 'Retail', 'Past', 0, 'Low', 'lisa.brown@retailmax.com', '2023-11-20', 0),
-    ('HealthCare Plus', 'Healthcare', 'Active', 4, 'High', 'dr.williams@healthcareplus.com', '2024-01-14', 200000),
-    ('FinanceFirst Bank', 'Financial Services', 'Active', 2, 'Medium', 'robert.davis@financefirst.com', '2024-01-08', 150000),
-    ('EduTech Learning', 'Education', 'Past', 0, 'Low', 'prof.martinez@edutech.edu', '2023-10-15', 0),
-    ('GreenEnergy Corp', 'Energy', 'Active', 1, 'High', 'jennifer.green@greenenergy.com', '2024-01-13', 75000),
-    ('ManufacturingWorks', 'Manufacturing', 'Active', 3, 'Medium', 'tom.wilson@manufacturingworks.com', '2024-01-09', 180000),
-    ('MediaStream Studios', 'Media & Entertainment', 'Past', 0, 'Low', 'alex.garcia@mediastream.com', '2023-12-05', 0),
-    ('LogisticsPro', 'Logistics', 'Active', 2, 'Medium', 'maria.rodriguez@logisticspro.com', '2024-01-11', 95000),
-    ('RealEstate Partners', 'Real Estate', 'Active', 1, 'High', 'david.lee@realestatepartners.com', '2024-01-16', 110000),
-    ('FoodChain Restaurants', 'Food & Beverage', 'Past', 0, 'Low', 'chef.thompson@foodchain.com', '2023-09-30', 0),
-    ('AutoDrive Motors', 'Automotive', 'Active', 2, 'High', 'engineer.kim@autodrive.com', '2024-01-07', 165000),
-    ('TravelAgency Plus', 'Travel & Tourism', 'Past', 0, 'Low', 'agent.white@travelagency.com', '2023-08-22', 0);
+    ('Acme Corporation', 'Technology', 'Active', 3, 'High', 'john.doe@acme.com', '2024-01-15', 125000, '+1 (555) 123-4567', '123 Tech Street, San Francisco, CA 94105', 'https://acme.com', 'Key client with multiple ongoing projects'),
+    ('Global Solutions Inc', 'Consulting', 'Active', 2, 'Medium', 'sarah.smith@globalsolutions.com', '2024-01-10', 85000, '+1 (555) 234-5678', '456 Business Ave, New York, NY 10001', 'https://globalsolutions.com', 'Consulting partner for enterprise solutions'),
+    ('TechStart Ventures', 'Startup', 'Active', 1, 'High', 'mike.johnson@techstart.com', '2024-01-12', 45000, '+1 (555) 345-6789', '789 Startup Blvd, Austin, TX 73301', 'https://techstart.com', 'Fast-growing startup with innovative products'),
+    ('RetailMax Stores', 'Retail', 'Past', 0, 'Low', 'lisa.brown@retailmax.com', '2023-11-20', 0, '+1 (555) 456-7890', '321 Retail Plaza, Chicago, IL 60601', 'https://retailmax.com', 'Former client - project completed'),
+    ('HealthCare Plus', 'Healthcare', 'Active', 4, 'High', 'dr.williams@healthcareplus.com', '2024-01-14', 200000, NULL, NULL, NULL, NULL),
+    ('FinanceFirst Bank', 'Financial Services', 'Active', 2, 'Medium', 'robert.davis@financefirst.com', '2024-01-08', 150000, NULL, NULL, NULL, NULL),
+    ('EduTech Learning', 'Education', 'Past', 0, 'Low', 'prof.martinez@edutech.edu', '2023-10-15', 0, NULL, NULL, NULL, NULL),
+    ('GreenEnergy Corp', 'Energy', 'Active', 1, 'High', 'jennifer.green@greenenergy.com', '2024-01-13', 75000, NULL, NULL, NULL, NULL),
+    ('ManufacturingWorks', 'Manufacturing', 'Active', 3, 'Medium', 'tom.wilson@manufacturingworks.com', '2024-01-09', 180000, NULL, NULL, NULL, NULL),
+    ('MediaStream Studios', 'Media & Entertainment', 'Past', 0, 'Low', 'alex.garcia@mediastream.com', '2023-12-05', 0, NULL, NULL, NULL, NULL),
+    ('LogisticsPro', 'Logistics', 'Active', 2, 'Medium', 'maria.rodriguez@logisticspro.com', '2024-01-11', 95000, NULL, NULL, NULL, NULL),
+    ('RealEstate Partners', 'Real Estate', 'Active', 1, 'High', 'david.lee@realestatepartners.com', '2024-01-16', 110000, NULL, NULL, NULL, NULL),
+    ('FoodChain Restaurants', 'Food & Beverage', 'Past', 0, 'Low', 'chef.thompson@foodchain.com', '2023-09-30', 0, NULL, NULL, NULL, NULL),
+    ('AutoDrive Motors', 'Automotive', 'Active', 2, 'High', 'engineer.kim@autodrive.com', '2024-01-07', 165000, NULL, NULL, NULL, NULL),
+    ('TravelAgency Plus', 'Travel & Tourism', 'Past', 0, 'Low', 'agent.white@travelagency.com', '2023-08-22', 0, NULL, NULL, NULL, NULL);
 
 -- Seed data for projects table
 INSERT INTO projects (

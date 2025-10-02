@@ -13,10 +13,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       console.error('Error fetching clients:', clientsError);
     }
 
-    // Get active projects count and average progress
+    // Get active projects count
     const { data: projectsData, error: projectsError } = await supabase
       .from('projects')
-      .select('id, progress')
+      .select('id')
       .in('status', ['In Progress', 'Review']);
 
     if (projectsError) {
@@ -65,11 +65,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       console.error('Error fetching today notes:', todayNotesError);
     }
 
-    // Calculate average project progress
-    const activeProjects = projectsData || [];
-    const averageProgress = activeProjects.length > 0 
-      ? Math.round(activeProjects.reduce((sum, project) => sum + (project.progress || 0), 0) / activeProjects.length)
-      : 0;
+    // Calculate active projects count
+    const activeProjectsCount = projectsData?.length || 0;
 
     // Calculate client growth (compare with last month)
     const lastMonth = new Date();
@@ -89,10 +86,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
     return {
       activeClients: clientsData?.length || 0,
-      activeProjects: activeProjects.length,
+      activeProjects: activeProjectsCount,
       tasksThisWeek: tasksData?.length || 0,
       recentNotes: notesData?.length || 0,
-      projectProgress: averageProgress,
+      projectProgress: activeProjectsCount,
       clientGrowth: clientGrowth,
       notesToday: todayNotesData?.length || 0,
     };
@@ -244,7 +241,7 @@ export async function getProjectCompletionStats() {
   try {
     const { data: projects, error } = await supabase
       .from('projects')
-      .select('status, progress');
+      .select('status');
 
     if (error) {
       console.error('Error fetching project completion stats:', error);
@@ -259,15 +256,15 @@ export async function getProjectCompletionStats() {
     const totalProjects = projects?.length || 0;
     const completedProjects = projects?.filter(p => p.status === 'Completed').length || 0;
     const inProgressProjects = projects?.filter(p => p.status === 'In Progress').length || 0;
-    const averageProgress = totalProjects > 0 
-      ? Math.round(projects.reduce((sum, project) => sum + (project.progress || 0), 0) / totalProjects)
+    const completionRate = totalProjects > 0 
+      ? Math.round((completedProjects / totalProjects) * 100)
       : 0;
 
     return {
       totalProjects,
       completedProjects,
       inProgressProjects,
-      averageProgress,
+      averageProgress: completionRate,
     };
   } catch (error) {
     console.error('Error in getProjectCompletionStats:', error);
