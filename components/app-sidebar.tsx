@@ -28,13 +28,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { supabase } from "@/lib/supabase"
+import { User } from "@supabase/supabase-js"
 
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
+const defaultUser = {
+  name: "User",
+  email: "user@example.com",
+  avatar: "",
+}
+
+const staticData = {
   navMain: [
     {
       title: "Dashboard",
@@ -89,6 +92,57 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [user, setUser] = React.useState(defaultUser)
+  const [currentUser, setCurrentUser] = React.useState<User | null>(null)
+  
+  React.useEffect(() => {
+    // Get initial user
+    const getInitialUser = async () => {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        setCurrentUser(authUser)
+        
+        if (authUser) {
+          const fullName = authUser.user_metadata?.first_name && authUser.user_metadata?.last_name 
+            ? `${authUser.user_metadata.first_name} ${authUser.user_metadata.last_name}`
+            : authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User'
+          
+          setUser({
+            name: fullName,
+            email: authUser.email || 'user@example.com',
+            avatar: authUser.user_metadata?.avatar_url || '',
+          })
+        }
+      } catch (error) {
+        console.log('No authenticated user or Supabase not configured')
+      }
+    }
+
+    getInitialUser()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          setCurrentUser(session.user)
+          const fullName = session.user.user_metadata?.first_name && session.user.user_metadata?.last_name 
+            ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name}`
+            : session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User'
+          
+          setUser({
+            name: fullName,
+            email: session.user.email || 'user@example.com',
+            avatar: session.user.user_metadata?.avatar_url || '',
+          })
+        } else if (event === 'SIGNED_OUT') {
+          setCurrentUser(null)
+          setUser(defaultUser)
+        }
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [])
   const [theme, setTheme] = React.useState<'light' | 'dark'>('dark')
 
   const toggleTheme = () => {
@@ -157,12 +211,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavSub items={data.navSub} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={staticData.navMain} />
+        <NavSub items={staticData.navSub} />
+        <NavSecondary items={staticData.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )

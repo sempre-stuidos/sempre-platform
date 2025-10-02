@@ -3,6 +3,7 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable } from "@/components/data-table"
 import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
+import { SupabaseExample } from "@/components/supabase-example"
 import {
   SidebarInset,
   SidebarProvider,
@@ -29,6 +30,9 @@ export default function Page() {
               <SectionCards />
               <div className="px-4 lg:px-6">
                 <ChartAreaInteractive />
+              </div>
+              <div className="px-4 lg:px-6">
+                <SupabaseExample />
               </div>
               <DataTable data={data} />
             </div>
