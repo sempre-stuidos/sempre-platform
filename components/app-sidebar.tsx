@@ -65,13 +65,18 @@ const data = {
   navSub: [
     {
       title: "Notes & Knowledge Base",
-      url: "#",
+      url: "/notes-knowledge",
       icon: IconFileDescription,
     },
     {
       title: "Files & Assets",
-      url: "#",
+      url: "/files-assets",
       icon: IconFileWord,
+    },
+    {
+      title: "Agency Toolkit",
+      url: "/agency-toolkit",
+      icon: IconInnerShadowTop,
     },
   ],
   navSecondary: [

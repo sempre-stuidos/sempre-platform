@@ -1,0 +1,202 @@
+[
+  {
+    "id": 1,
+    "title": "Call with Infinity PM – agreed to include a booking widget",
+    "type": "Meeting Notes",
+    "status": "Draft",
+    "client": "Infinity Corp",
+    "project": "Website Redesign",
+    "date": "2024-01-15",
+    "author": "Sarah Chen"
+  },
+  {
+    "id": 2,
+    "title": "Q4 Strategy Planning Session",
+    "type": "Meeting Notes",
+    "status": "Published",
+    "client": "TechStart Inc",
+    "project": "Digital Transformation",
+    "date": "2024-01-10",
+    "author": "Eddie Lake"
+  },
+  {
+    "id": 3,
+    "title": "Landing Page Build",
+    "type": "Internal Playbook",
+    "status": "Template",
+    "client": "",
+    "project": "",
+    "date": "2024-01-01",
+    "author": "Jamik Tashpulatov"
+  },
+  {
+    "id": 4,
+    "title": "SEO Campaign Setup",
+    "type": "Internal Playbook",
+    "status": "Template",
+    "client": "",
+    "project": "",
+    "date": "2024-01-01",
+    "author": "Maya Johnson"
+  },
+  {
+    "id": 5,
+    "title": "Monthly Report Template",
+    "type": "Internal Playbook",
+    "status": "Template",
+    "client": "",
+    "project": "",
+    "date": "2024-01-01",
+    "author": "Carlos Rodriguez"
+  },
+  {
+    "id": 6,
+    "title": "Client Onboarding Process",
+    "type": "Internal Playbook",
+    "status": "Template",
+    "client": "",
+    "project": "",
+    "date": "2024-01-01",
+    "author": "Sarah Chen"
+  },
+  {
+    "id": 7,
+    "title": "Brand Guidelines Discussion",
+    "type": "Meeting Notes",
+    "status": "Draft",
+    "client": "Creative Agency",
+    "project": "Brand Identity",
+    "date": "2024-01-12",
+    "author": "Leila Ahmadi"
+  },
+  {
+    "id": 8,
+    "title": "E-commerce Integration Requirements",
+    "type": "Meeting Notes",
+    "status": "Published",
+    "client": "Retail Plus",
+    "project": "E-commerce Platform",
+    "date": "2024-01-14",
+    "author": "Thomas Wilson"
+  },
+  {
+    "id": 9,
+    "title": "Social Media Campaign Template",
+    "type": "Internal Playbook",
+    "status": "Template",
+    "client": "",
+    "project": "",
+    "date": "2024-01-01",
+    "author": "Nina Patel"
+  },
+  {
+    "id": 10,
+    "title": "Content Strategy Workshop",
+    "type": "Meeting Notes",
+    "status": "Archived",
+    "client": "Media Group",
+    "project": "Content Marketing",
+    "date": "2024-01-08",
+    "author": "David Kim"
+  },
+  {
+    "id": 11,
+    "title": "Research on AI Integration",
+    "type": "Research Notes",
+    "status": "Draft",
+    "client": "",
+    "project": "",
+    "date": "2024-01-16",
+    "author": "Alex Thompson"
+  },
+  {
+    "id": 12,
+    "title": "Bug Report - Login Issue",
+    "type": "Bug Report",
+    "status": "Open",
+    "client": "TechStart Inc",
+    "project": "Mobile App",
+    "date": "2024-01-17",
+    "author": "Raj Patel"
+  },
+  {
+    "id": 13,
+    "title": "Feature Request - Dark Mode",
+    "type": "Feature Request",
+    "status": "Under Review",
+    "client": "Creative Agency",
+    "project": "Website Redesign",
+    "date": "2024-01-18",
+    "author": "James Wilson"
+  },
+  {
+    "id": 14,
+    "title": "Team Standup Notes",
+    "type": "Standup Notes",
+    "status": "Published",
+    "client": "",
+    "project": "",
+    "date": "2024-01-19",
+    "author": "Michael Chen"
+  },
+  {
+    "id": 15,
+    "title": "Code Review Guidelines",
+    "type": "Documentation",
+    "status": "Published",
+    "client": "",
+    "project": "",
+    "date": "2024-01-20",
+    "author": "Lisa Wong"
+  },
+  {
+    "id": 16,
+    "title": "Client Feedback Session",
+    "type": "Meeting Notes",
+    "status": "Draft",
+    "client": "HealthTech",
+    "project": "Mobile App",
+    "date": "2024-01-13",
+    "author": "Daniel Park"
+  },
+  {
+    "id": 17,
+    "title": "Security Audit Process",
+    "type": "Internal Playbook",
+    "status": "Template",
+    "client": "",
+    "project": "",
+    "date": "2024-01-01",
+    "author": "Sarah Johnson"
+  },
+  {
+    "id": 18,
+    "title": "Project Kickoff Meeting",
+    "type": "Meeting Notes",
+    "status": "Published",
+    "client": "EduTech",
+    "project": "Learning Platform",
+    "date": "2024-01-17",
+    "author": "Emma Davis"
+  },
+  {
+    "id": 19,
+    "title": "Quality Assurance Testing",
+    "type": "Internal Playbook",
+    "status": "Template",
+    "client": "",
+    "project": "",
+    "date": "2024-01-01",
+    "author": "Priya Singh"
+  },
+  {
+    "id": 20,
+    "title": "Stakeholder Update Call",
+    "type": "Meeting Notes",
+    "status": "Archived",
+    "client": "Enterprise Solutions",
+    "project": "CRM Implementation",
+    "date": "2024-01-09",
+    "author": "Maria Garcia"
+  }
+]
