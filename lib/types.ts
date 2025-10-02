@@ -155,3 +155,17 @@ export interface AgencyToolkit {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface FilesAssets {
+  id: number;
+  name: string;
+  type: 'Logo' | 'Document' | 'Mockup' | 'Content' | 'Images' | 'Wireframe' | 'Prototype' | 'Templates' | 'Video' | 'Design System' | 'Icons' | 'Presentation' | 'Template';
+  category: 'Client Assets' | 'Project Assets';
+  project: string;
+  size: string;
+  format: string;
+  uploaded: string;
+  status: 'Active' | 'Review' | 'Draft' | 'Processing' | 'Archive';
+  created_at?: string;
+  updated_at?: string;
+}

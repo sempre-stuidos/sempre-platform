@@ -7,9 +7,11 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
-import data from "./files-assets-data.json"
+import { getAllFilesAssets } from "@/lib/files-assets"
 
-export default function Page() {
+export default async function Page() {
+  // Fetch files-assets data from database
+  const data = await getAllFilesAssets()
   return (
     <SidebarProvider
       style={

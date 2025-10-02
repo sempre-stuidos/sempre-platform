@@ -55,9 +55,9 @@ import {
   VisibilityState,
 } from "@tanstack/react-table"
 import { toast } from "sonner"
-import { z } from "zod"
 
 import { useIsMobile } from "@/hooks/use-mobile"
+import { FilesAssets } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -103,18 +103,6 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 
-export const filesAssetsSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  type: z.string(),
-  category: z.string(),
-  project: z.string(),
-  size: z.string(),
-  format: z.string(),
-  uploaded: z.string(),
-  status: z.string(),
-})
-
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
   const { attributes, listeners } = useSortable({
@@ -150,7 +138,7 @@ const getFileIcon = (format: string) => {
   }
 }
 
-const columns: ColumnDef<z.infer<typeof filesAssetsSchema>>[] = [
+const columns: ColumnDef<FilesAssets>[] = [
   {
     id: "drag",
     header: () => null,
@@ -303,7 +291,7 @@ const columns: ColumnDef<z.infer<typeof filesAssetsSchema>>[] = [
   },
 ]
 
-function DraggableRow({ row }: { row: Row<z.infer<typeof filesAssetsSchema>> }) {
+function DraggableRow({ row }: { row: Row<FilesAssets> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
   })
@@ -331,7 +319,7 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof filesAssetsSchema>> }) 
 export function FilesAssetsDataTable({
   data: initialData,
 }: {
-  data: z.infer<typeof filesAssetsSchema>[]
+  data: FilesAssets[]
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
@@ -619,7 +607,7 @@ export function FilesAssetsDataTable({
   )
 }
 
-function FileCellViewer({ item }: { item: z.infer<typeof filesAssetsSchema> }) {
+function FileCellViewer({ item }: { item: FilesAssets }) {
   const isMobile = useIsMobile()
 
   return (

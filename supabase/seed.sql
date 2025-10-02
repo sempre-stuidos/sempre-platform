@@ -430,3 +430,35 @@ INSERT INTO agency_toolkit_cost_history (toolkit_id, date, amount, currency) VAL
     (10, '2024-02-08', 8.00, 'USD'),
     (10, '2024-01-08', 8.00, 'USD'),
     (10, '2023-12-08', 8.00, 'USD');
+
+-- Seed data for files_assets table
+INSERT INTO files_assets (
+    name, 
+    type, 
+    category, 
+    project, 
+    size, 
+    format, 
+    uploaded, 
+    status
+) VALUES 
+    ('Client Logo - TechCorp', 'Logo', 'Client Assets', 'TechCorp Website Redesign', '2.4 MB', 'SVG', '2024-01-15', 'Active'),
+    ('Brand Guidelines - TechCorp', 'Document', 'Client Assets', 'TechCorp Website Redesign', '15.2 MB', 'PDF', '2024-01-14', 'Active'),
+    ('Homepage Mockup v2', 'Mockup', 'Project Assets', 'TechCorp Website Redesign', '8.7 MB', 'PNG', '2024-01-13', 'Review'),
+    ('Content Draft - About Page', 'Content', 'Project Assets', 'TechCorp Website Redesign', '0.3 MB', 'DOCX', '2024-01-12', 'Draft'),
+    ('Product Images - E-commerce', 'Images', 'Client Assets', 'E-commerce Platform', '45.8 MB', 'ZIP', '2024-01-11', 'Active'),
+    ('Wireframes - Mobile App', 'Wireframe', 'Project Assets', 'Mobile App Development', '12.3 MB', 'Figma', '2024-01-10', 'Active'),
+    ('Client Logo - StartupXYZ', 'Logo', 'Client Assets', 'StartupXYZ Branding', '1.8 MB', 'SVG', '2024-01-09', 'Active'),
+    ('Style Guide - StartupXYZ', 'Document', 'Client Assets', 'StartupXYZ Branding', '22.1 MB', 'PDF', '2024-01-08', 'Active'),
+    ('Content Strategy Document', 'Document', 'Project Assets', 'Content Marketing Campaign', '3.2 MB', 'PDF', '2024-01-07', 'Review'),
+    ('Social Media Templates', 'Templates', 'Project Assets', 'Social Media Campaign', '18.5 MB', 'PSD', '2024-01-06', 'Active'),
+    ('Client Photos - Corporate', 'Images', 'Client Assets', 'Corporate Website', '67.2 MB', 'ZIP', '2024-01-05', 'Active'),
+    ('Prototype - Dashboard UI', 'Prototype', 'Project Assets', 'Dashboard Redesign', '25.4 MB', 'Figma', '2024-01-04', 'Review'),
+    ('Brand Colors Palette', 'Design System', 'Client Assets', 'Brand Identity Design', '0.8 MB', 'AI', '2024-01-03', 'Active'),
+    ('Content Calendar Template', 'Template', 'Project Assets', 'Content Planning', '0.5 MB', 'XLSX', '2024-01-02', 'Active'),
+    ('Video Assets - Promo', 'Video', 'Project Assets', 'Marketing Campaign', '156.7 MB', 'MP4', '2024-01-01', 'Processing'),
+    ('Client Logo - GlobalTech', 'Logo', 'Client Assets', 'GlobalTech Rebrand', '3.1 MB', 'SVG', '2023-12-31', 'Active'),
+    ('User Research Report', 'Document', 'Project Assets', 'UX Research Study', '8.9 MB', 'PDF', '2023-12-30', 'Review'),
+    ('Icon Set - Custom', 'Icons', 'Project Assets', 'Design System', '4.2 MB', 'SVG', '2023-12-29', 'Active'),
+    ('Client Presentation Deck', 'Presentation', 'Client Assets', 'Q4 Review', '28.3 MB', 'PPTX', '2023-12-28', 'Active'),
+    ('Website Screenshots', 'Images', 'Project Assets', 'Website Audit', '12.6 MB', 'PNG', '2023-12-27', 'Archive');
