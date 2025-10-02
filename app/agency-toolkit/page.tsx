@@ -6,9 +6,11 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
-import data from "./agency-toolkit-data.json"
+import { getAllAgencyToolkit } from "@/lib/agency-toolkit"
 
-export default function Page() {
+export default async function Page() {
+  // Fetch agency-toolkit data from database
+  const data = await getAllAgencyToolkit()
   return (
     <SidebarProvider
       style={

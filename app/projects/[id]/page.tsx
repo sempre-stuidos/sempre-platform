@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { IconArrowLeft, IconEdit, IconShare } from "@tabler/icons-react"
 import Link from "next/link"
 
-import projectsData from "../projects-data.json"
+import { getProjectById } from "@/lib/projects"
 
 interface ProjectPageProps {
   params: {
@@ -21,8 +21,8 @@ interface ProjectPageProps {
   }
 }
 
-export default function ProjectPage({ params }: ProjectPageProps) {
-  const project = projectsData.find(p => p.id === parseInt(params.id))
+export default async function ProjectPage({ params }: ProjectPageProps) {
+  const project = await getProjectById(parseInt(params.id))
 
   if (!project) {
     return (

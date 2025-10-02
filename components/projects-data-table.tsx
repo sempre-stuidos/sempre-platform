@@ -51,7 +51,6 @@ import {
   VisibilityState,
 } from "@tanstack/react-table"
 import { toast } from "sonner"
-import { z } from "zod"
 
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
@@ -89,16 +88,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
-
-export const projectSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  clientName: z.string(),
-  status: z.string(),
-  dueDate: z.string(),
-  progress: z.number(),
-  priority: z.string(),
-})
+import { Project } from "@/lib/types"
 
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
@@ -120,7 +110,7 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
-const columns: ColumnDef<z.infer<typeof projectSchema>>[] = [
+const columns: ColumnDef<Project>[] = [
   {
     id: "drag",
     header: () => null,
@@ -266,7 +256,7 @@ const columns: ColumnDef<z.infer<typeof projectSchema>>[] = [
   },
 ]
 
-function DraggableRow({ row }: { row: Row<z.infer<typeof projectSchema>> }) {
+function DraggableRow({ row }: { row: Row<Project> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
   })
@@ -294,7 +284,7 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof projectSchema>> }) {
 export function ProjectsDataTable({
   data: initialData,
 }: {
-  data: z.infer<typeof projectSchema>[]
+  data: Project[]
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
@@ -582,7 +572,7 @@ export function ProjectsDataTable({
   )
 }
 
-function ProjectCellViewer({ item }: { item: z.infer<typeof projectSchema> }) {
+function ProjectCellViewer({ item }: { item: Project }) {
   return (
     <Link href={`/projects/${item.id}`} className="text-foreground hover:text-primary font-medium">
       {item.name}

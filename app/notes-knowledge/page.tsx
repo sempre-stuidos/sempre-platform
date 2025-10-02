@@ -6,9 +6,11 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
-import data from "./notes-knowledge-data.json"
+import { getAllNotesKnowledge } from "@/lib/notes-knowledge"
 
-export default function Page() {
+export default async function Page() {
+  // Fetch notes-knowledge data from database
+  const data = await getAllNotesKnowledge()
   return (
     <SidebarProvider
       style={

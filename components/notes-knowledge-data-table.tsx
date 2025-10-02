@@ -35,9 +35,9 @@ import {
   VisibilityState,
 } from "@tanstack/react-table"
 import { toast } from "sonner"
-import { z } from "zod"
 
 import { useIsMobile } from "@/hooks/use-mobile"
+import { NotesKnowledge } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -99,18 +99,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-export const schema = z.object({
-  id: z.number(),
-  title: z.string(),
-  type: z.string(),
-  status: z.string(),
-  client: z.string(),
-  project: z.string(),
-  date: z.string(),
-  author: z.string(),
-})
-
-const columns: ColumnDef<z.infer<typeof schema>>[] = [
+const columns: ColumnDef<NotesKnowledge>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -277,7 +266,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
 export function NotesKnowledgeDataTable({
   data: initialData,
 }: {
-  data: z.infer<typeof schema>[]
+  data: NotesKnowledge[]
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
@@ -574,7 +563,7 @@ export function NotesKnowledgeDataTable({
   )
 }
 
-function CardViewItem({ item }: { item: z.infer<typeof schema> }) {
+function CardViewItem({ item }: { item: NotesKnowledge }) {
   const isMobile = useIsMobile()
   const isPlaybook = item.type === "Internal Playbook"
   const statusColors = {
@@ -751,7 +740,7 @@ function CardViewItem({ item }: { item: z.infer<typeof schema> }) {
   )
 }
 
-function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
+function TableCellViewer({ item }: { item: NotesKnowledge }) {
   const isMobile = useIsMobile()
   const statusColors = {
     "Draft": "bg-yellow-100 text-yellow-800 border-yellow-200",

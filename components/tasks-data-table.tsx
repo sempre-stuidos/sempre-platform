@@ -53,7 +53,6 @@ import {
   VisibilityState,
 } from "@tanstack/react-table"
 import { toast } from "sonner"
-import { z } from "zod"
 
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
@@ -103,19 +102,7 @@ import {
 } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-
-export const taskSchema = z.object({
-  id: z.number(),
-  title: z.string(),
-  projectName: z.string(),
-  assigneeName: z.string(),
-  assigneeRole: z.string(),
-  assigneeAvatar: z.string(),
-  status: z.string(),
-  priority: z.string(),
-  dueDate: z.string(),
-  progress: z.number(),
-})
+import { Task } from "@/lib/types"
 
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
@@ -137,7 +124,7 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
-const columns: ColumnDef<z.infer<typeof taskSchema>>[] = [
+const columns: ColumnDef<Task>[] = [
   {
     id: "drag",
     header: () => null,
@@ -302,7 +289,7 @@ const columns: ColumnDef<z.infer<typeof taskSchema>>[] = [
   },
 ]
 
-function DraggableRow({ row }: { row: Row<z.infer<typeof taskSchema>> }) {
+function DraggableRow({ row }: { row: Row<Task> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
   })
@@ -330,7 +317,7 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof taskSchema>> }) {
 export function TasksDataTable({
   data: initialData,
 }: {
-  data: z.infer<typeof taskSchema>[]
+  data: Task[]
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
@@ -640,7 +627,7 @@ export function TasksDataTable({
   )
 }
 
-function TaskCellViewer({ item }: { item: z.infer<typeof taskSchema> }) {
+function TaskCellViewer({ item }: { item: Task }) {
   const isMobile = useIsMobile()
 
   return (

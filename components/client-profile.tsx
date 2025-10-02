@@ -8,18 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
-
-interface Client {
-  id: number
-  name: string
-  businessType: string
-  status: string
-  projectCount: number
-  priority: string
-  contactEmail: string
-  lastContact: string
-  totalValue: number
-}
+import { Client } from "@/lib/types"
 
 interface ClientProfileProps {
   client: Client

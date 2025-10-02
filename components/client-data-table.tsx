@@ -50,7 +50,6 @@ import {
   VisibilityState,
 } from "@tanstack/react-table"
 import { toast } from "sonner"
-import { z } from "zod"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
@@ -99,18 +98,8 @@ import {
 } from "@/components/ui/tabs"
 import { AddClientModal } from "@/components/add-client-modal"
 import Link from "next/link"
-
-export const clientSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  businessType: z.string(),
-  status: z.string(),
-  projectCount: z.number(),
-  priority: z.string(),
-  contactEmail: z.string(),
-  lastContact: z.string(),
-  totalValue: z.number(),
-})
+import { Client } from "@/lib/types"
+import { createClient } from "@/lib/clients"
 
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
@@ -132,7 +121,7 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
-const columns: ColumnDef<z.infer<typeof clientSchema>>[] = [
+const columns: ColumnDef<Client>[] = [
   {
     id: "drag",
     header: () => null,
@@ -283,7 +272,7 @@ const columns: ColumnDef<z.infer<typeof clientSchema>>[] = [
   },
 ]
 
-function DraggableRow({ row }: { row: Row<z.infer<typeof clientSchema>> }) {
+function DraggableRow({ row }: { row: Row<Client> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
   })
@@ -311,7 +300,7 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof clientSchema>> }) {
 export function ClientDataTable({
   data: initialData,
 }: {
-  data: z.infer<typeof clientSchema>[]
+  data: Client[]
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
@@ -374,20 +363,29 @@ export function ClientDataTable({
     }
   }
 
-  const handleAddClient = (newClient: any) => {
-    const client = {
-      id: Math.max(...data.map(c => c.id)) + 1,
-      name: newClient.name,
-      businessType: newClient.businessType,
-      status: newClient.status,
-      projectCount: 0,
-      priority: newClient.priority,
-      contactEmail: newClient.contactEmail,
-      lastContact: new Date().toISOString().split('T')[0],
-      totalValue: 0
+  const handleAddClient = async (newClient: any) => {
+    try {
+      const client = await createClient({
+        name: newClient.name,
+        businessType: newClient.businessType,
+        status: newClient.status,
+        projectCount: 0,
+        priority: newClient.priority,
+        contactEmail: newClient.contactEmail,
+        lastContact: new Date().toISOString().split('T')[0],
+        totalValue: 0
+      })
+      
+      if (client) {
+        setData([client, ...data])
+        toast.success("Client added successfully")
+      } else {
+        toast.error("Failed to add client")
+      }
+    } catch (error) {
+      console.error("Error adding client:", error)
+      toast.error("Failed to add client")
     }
-    setData([client, ...data])
-    toast.success("Client added successfully")
   }
 
   // Filter data based on active tab
@@ -638,7 +636,7 @@ export function ClientDataTable({
   )
 }
 
-function ClientCellViewer({ client }: { client: z.infer<typeof clientSchema> }) {
+function ClientCellViewer({ client }: { client: Client }) {
   const isMobile = useIsMobile()
 
   return (

@@ -6,9 +6,11 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
-import data from "./tasks-data.json"
+import { getAllTasks } from "@/lib/tasks"
 
-export default function Page() {
+export default async function Page() {
+  // Fetch tasks data from database
+  const data = await getAllTasks()
   return (
     <SidebarProvider
       style={

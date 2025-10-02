@@ -60,7 +60,6 @@ import {
   VisibilityState,
 } from "@tanstack/react-table"
 import { toast } from "sonner"
-import { z } from "zod"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -108,25 +107,7 @@ import {
 } from "@/components/ui/dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-
-export const teamMemberSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  role: z.string(),
-  status: z.string(),
-  email: z.string(),
-  timezone: z.string(),
-  avatar: z.string(),
-  skills: z.array(z.string()),
-  currentProjects: z.number(),
-  activeTasks: z.number(),
-  upcomingDeadlines: z.array(z.object({
-    project: z.string(),
-    deadline: z.string(),
-    type: z.string(),
-  })),
-  workload: z.number(),
-})
+import { TeamMember } from "@/lib/types"
 
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
@@ -148,7 +129,7 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
-const columns: ColumnDef<z.infer<typeof teamMemberSchema>>[] = [
+const columns: ColumnDef<TeamMember>[] = [
   {
     id: "drag",
     header: () => null,
@@ -284,7 +265,7 @@ const columns: ColumnDef<z.infer<typeof teamMemberSchema>>[] = [
   },
 ]
 
-function DraggableRow({ row }: { row: Row<z.infer<typeof teamMemberSchema>> }) {
+function DraggableRow({ row }: { row: Row<TeamMember> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
   })
@@ -312,7 +293,7 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof teamMemberSchema>> }) {
 export function TeamDataTable({
   data: initialData,
 }: {
-  data: z.infer<typeof teamMemberSchema>[]
+  data: TeamMember[]
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
@@ -326,7 +307,7 @@ export function TeamDataTable({
     pageIndex: 0,
     pageSize: 10,
   })
-  const [selectedMember, setSelectedMember] = React.useState<z.infer<typeof teamMemberSchema> | null>(null)
+  const [selectedMember, setSelectedMember] = React.useState<TeamMember | null>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = React.useState(false)
   const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list')
   const sortableId = React.useId()
@@ -341,7 +322,7 @@ export function TeamDataTable({
     [data]
   )
 
-  const handleViewProfile = (member: z.infer<typeof teamMemberSchema>) => {
+  const handleViewProfile = (member: TeamMember) => {
     setSelectedMember(member)
     setIsProfileModalOpen(true)
   }
@@ -761,7 +742,7 @@ export function TeamDataTable({
   )
 }
 
-function TeamMemberCellViewer({ item, onViewProfile }: { item: z.infer<typeof teamMemberSchema>, onViewProfile: (member: z.infer<typeof teamMemberSchema>) => void }) {
+function TeamMemberCellViewer({ item, onViewProfile }: { item: TeamMember, onViewProfile: (member: TeamMember) => void }) {
   return (
     <div 
       className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
@@ -781,7 +762,7 @@ function TeamMemberCellViewer({ item, onViewProfile }: { item: z.infer<typeof te
   )
 }
 
-function TeamMemberCard({ member, onViewProfile }: { member: z.infer<typeof teamMemberSchema>, onViewProfile: (member: z.infer<typeof teamMemberSchema>) => void }) {
+function TeamMemberCard({ member, onViewProfile }: { member: TeamMember, onViewProfile: (member: TeamMember) => void }) {
   const statusColors = {
     "Active": "bg-green-100 text-green-800 border-green-200",
     "Contractor": "bg-blue-100 text-blue-800 border-blue-200",

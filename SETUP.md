@@ -54,3 +54,4 @@ npm run dev
 - All authentication forms include proper validation and loading states
 - The design uses a dark theme with animated geometric shapes
 - Forms are fully responsive and accessible
+

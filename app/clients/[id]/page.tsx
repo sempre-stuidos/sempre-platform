@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { IconArrowLeft, IconEdit, IconShare } from "@tabler/icons-react"
 import Link from "next/link"
 
-import clientsData from "../clients-data.json"
+import { getClientById } from "@/lib/clients"
 
 interface ClientDetailsPageProps {
   params: {
@@ -21,9 +21,9 @@ interface ClientDetailsPageProps {
   }
 }
 
-export default function ClientDetailsPage({ params }: ClientDetailsPageProps) {
+export default async function ClientDetailsPage({ params }: ClientDetailsPageProps) {
   const clientId = parseInt(params.id)
-  const client = clientsData.find(c => c.id === clientId)
+  const client = await getClientById(clientId)
 
   if (!client) {
     return (

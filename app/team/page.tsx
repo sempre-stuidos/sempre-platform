@@ -6,9 +6,11 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
-import data from "./team-data.json"
+import { getAllTeamMembers } from "@/lib/team"
 
-export default function Page() {
+export default async function Page() {
+  // Fetch team data from database
+  const data = await getAllTeamMembers()
   return (
     <SidebarProvider
       style={

@@ -23,7 +23,7 @@ import {
 } from "@tabler/icons-react"
 import Link from "next/link"
 
-import data from "../tasks-data.json"
+import { getTaskById } from "@/lib/tasks"
 
 interface TaskDetailPageProps {
   params: {
@@ -31,8 +31,8 @@ interface TaskDetailPageProps {
   }
 }
 
-export default function TaskDetailPage({ params }: TaskDetailPageProps) {
-  const task = data.find((t) => t.id === parseInt(params.id))
+export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
+  const task = await getTaskById(parseInt(params.id))
 
   if (!task) {
     return (
@@ -162,7 +162,9 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                       <CardTitle>Description</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground">{task.description}</p>
+                      <p className="text-muted-foreground">
+                        {task.title} - This task is part of the {task.projectName} project and is assigned to {task.assigneeName}.
+                      </p>
                     </CardContent>
                   </Card>
 
@@ -179,29 +181,32 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                       <Progress value={task.progress} className="w-full" />
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="text-muted-foreground">Estimated Hours:</span>
-                          <span className="ml-2 font-medium">{task.estimatedHours}h</span>
+                          <span className="text-muted-foreground">Status:</span>
+                          <span className="ml-2 font-medium">{task.status}</span>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Actual Hours:</span>
-                          <span className="ml-2 font-medium">{task.actualHours}h</span>
+                          <span className="text-muted-foreground">Priority:</span>
+                          <span className="ml-2 font-medium">{task.priority}</span>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Tags */}
+                  {/* Project Info */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Tags</CardTitle>
+                      <CardTitle>Project Details</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {task.tags.map((tag, index) => (
-                          <Badge key={index} variant="secondary">
-                            {tag}
-                          </Badge>
-                        ))}
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Project:</span>
+                          <span className="text-sm font-medium">{task.projectName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Due Date:</span>
+                          <span className="text-sm font-medium">{task.dueDate}</span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -240,7 +245,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                         <IconFolder className="size-5 text-muted-foreground" />
                         <div>
                           <p className="font-medium">{task.projectName}</p>
-                          <p className="text-sm text-muted-foreground">Project #{task.projectId}</p>
+                          <p className="text-sm text-muted-foreground">Project ID: {task.projectId}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -264,7 +269,9 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                         <IconClock className="size-4 text-muted-foreground" />
                         <div>
                           <p className="text-sm font-medium">Created</p>
-                          <p className="text-sm text-muted-foreground">{task.createdDate}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {task.created_at ? new Date(task.created_at).toLocaleDateString() : 'N/A'}
+                          </p>
                         </div>
                       </div>
                     </CardContent>

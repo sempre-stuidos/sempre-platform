@@ -6,9 +6,12 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
-import clientsData from "./clients-data.json"
+import { getAllClients } from "@/lib/clients"
 
-export default function ClientsPage() {
+export default async function ClientsPage() {
+  // Fetch clients data from database
+  const clientsData = await getAllClients()
+
   return (
     <SidebarProvider
       style={

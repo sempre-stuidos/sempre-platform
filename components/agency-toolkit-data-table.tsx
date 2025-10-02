@@ -54,9 +54,9 @@ import {
   VisibilityState,
 } from "@tanstack/react-table"
 import { toast } from "sonner"
-import { z } from "zod"
 
 import Link from "next/link"
+import { AgencyToolkit } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -93,34 +93,6 @@ import {
 } from "@/components/ui/tabs"
 import { AgencyToolkitDrawer } from "@/components/agency-toolkit-drawer"
 
-export const agencyToolkitSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  logo: z.string(),
-  category: z.string(),
-  planType: z.string(),
-  seats: z.number(),
-  renewalCycle: z.string(),
-  price: z.number(),
-  currency: z.string(),
-  paymentMethod: z.string(),
-  nextBillingDate: z.string(),
-  status: z.string(),
-  notes: z.string(),
-  invoices: z.array(z.object({
-    id: z.string(),
-    date: z.string(),
-    amount: z.number(),
-    currency: z.string(),
-    status: z.string(),
-  })),
-  costHistory: z.array(z.object({
-    date: z.string(),
-    amount: z.number(),
-    currency: z.string(),
-  })),
-})
-
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
   const { attributes, listeners } = useSortable({
@@ -141,7 +113,7 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
-const columns: ColumnDef<z.infer<typeof agencyToolkitSchema>>[] = [
+const columns: ColumnDef<AgencyToolkit>[] = [
   {
     id: "drag",
     header: () => null,
@@ -286,7 +258,7 @@ const columns: ColumnDef<z.infer<typeof agencyToolkitSchema>>[] = [
   },
 ]
 
-function DraggableRow({ row }: { row: Row<z.infer<typeof agencyToolkitSchema>> }) {
+function DraggableRow({ row }: { row: Row<AgencyToolkit> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
   })
@@ -314,7 +286,7 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof agencyToolkitSchema>> }
 export function AgencyToolkitDataTable({
   data: initialData,
 }: {
-  data: z.infer<typeof agencyToolkitSchema>[]
+  data: AgencyToolkit[]
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
@@ -328,7 +300,7 @@ export function AgencyToolkitDataTable({
     pageIndex: 0,
     pageSize: 10,
   })
-  const [selectedTool, setSelectedTool] = React.useState<z.infer<typeof agencyToolkitSchema> | null>(null)
+  const [selectedTool, setSelectedTool] = React.useState<AgencyToolkit | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false)
   const sortableId = React.useId()
   const sensors = useSensors(
@@ -342,7 +314,7 @@ export function AgencyToolkitDataTable({
     [data]
   )
 
-  const handleToolClick = (tool: z.infer<typeof agencyToolkitSchema>) => {
+  const handleToolClick = (tool: AgencyToolkit) => {
     setSelectedTool(tool)
     setIsDrawerOpen(true)
   }
@@ -624,8 +596,8 @@ function ToolCellViewer({
   item, 
   onToolClick 
 }: { 
-  item: z.infer<typeof agencyToolkitSchema>
-  onToolClick: (tool: z.infer<typeof agencyToolkitSchema>) => void
+  item: AgencyToolkit
+  onToolClick: (tool: AgencyToolkit) => void
 }) {
   return (
     <button

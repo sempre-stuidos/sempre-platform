@@ -6,9 +6,11 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
-import data from "./projects-data.json"
+import { getAllProjects } from "@/lib/projects"
 
-export default function Page() {
+export default async function Page() {
+  // Fetch projects data from database
+  const data = await getAllProjects()
   return (
     <SidebarProvider
       style={
