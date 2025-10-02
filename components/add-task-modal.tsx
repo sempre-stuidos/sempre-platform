@@ -27,7 +27,7 @@ import { getAllProjects, getAllTeamMembers } from "@/lib/tasks"
 interface NewTask {
   title: string
   projectId: number
-  assigneeId: number
+  assigneeId: number | null
   status: 'To Do' | 'In Progress' | 'Review' | 'Done'
   priority: 'High' | 'Medium' | 'Low'
   dueDate: string
@@ -51,7 +51,7 @@ export function AddTaskModal({
   const [formData, setFormData] = useState<NewTask>({
     title: "",
     projectId: 0,
-    assigneeId: 0,
+    assigneeId: null,
     status: "To Do",
     priority: "Medium",
     dueDate: "",
@@ -91,7 +91,7 @@ export function AddTaskModal({
       setFormData({
         title: initialData.title || "",
         projectId: initialData.projectId || 0,
-        assigneeId: initialData.assigneeId || 0,
+        assigneeId: initialData.assigneeId || null,
         status: initialData.status || "To Do",
         priority: initialData.priority || "Medium",
         dueDate: initialData.dueDate || "",
@@ -101,7 +101,7 @@ export function AddTaskModal({
       setFormData({
         title: "",
         projectId: 0,
-        assigneeId: 0,
+        assigneeId: null,
         status: "To Do",
         priority: "Medium",
         dueDate: "",
@@ -113,16 +113,14 @@ export function AddTaskModal({
   const validateForm = () => {
     const newErrors: Partial<NewTask> = {}
 
-    // Required fields: title, projectId, assigneeId
+    // Required fields: title, projectId
     if (!formData.title.trim()) {
       newErrors.title = "Task title is required"
     }
     if (!formData.projectId || formData.projectId === 0) {
       newErrors.projectId = "Project is required"
     }
-    if (!formData.assigneeId || formData.assigneeId === 0) {
-      newErrors.assigneeId = "Assignee is required"
-    }
+    // assigneeId is optional (can be null)
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -197,15 +195,16 @@ export function AddTaskModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="assigneeId">Assignee *</Label>
+              <Label htmlFor="assigneeId">Assignee</Label>
               <Select
                 value={formData.assigneeId ? formData.assigneeId.toString() : ""}
-                onValueChange={(value) => handleInputChange("assigneeId", parseInt(value) || 0)}
+                onValueChange={(value) => handleInputChange("assigneeId", value === "none" ? null : parseInt(value) || null)}
               >
-                <SelectTrigger className={errors.assigneeId ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Select an assignee" />
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an assignee (optional)" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">No assignee</SelectItem>
                   {teamMembers.map((member) => (
                     <SelectItem key={member.id} value={member.id.toString()}>
                       {member.name} ({member.role})
@@ -213,9 +212,6 @@ export function AddTaskModal({
                   ))}
                 </SelectContent>
               </Select>
-              {errors.assigneeId && (
-                <p className="text-sm text-red-500">{errors.assigneeId}</p>
-              )}
             </div>
           </div>
 

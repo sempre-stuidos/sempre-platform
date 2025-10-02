@@ -77,7 +77,7 @@ export interface Task {
   id: number;
   title: string;
   projectId: number;
-  assigneeId: number;
+  assigneeId: number | null;
   status: 'To Do' | 'In Progress' | 'Review' | 'Done';
   priority: 'High' | 'Medium' | 'Low';
   dueDate: string;

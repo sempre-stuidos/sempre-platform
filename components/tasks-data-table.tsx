@@ -188,20 +188,29 @@ const createColumns = (handleEditTask: (task: Task) => void, openDeleteDialog: (
   {
     accessorKey: "assigneeName",
     header: "Assignee",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <Avatar className="size-6">
-          <AvatarImage src={row.original.assigneeAvatar} alt={row.original.assigneeName} />
-          <AvatarFallback className="text-xs">
-            {row.original.assigneeName.split(' ').map(n => n[0]).join('')}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex flex-col">
-          <span className="text-sm font-medium">{row.original.assigneeName}</span>
-          <span className="text-xs text-muted-foreground">{row.original.assigneeRole}</span>
+    cell: ({ row }) => {
+      if (!row.original.assigneeName) {
+        return (
+          <div className="text-sm text-muted-foreground">
+            No assignee
+          </div>
+        )
+      }
+      return (
+        <div className="flex items-center gap-2">
+          <Avatar className="size-6">
+            <AvatarImage src={row.original.assigneeAvatar} alt={row.original.assigneeName} />
+            <AvatarFallback className="text-xs">
+              {row.original.assigneeName.split(' ').map(n => n[0]).join('')}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">{row.original.assigneeName}</span>
+            <span className="text-xs text-muted-foreground">{row.original.assigneeRole}</span>
+          </div>
         </div>
-      </div>
-    ),
+      )
+    },
   },
   {
     accessorKey: "status",

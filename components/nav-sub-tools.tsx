@@ -25,7 +25,7 @@ export function NavSubTools({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Tools</SidebarGroupLabel>
+      <SidebarGroupLabel>Others</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => {

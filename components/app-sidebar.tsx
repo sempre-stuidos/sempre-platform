@@ -86,7 +86,7 @@ const staticData = {
   ],
   navSubTools: [
     {
-      title: "Presentation",
+      title: "Slides Library",
       url: "/presentation",
       icon: IconPresentation,
     },
