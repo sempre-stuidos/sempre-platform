@@ -7,13 +7,15 @@ function transformTaskRecord(record: any): Task {
     id: record.id,
     title: record.title,
     projectId: record.project_id,
+    assigneeId: record.assignee_id,
+    status: record.status,
+    priority: record.priority,
+    dueDate: record.due_date,
+    // Derived fields populated from joins
     projectName: record.project_name,
     assigneeName: record.assignee_name,
     assigneeRole: record.assignee_role,
     assigneeAvatar: record.assignee_avatar,
-    status: record.status,
-    priority: record.priority,
-    dueDate: record.due_date,
     created_at: record.created_at,
     updated_at: record.updated_at,
   };
@@ -24,10 +26,7 @@ function transformTaskToRecord(task: Partial<Task>) {
   return {
     title: task.title,
     project_id: task.projectId,
-    project_name: task.projectName,
-    assignee_name: task.assigneeName,
-    assignee_role: task.assigneeRole,
-    assignee_avatar: task.assigneeAvatar,
+    assignee_id: task.assigneeId,
     status: task.status,
     priority: task.priority,
     due_date: task.dueDate,
@@ -38,7 +37,11 @@ export async function getAllTasks(): Promise<Task[]> {
   try {
     const { data, error } = await supabase
       .from('tasks')
-      .select('*')
+      .select(`
+        *,
+        projects:project_id(name),
+        team_members:assignee_id(name, role, avatar)
+      `)
       .order('id', { ascending: true });
 
     if (error) {
@@ -46,7 +49,13 @@ export async function getAllTasks(): Promise<Task[]> {
       throw error;
     }
 
-    return data?.map(transformTaskRecord) || [];
+    return data?.map(record => ({
+      ...transformTaskRecord(record),
+      projectName: record.projects?.name,
+      assigneeName: record.team_members?.name,
+      assigneeRole: record.team_members?.role,
+      assigneeAvatar: record.team_members?.avatar,
+    })) || [];
   } catch (error) {
     console.error('Error in getAllTasks:', error);
     return [];
@@ -193,12 +202,16 @@ export async function getTasksByProjectId(projectId: number): Promise<Task[]> {
   }
 }
 
-export async function getTasksByAssignee(assigneeName: string): Promise<Task[]> {
+export async function getTasksByAssignee(assigneeId: number): Promise<Task[]> {
   try {
     const { data, error } = await supabase
       .from('tasks')
-      .select('*')
-      .eq('assignee_name', assigneeName)
+      .select(`
+        *,
+        projects:project_id(name),
+        team_members:assignee_id(name, role, avatar)
+      `)
+      .eq('assignee_id', assigneeId)
       .order('id', { ascending: true });
 
     if (error) {
@@ -206,9 +219,55 @@ export async function getTasksByAssignee(assigneeName: string): Promise<Task[]> 
       throw error;
     }
 
-    return data?.map(transformTaskRecord) || [];
+    return data?.map(record => ({
+      ...transformTaskRecord(record),
+      projectName: record.projects?.name,
+      assigneeName: record.team_members?.name,
+      assigneeRole: record.team_members?.role,
+      assigneeAvatar: record.team_members?.avatar,
+    })) || [];
   } catch (error) {
     console.error('Error in getTasksByAssignee:', error);
+    return [];
+  }
+}
+
+// Helper functions for dropdowns
+export async function getAllProjects(): Promise<{id: number, name: string}[]> {
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('id, name')
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching projects:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getAllProjects:', error);
+    return [];
+  }
+}
+
+export async function getAllTeamMembers(): Promise<{id: number, name: string, role: string, avatar?: string}[]> {
+  try {
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('id, name, role, avatar')
+      .eq('status', 'Active')
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching team members:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getAllTeamMembers:', error);
     return [];
   }
 }

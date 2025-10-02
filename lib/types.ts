@@ -77,13 +77,15 @@ export interface Task {
   id: number;
   title: string;
   projectId: number;
-  projectName: string;
-  assigneeName: string;
-  assigneeRole: string;
-  assigneeAvatar: string;
+  assigneeId: number;
   status: 'To Do' | 'In Progress' | 'Review' | 'Done';
   priority: 'High' | 'Medium' | 'Low';
   dueDate: string;
+  // Derived fields populated from related tables
+  projectName?: string;
+  assigneeName?: string;
+  assigneeRole?: string;
+  assigneeAvatar?: string;
   created_at?: string;
   updated_at?: string;
 }

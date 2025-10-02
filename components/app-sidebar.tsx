@@ -9,6 +9,7 @@ import {
   IconInnerShadowTop,
   IconListDetails,
   IconMoon,
+  IconPresentation,
   IconSearch,
   IconSun,
   IconUsers,
@@ -17,6 +18,7 @@ import {
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavSub } from "@/components/nav-sub"
+import { NavSubTools } from "@/components/nav-sub-tools"
 import { NavUser } from "@/components/nav-user"
 import { Button } from "@/components/ui/button"
 import {
@@ -80,6 +82,13 @@ const staticData = {
       title: "Agency Toolkit",
       url: "/agency-toolkit",
       icon: IconInnerShadowTop,
+    },
+  ],
+  navSubTools: [
+    {
+      title: "Presentation",
+      url: "/presentation",
+      icon: IconPresentation,
     },
   ],
   navSecondary: [
@@ -213,6 +222,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={staticData.navMain} />
         <NavSub items={staticData.navSub} />
+        <NavSubTools items={staticData.navSubTools} />
         <NavSecondary items={staticData.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

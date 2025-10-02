@@ -53,6 +53,18 @@ import {
   VisibilityState,
 } from "@tanstack/react-table"
 import { toast } from "sonner"
+import { createTask, updateTask, deleteTask } from "@/lib/tasks"
+import { AddTaskModal } from "@/components/add-task-modal"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
@@ -124,7 +136,7 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
-const columns: ColumnDef<Task>[] = [
+const createColumns = (handleEditTask: (task: Task) => void, openDeleteDialog: (task: Task) => void): ColumnDef<Task>[] => [
   {
     id: "drag",
     header: () => null,
@@ -265,7 +277,7 @@ const columns: ColumnDef<Task>[] = [
   },
   {
     id: "actions",
-    cell: () => (
+    cell: ({ row }) => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -278,11 +290,17 @@ const columns: ColumnDef<Task>[] = [
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>View Details</DropdownMenuItem>
-          <DropdownMenuItem>Edit Task</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleEditTask(row.original)}>
+            Edit Task
+          </DropdownMenuItem>
           <DropdownMenuItem>Duplicate</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+          <DropdownMenuItem 
+            variant="destructive"
+            onClick={() => openDeleteDialog(row.original)}
+          >
+            Delete
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
@@ -332,6 +350,12 @@ export function TasksDataTable({
     pageSize: 10,
   })
   const sortableId = React.useId()
+
+  // CRUD state
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = React.useState(false)
+  const [editingTask, setEditingTask] = React.useState<Task | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [taskToDelete, setTaskToDelete] = React.useState<Task | null>(null)
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
     useSensor(TouchSensor, {}),
@@ -343,6 +367,70 @@ export function TasksDataTable({
     [data]
   )
 
+  // CRUD handlers
+  const handleAddTask = async (taskData: any) => {
+    try {
+      const newTask = await createTask(taskData)
+      if (newTask) {
+        setData(prev => [...prev, newTask])
+        toast.success('Task created successfully')
+        setIsAddTaskModalOpen(false)
+      } else {
+        toast.error('Failed to create task')
+      }
+    } catch (error) {
+      console.error('Error creating task:', error)
+      toast.error('Failed to create task')
+    }
+  }
+
+  const handleUpdateTask = async (taskData: any) => {
+    if (!editingTask) return
+    
+    try {
+      const updatedTask = await updateTask(editingTask.id, taskData)
+      if (updatedTask) {
+        setData(prev => prev.map(t => t.id === editingTask.id ? updatedTask : t))
+        toast.success('Task updated successfully')
+        setEditingTask(null)
+        setIsAddTaskModalOpen(false)
+      } else {
+        toast.error('Failed to update task')
+      }
+    } catch (error) {
+      console.error('Error updating task:', error)
+      toast.error('Failed to update task')
+    }
+  }
+
+  const handleDeleteTask = async (taskId: number) => {
+    try {
+      const success = await deleteTask(taskId)
+      if (success) {
+        setData(data.filter(task => task.id !== taskId))
+        toast.success('Task deleted successfully')
+        setDeleteDialogOpen(false)
+        setTaskToDelete(null)
+      } else {
+        toast.error('Failed to delete task')
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error)
+      toast.error('Failed to delete task')
+    }
+  }
+
+  const openDeleteDialog = (task: Task) => {
+    setTaskToDelete(task)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task)
+    setIsAddTaskModalOpen(true)
+  }
+
+  const columns = React.useMemo(() => createColumns(handleEditTask, openDeleteDialog), [handleEditTask, openDeleteDialog])
 
   const table = useReactTable({
     data,
@@ -379,7 +467,6 @@ export function TasksDataTable({
       })
     }
   }
-
 
   // Calculate counts for tabs
   const todoCount = data.filter(task => task.status === "To Do").length
@@ -462,7 +549,7 @@ export function TasksDataTable({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setIsAddTaskModalOpen(true)}>
             <IconPlus />
             <span className="hidden lg:inline">Add Task</span>
           </Button>
@@ -623,6 +710,39 @@ export function TasksDataTable({
         <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
       </TabsContent>
     </Tabs>
+
+    {/* Add/Edit Task Modal */}
+    <AddTaskModal
+      isOpen={isAddTaskModalOpen}
+      onClose={() => {
+        setIsAddTaskModalOpen(false)
+        setEditingTask(null)
+      }}
+      onAddTask={editingTask ? handleUpdateTask : handleAddTask}
+      initialData={editingTask}
+      isEdit={!!editingTask}
+    />
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Task</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete "{taskToDelete?.title}"? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => taskToDelete && handleDeleteTask(taskToDelete.id)}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   )
 }
