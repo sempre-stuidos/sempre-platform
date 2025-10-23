@@ -19,6 +19,7 @@ import {
   IconUsers,
   IconFileText,
   IconEdit,
+  IconClipboardText,
 } from "@tabler/icons-react"
 import {
   ColumnDef,
@@ -38,6 +39,18 @@ import { toast } from "sonner"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { NotesKnowledge } from "@/lib/types"
+import { createNotesKnowledge, updateNotesKnowledge, deleteNotesKnowledge } from "@/lib/notes-knowledge"
+import { AddNoteModal } from "@/components/add-note-modal"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -99,7 +112,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-const columns: ColumnDef<NotesKnowledge>[] = [
+const createColumns = (onEditNote?: (note: NotesKnowledge) => void, onDeleteNote?: (note: NotesKnowledge) => void): ColumnDef<NotesKnowledge>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -141,6 +154,8 @@ const columns: ColumnDef<NotesKnowledge>[] = [
       const type = row.original.type
       const getTypeIcon = (type: string) => {
         switch (type) {
+          case "Proposal":
+            return <IconClipboardText className="size-4 text-sky-600" />
           case "Internal Playbook":
             return <IconBook className="size-4 text-blue-600" />
           case "Meeting Notes":
@@ -239,7 +254,7 @@ const columns: ColumnDef<NotesKnowledge>[] = [
   },
   {
     id: "actions",
-    cell: () => (
+    cell: ({ row }) => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -252,11 +267,16 @@ const columns: ColumnDef<NotesKnowledge>[] = [
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Edit</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onEditNote?.(row.original)}>
+            <IconEdit className="size-4 mr-2" />
+            Edit
+          </DropdownMenuItem>
           <DropdownMenuItem>Duplicate</DropdownMenuItem>
           <DropdownMenuItem>Archive</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={() => onDeleteNote?.(row.original)}>
+            Delete
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
@@ -281,6 +301,74 @@ export function NotesKnowledgeDataTable({
     pageSize: 10,
   })
   const [viewMode, setViewMode] = React.useState<'table' | 'cards'>('table')
+  const [isAddNoteModalOpen, setIsAddNoteModalOpen] = React.useState(false)
+  const [editingNote, setEditingNote] = React.useState<NotesKnowledge | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [noteToDelete, setNoteToDelete] = React.useState<NotesKnowledge | null>(null)
+
+  const handleAddNote = async (noteData: Partial<NotesKnowledge>) => {
+    try {
+      const newNote = await createNotesKnowledge(noteData as Omit<NotesKnowledge, 'id' | 'created_at' | 'updated_at'>)
+      if (newNote) {
+        setData(prev => [...prev, newNote])
+        toast.success('Note created successfully')
+        setIsAddNoteModalOpen(false)
+      } else {
+        toast.error('Failed to create note')
+      }
+    } catch (error) {
+      console.error('Error creating note:', error)
+      toast.error('Failed to create note')
+    }
+  }
+
+  const handleUpdateNote = async (noteData: Partial<NotesKnowledge>) => {
+    if (!editingNote) return
+    
+    try {
+      const updatedNote = await updateNotesKnowledge(editingNote.id, noteData)
+      if (updatedNote) {
+        setData(prev => prev.map(n => n.id === editingNote.id ? updatedNote : n))
+        toast.success('Note updated successfully')
+        setEditingNote(null)
+        setIsAddNoteModalOpen(false)
+      } else {
+        toast.error('Failed to update note')
+      }
+    } catch (error) {
+      console.error('Error updating note:', error)
+      toast.error('Failed to update note')
+    }
+  }
+
+  const handleDeleteNote = async (noteId: number) => {
+    try {
+      const success = await deleteNotesKnowledge(noteId)
+      if (success) {
+        setData(data.filter(note => note.id !== noteId))
+        toast.success('Note deleted successfully')
+        setDeleteDialogOpen(false)
+        setNoteToDelete(null)
+      } else {
+        toast.error('Failed to delete note')
+      }
+    } catch (error) {
+      console.error('Error deleting note:', error)
+      toast.error('Failed to delete note')
+    }
+  }
+
+  const openDeleteDialog = (note: NotesKnowledge) => {
+    setNoteToDelete(note)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleEditNote = (note: NotesKnowledge) => {
+    setEditingNote(note)
+    setIsAddNoteModalOpen(true)
+  }
+
+  const columns = React.useMemo(() => createColumns(handleEditNote, openDeleteDialog), [])
 
   const table = useReactTable({
     data,
@@ -308,6 +396,7 @@ export function NotesKnowledgeDataTable({
   })
 
   return (
+    <>
     <Tabs
       defaultValue="all"
       className="w-full flex-col justify-start gap-6"
@@ -395,7 +484,7 @@ export function NotesKnowledgeDataTable({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setIsAddNoteModalOpen(true)}>
             <IconPlus />
             <span className="hidden lg:inline">Add Note</span>
           </Button>
@@ -457,7 +546,7 @@ export function NotesKnowledgeDataTable({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <CardViewItem key={row.id} item={row.original} />
+                <CardViewItem key={row.id} item={row.original} onEdit={handleEditNote} onDelete={openDeleteDialog} />
               ))
             ) : (
               <div className="col-span-full h-24 text-center flex items-center justify-center text-muted-foreground">
@@ -560,10 +649,44 @@ export function NotesKnowledgeDataTable({
         <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
       </TabsContent>
     </Tabs>
+
+    {/* Add/Edit Note Modal */}
+    <AddNoteModal
+      isOpen={isAddNoteModalOpen}
+      onClose={() => {
+        setIsAddNoteModalOpen(false)
+        setEditingNote(null)
+      }}
+      onAddNote={editingNote ? handleUpdateNote : handleAddNote}
+      initialData={editingNote || undefined}
+      isEdit={!!editingNote}
+    />
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Note</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete &quot;{noteToDelete?.title}&quot;? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => noteToDelete && handleDeleteNote(noteToDelete.id)}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }
 
-function CardViewItem({ item }: { item: NotesKnowledge }) {
+function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit: (note: NotesKnowledge) => void; onDelete: (note: NotesKnowledge) => void }) {
   const isMobile = useIsMobile()
   const isPlaybook = item.type === "Internal Playbook"
   const statusColors = {
@@ -582,6 +705,8 @@ function CardViewItem({ item }: { item: NotesKnowledge }) {
           <div className="flex items-center gap-2">
             {(() => {
               switch (item.type) {
+                case "Proposal":
+                  return <IconClipboardText className="size-4 text-sky-600" />
                 case "Internal Playbook":
                   return <IconBook className="size-4 text-blue-600" />
                 case "Meeting Notes":
@@ -622,14 +747,14 @@ function CardViewItem({ item }: { item: NotesKnowledge }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-32">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onEdit(item)}>
                 <IconEdit className="size-4 mr-2" />
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem>Duplicate</DropdownMenuItem>
               <DropdownMenuItem>Archive</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onClick={() => onDelete(item)}>Delete</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -645,6 +770,8 @@ function CardViewItem({ item }: { item: NotesKnowledge }) {
                 <DialogTitle className="flex items-center gap-2">
                   {(() => {
                     switch (item.type) {
+                      case "Proposal":
+                        return <IconClipboardText className="size-5 text-sky-600" />
                       case "Internal Playbook":
                         return <IconBook className="size-5 text-blue-600" />
                       case "Meeting Notes":
@@ -703,6 +830,12 @@ function CardViewItem({ item }: { item: NotesKnowledge }) {
                     <p className="mt-1">{item.date}</p>
                   </div>
                 </div>
+                {item.content && (
+                  <div className="pt-4 border-t">
+                    <span className="font-medium text-muted-foreground">Content:</span>
+                    <p className="mt-2 text-sm whitespace-pre-wrap">{item.content}</p>
+                  </div>
+                )}
                 <div className="pt-4 border-t">
                   <p className="text-sm text-muted-foreground">
                     Click the edit button in the dropdown menu to modify this note.
@@ -763,6 +896,8 @@ function TableCellViewer({ item }: { item: NotesKnowledge }) {
           <DialogTitle className="flex items-center gap-2">
             {(() => {
               switch (item.type) {
+                case "Proposal":
+                  return <IconClipboardText className="size-5 text-sky-600" />
                 case "Internal Playbook":
                   return <IconBook className="size-5 text-blue-600" />
                 case "Meeting Notes":
@@ -821,6 +956,12 @@ function TableCellViewer({ item }: { item: NotesKnowledge }) {
               <p className="mt-1">{item.date}</p>
             </div>
           </div>
+          {item.content && (
+            <div className="pt-4 border-t">
+              <span className="font-medium text-muted-foreground">Content:</span>
+              <p className="mt-2 text-sm whitespace-pre-wrap">{item.content}</p>
+            </div>
+          )}
           <div className="pt-4 border-t">
             <p className="text-sm text-muted-foreground">
               Click the edit button in the dropdown menu to modify this note.

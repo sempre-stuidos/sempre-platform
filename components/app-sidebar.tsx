@@ -69,6 +69,11 @@ const staticData = {
       icon: IconFileWord,
     },
     {
+      title: "Notes & Knowledge",
+      url: "/notes-knowledge",
+      icon: IconFileDescription,
+    },
+    {
       title: "Agency Toolkit",
       url: "/agency-toolkit",
       icon: IconInnerShadowTop,

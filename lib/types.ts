@@ -129,12 +129,13 @@ export interface Deadline {
 export interface NotesKnowledge {
   id: number;
   title: string;
-  type: 'Meeting Notes' | 'Internal Playbook' | 'Research Notes' | 'Bug Report' | 'Feature Request' | 'Standup Notes' | 'Documentation';
+  type: 'Proposal' | 'Meeting Notes' | 'Internal Playbook' | 'Research Notes' | 'Bug Report' | 'Feature Request' | 'Standup Notes' | 'Documentation';
   status: 'Draft' | 'Published' | 'Archived' | 'Template' | 'Open' | 'Under Review';
   client: string;
   project: string;
   date: string;
   author: string;
+  content?: string;
   created_at?: string;
   updated_at?: string;
 }

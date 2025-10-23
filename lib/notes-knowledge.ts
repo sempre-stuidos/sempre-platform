@@ -6,12 +6,13 @@ function transformNotesKnowledgeRecord(record: Record<string, unknown>): NotesKn
   return {
     id: record.id as number,
     title: record.title as string,
-    type: record.type as "Meeting Notes" | "Internal Playbook" | "Research Notes" | "Bug Report" | "Feature Request" | "Standup Notes" | "Documentation",
+    type: record.type as "Proposal" | "Meeting Notes" | "Internal Playbook" | "Research Notes" | "Bug Report" | "Feature Request" | "Standup Notes" | "Documentation",
     status: record.status as "Draft" | "Published" | "Archived" | "Template" | "Open" | "Under Review",
     client: (record.client as string) || '',
     project: (record.project as string) || '',
     date: record.date as string,
     author: record.author as string,
+    content: (record.content as string) || '',
     created_at: record.created_at as string,
     updated_at: record.updated_at as string,
   };
@@ -27,6 +28,7 @@ function transformNotesKnowledgeToRecord(notesKnowledge: Partial<NotesKnowledge>
     project: notesKnowledge.project || null,
     date: notesKnowledge.date,
     author: notesKnowledge.author,
+    content: notesKnowledge.content || null,
   };
 }
 
@@ -79,14 +81,23 @@ export async function getNotesKnowledgeById(id: number): Promise<NotesKnowledge 
 
 export async function createNotesKnowledge(notesKnowledge: Omit<NotesKnowledge, 'id' | 'created_at' | 'updated_at'>): Promise<NotesKnowledge | null> {
   try {
+    const record = transformNotesKnowledgeToRecord(notesKnowledge);
+    console.log('Creating note with data:', record);
+    
     const { data: newNotesKnowledge, error } = await supabase
       .from('notes_knowledge')
-      .insert([transformNotesKnowledgeToRecord(notesKnowledge)])
+      .insert([record])
       .select()
       .single();
 
     if (error) {
-      console.error('Error creating notes knowledge:', error);
+      console.error('Supabase error creating notes knowledge:', error);
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       throw error;
     }
 
