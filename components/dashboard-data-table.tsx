@@ -4,7 +4,6 @@ import * as React from "react"
 import { SimpleTasksTable } from "@/components/simple-tasks-table"
 import {
   Tabs,
-  TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"

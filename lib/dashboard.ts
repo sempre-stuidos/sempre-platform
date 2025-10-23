@@ -273,8 +273,8 @@ export async function getRecentTasks(limit: number = 10) {
       status: task.status,
       priority: task.priority,
       dueDate: task.due_date || 'No due date',
-      assignee: (task.team_members as any)?.name || 'Unassigned',
-      projectName: (task.projects as any)?.name || 'No Project',
+      assignee: task.team_members ? (task.team_members as unknown as { name: string }).name : 'Unassigned',
+      projectName: task.projects ? (task.projects as unknown as { name: string }).name : 'No Project',
     })) || [];
   } catch (error) {
     console.error('Error in getRecentTasks:', error);
@@ -316,8 +316,8 @@ export async function getHighPriorityTasks(limit: number = 50) {
       status: task.status,
       priority: task.priority,
       dueDate: task.due_date || 'No due date',
-      assignee: (task.team_members as any)?.name || 'Unassigned',
-      projectName: (task.projects as any)?.name || 'No Project',
+      assignee: task.team_members ? (task.team_members as unknown as { name: string }).name : 'Unassigned',
+      projectName: task.projects ? (task.projects as unknown as { name: string }).name : 'No Project',
     })) || [];
   } catch (error) {
     console.error('Error in getHighPriorityTasks:', error);
@@ -364,8 +364,8 @@ export async function getTasksDueThisWeek(limit: number = 50) {
       status: task.status,
       priority: task.priority,
       dueDate: task.due_date || 'No due date',
-      assignee: (task.team_members as any)?.name || 'Unassigned',
-      projectName: (task.projects as any)?.name || 'No Project',
+      assignee: task.team_members ? (task.team_members as unknown as { name: string }).name : 'Unassigned',
+      projectName: task.projects ? (task.projects as unknown as { name: string }).name : 'No Project',
     })) || [];
   } catch (error) {
     console.error('Error in getTasksDueThisWeek:', error);
@@ -406,8 +406,8 @@ export async function getCompletedTasks(limit: number = 50) {
       status: task.status,
       priority: task.priority,
       dueDate: task.due_date || 'No due date',
-      assignee: (task.team_members as any)?.name || 'Unassigned',
-      projectName: (task.projects as any)?.name || 'No Project',
+      assignee: task.team_members ? (task.team_members as unknown as { name: string }).name : 'Unassigned',
+      projectName: task.projects ? (task.projects as unknown as { name: string }).name : 'No Project',
     })) || [];
   } catch (error) {
     console.error('Error in getCompletedTasks:', error);
