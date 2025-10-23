@@ -84,7 +84,18 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
     const clientGrowth = (clientsData?.length || 0) - (lastMonthClientsData?.length || 0);
 
+    // Calculate task counts by status (simplified for now)
+    const completedTasksCount = 0;
+    const inProgressTasksCount = tasksData?.length || 0;
+    const pendingReviewTasksCount = 0;
+    const averageProgress = 0; // Simplified for now
+
     return {
+      totalItems: (clientsData?.length || 0) + (activeProjectsCount || 0) + (tasksData?.length || 0),
+      completedItems: completedTasksCount || 0,
+      inProgressItems: inProgressTasksCount || 0,
+      pendingReviewItems: pendingReviewTasksCount || 0,
+      completionRate: averageProgress || 0,
       activeClients: clientsData?.length || 0,
       activeProjects: activeProjectsCount,
       tasksThisWeek: tasksData?.length || 0,
@@ -96,6 +107,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   } catch (error) {
     console.error('Error in getDashboardStats:', error);
     return {
+      totalItems: 0,
+      completedItems: 0,
+      inProgressItems: 0,
+      pendingReviewItems: 0,
+      completionRate: 0,
       activeClients: 0,
       activeProjects: 0,
       tasksThisWeek: 0,
@@ -170,9 +186,11 @@ export async function getDashboardChartData(): Promise<DashboardChartData[]> {
     // Convert to array format
     dateMap.forEach((value, date) => {
       chartData.push({
+        month: date,
         date,
-        desktop: value.desktop,
-        mobile: value.mobile,
+        completed: value.desktop || 0,
+        inProgress: value.mobile || 0,
+        pending: 0,
       });
     });
 
@@ -192,9 +210,11 @@ function generateFallbackChartData(): DashboardChartData[] {
     date.setDate(date.getDate() - i);
     
     data.push({
+      month: date.toISOString().split('T')[0],
       date: date.toISOString().split('T')[0],
-      desktop: Math.floor(Math.random() * 5), // Random project activity
-      mobile: Math.floor(Math.random() * 8),   // Random task activity
+      completed: Math.floor(Math.random() * 5), // Random project activity
+      inProgress: Math.floor(Math.random() * 8),   // Random task activity
+      pending: Math.floor(Math.random() * 3),
     });
   }
   

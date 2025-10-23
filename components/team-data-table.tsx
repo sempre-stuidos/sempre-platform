@@ -303,20 +303,32 @@ export function TeamDataTable({
   const [teamMemberToDelete, setTeamMemberToDelete] = React.useState<TeamMember | null>(null)
 
   // CRUD handlers
-  const handleAddTeamMember = async (teamMemberData: any) => {
+  const handleAddTeamMember = async (teamMemberData: Partial<TeamMember>) => {
     try {
-      const newTeamMember = await createTeamMember(teamMemberData)
+      const newTeamMember = await createTeamMember({
+        name: teamMemberData.name || "",
+        role: teamMemberData.role || "",
+        status: teamMemberData.status || "Active",
+        email: teamMemberData.email || "",
+        timezone: teamMemberData.timezone || "UTC",
+        avatar: teamMemberData.avatar || "",
+        currentProjects: teamMemberData.currentProjects || 0,
+        activeTasks: teamMemberData.activeTasks || 0,
+        workload: teamMemberData.workload || 0,
+        skills: teamMemberData.skills || [],
+        upcomingDeadlines: teamMemberData.upcomingDeadlines || []
+      })
       if (newTeamMember) {
         setData(prev => [...prev, newTeamMember])
         toast.success("Team member added successfully")
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding team member:', error)
-      toast.error(error.message || "Failed to add team member")
+      toast.error(error instanceof Error ? error.message : "Failed to add team member")
     }
   }
 
-  const handleUpdateTeamMember = async (teamMemberData: any) => {
+  const handleUpdateTeamMember = async (teamMemberData: Partial<TeamMember>) => {
     if (!editingTeamMember) return
     
     try {
@@ -327,9 +339,9 @@ export function TeamDataTable({
         ))
         toast.success("Team member updated successfully")
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating team member:', error)
-      toast.error(error.message || "Failed to update team member")
+      toast.error(error instanceof Error ? error.message : "Failed to update team member")
     }
   }
 
@@ -340,9 +352,9 @@ export function TeamDataTable({
         setData(prev => prev.filter(member => member.id !== teamMemberId))
         toast.success("Team member deleted successfully")
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting team member:', error)
-      toast.error(error.message || "Failed to delete team member")
+      toast.error(error instanceof Error ? error.message : "Failed to delete team member")
     }
   }
 
@@ -376,9 +388,9 @@ export function TeamDataTable({
       setRowSelection({})
       
       toast.success(`${teamMemberIds.length} team member(s) deleted successfully`)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting team members:', error)
-      toast.error(error.message || "Failed to delete team members")
+      toast.error(error instanceof Error ? error.message : "Failed to delete team members")
     }
   }
 

@@ -2,26 +2,26 @@ import { supabase } from './supabase';
 import { TeamMember, Deadline } from './types';
 
 // Transform database record to match frontend interface
-function transformTeamMemberRecord(record: any, skills: any[], deadlines: any[]): TeamMember {
+function transformTeamMemberRecord(record: Record<string, unknown>, skills: Record<string, unknown>[], deadlines: Record<string, unknown>[]): TeamMember {
   return {
-    id: record.id,
-    name: record.name,
-    role: record.role,
-    status: record.status,
-    email: record.email,
-    timezone: record.timezone,
-    avatar: record.avatar,
-    currentProjects: record.current_projects,
-    activeTasks: record.active_tasks,
-    workload: record.workload,
-    skills: skills.map(s => s.skill),
+    id: record.id as number,
+    name: record.name as string,
+    role: record.role as string,
+    status: record.status as "Active" | "Contractor" | "Past Collaborator",
+    email: record.email as string,
+    timezone: record.timezone as string,
+    avatar: record.avatar as string,
+    currentProjects: record.current_projects as number,
+    activeTasks: record.active_tasks as number,
+    workload: record.workload as number,
+    skills: skills.map(s => s.skill as string),
     upcomingDeadlines: deadlines.map(d => ({
-      project: d.project,
-      deadline: d.deadline,
-      type: d.type
+      project: d.project as string,
+      deadline: d.deadline as string,
+      type: d.type as string
     })),
-    created_at: record.created_at,
-    updated_at: record.updated_at,
+    created_at: record.created_at as string,
+    updated_at: record.updated_at as string,
   };
 }
 
@@ -69,15 +69,17 @@ export async function getAllTeamMembers(): Promise<TeamMember[]> {
     ]);
 
     // Group related data by team_member_id
-    const skillsByTeamMember = (skills || []).reduce((acc: any, skill: any) => {
-      if (!acc[skill.team_member_id]) acc[skill.team_member_id] = [];
-      acc[skill.team_member_id].push(skill);
+    const skillsByTeamMember = (skills || []).reduce((acc: Record<string, Record<string, unknown>[]>, skill: Record<string, unknown>) => {
+      const teamMemberId = skill.team_member_id as string;
+      if (!acc[teamMemberId]) acc[teamMemberId] = [];
+      acc[teamMemberId].push(skill);
       return acc;
     }, {});
 
-    const deadlinesByTeamMember = (deadlines || []).reduce((acc: any, deadline: any) => {
-      if (!acc[deadline.team_member_id]) acc[deadline.team_member_id] = [];
-      acc[deadline.team_member_id].push(deadline);
+    const deadlinesByTeamMember = (deadlines || []).reduce((acc: Record<string, Record<string, unknown>[]>, deadline: Record<string, unknown>) => {
+      const teamMemberId = deadline.team_member_id as string;
+      if (!acc[teamMemberId]) acc[teamMemberId] = [];
+      acc[teamMemberId].push(deadline);
       return acc;
     }, {});
 

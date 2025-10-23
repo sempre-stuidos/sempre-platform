@@ -13,7 +13,7 @@ interface AddClientModalProps {
   isOpen: boolean
   onClose: () => void
   onAddClient: (client: NewClient) => void
-  initialData?: any
+  initialData?: Partial<NewClient>
   isEdit?: boolean
 }
 

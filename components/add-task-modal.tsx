@@ -36,7 +36,7 @@ interface NewTask {
 interface AddTaskModalProps {
   isOpen: boolean
   onClose: () => void
-  onAddTask: (taskData: any) => void
+  onAddTask: (taskData: NewTask) => void
   initialData?: Task | null
   isEdit?: boolean
 }
@@ -57,7 +57,7 @@ export function AddTaskModal({
     dueDate: "",
   })
 
-  const [errors, setErrors] = useState<Partial<NewTask>>({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [projects, setProjects] = useState<{id: number, name: string}[]>([])
   const [teamMembers, setTeamMembers] = useState<{id: number, name: string, role: string, avatar?: string}[]>([])
   const [loading, setLoading] = useState(false)
@@ -111,7 +111,7 @@ export function AddTaskModal({
   }, [initialData, isEdit])
 
   const validateForm = () => {
-    const newErrors: Partial<NewTask> = {}
+    const newErrors: Record<string, string> = {}
 
     // Required fields: title, projectId
     if (!formData.title.trim()) {
@@ -136,11 +136,15 @@ export function AddTaskModal({
     onAddTask(formData)
   }
 
-  const handleInputChange = (field: keyof NewTask, value: string | number) => {
+  const handleInputChange = (field: keyof NewTask, value: string | number | null) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }))
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[field]
+        return newErrors
+      })
     }
   }
 

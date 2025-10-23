@@ -61,8 +61,8 @@ export function NavUser({
       
       // Redirect to login page
       window.location.href = '/login'
-    } catch (error: any) {
-      toast.error(error.message || "Failed to log out")
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to log out")
     }
   }
 

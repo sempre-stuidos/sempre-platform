@@ -331,7 +331,7 @@ export function ProjectsDataTable({
     [data]
   )
 
-  const handleAddProject = async (projectData: any) => {
+  const handleAddProject = async (projectData: Partial<Project>) => {
     try {
       const newProject = await createProject(projectData)
       if (newProject) {
@@ -347,7 +347,7 @@ export function ProjectsDataTable({
     }
   }
 
-  const handleUpdateProject = async (projectData: any) => {
+  const handleUpdateProject = async (projectData: Partial<Project>) => {
     if (!editingProject) return
     
     try {
@@ -665,7 +665,7 @@ export function ProjectsDataTable({
         setEditingProject(null)
       }}
       onAddProject={editingProject ? handleUpdateProject : handleAddProject}
-      initialData={editingProject}
+      initialData={editingProject || undefined}
       isEdit={!!editingProject}
     />
 
@@ -675,7 +675,7 @@ export function ProjectsDataTable({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Project</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete "{projectToDelete?.name}"? This action cannot be undone.
+            Are you sure you want to delete &quot;{projectToDelete?.name}&quot;? This action cannot be undone.
             All related tasks, deliverables, and timeline items will also be deleted.
           </AlertDialogDescription>
         </AlertDialogHeader>

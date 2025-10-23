@@ -92,7 +92,7 @@ export function ClientAttachments({ clientId }: ClientAttachmentsProps) {
 
   const [newAttachment, setNewAttachment] = useState({
     name: "",
-    type: "document" as const,
+    type: "document" as "proposal" | "contract" | "invoice" | "document" | "image" | "other",
     file: null as File | null
   })
 
@@ -201,7 +201,7 @@ export function ClientAttachments({ clientId }: ClientAttachmentsProps) {
         <Card>
           <CardHeader>
             <CardTitle>Upload New Attachment</CardTitle>
-            <CardDescription>Add a new file to this client's folder</CardDescription>
+            <CardDescription>Add a new file to this client&apos;s folder</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -226,7 +226,7 @@ export function ClientAttachments({ clientId }: ClientAttachmentsProps) {
               <Label htmlFor="attachmentType">Type</Label>
               <Select
                 value={newAttachment.type}
-                onValueChange={(value: any) => setNewAttachment({ ...newAttachment, type: value })}
+                onValueChange={(value: string) => setNewAttachment({ ...newAttachment, type: value as "proposal" | "contract" | "invoice" | "document" | "image" | "other" })}
               >
                 <SelectTrigger>
                   <SelectValue />

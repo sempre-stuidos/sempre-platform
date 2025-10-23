@@ -33,7 +33,7 @@ interface NewTeamMember {
 interface AddTeamMemberModalProps {
   isOpen: boolean
   onClose: () => void
-  onAddTeamMember: (teamMemberData: any) => void
+  onAddTeamMember: (teamMemberData: NewTeamMember) => void
   initialData?: TeamMember | null
   isEdit?: boolean
 }
@@ -57,7 +57,7 @@ export function AddTeamMemberModal({
     workload: 0,
   })
 
-  const [errors, setErrors] = useState<Partial<NewTeamMember>>({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
 
   // Populate form data when editing
@@ -92,7 +92,7 @@ export function AddTeamMemberModal({
   }, [initialData, isEdit])
 
   const validateForm = () => {
-    const newErrors: Partial<NewTeamMember> = {}
+    const newErrors: Record<string, string> = {}
 
     // Required fields
     if (!formData.name.trim()) {
@@ -138,9 +138,9 @@ export function AddTeamMemberModal({
       
       onAddTeamMember(formData)
       onClose()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving team member:', error)
-      toast.error(error.message || "Failed to save team member")
+      toast.error(error instanceof Error ? error.message : "Failed to save team member")
     } finally {
       setLoading(false)
     }
@@ -150,7 +150,11 @@ export function AddTeamMemberModal({
     setFormData(prev => ({ ...prev, [field]: value }))
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }))
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[field]
+        return newErrors
+      })
     }
   }
 

@@ -46,8 +46,8 @@ export function RegisterForm({
         }
       })
       if (error) throw error
-    } catch (error: any) {
-      toast.error(error.message || "Failed to sign up with Google")
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to sign up with Google")
     } finally {
       setIsLoading(false)
     }
@@ -83,8 +83,8 @@ export function RegisterForm({
       if (error) throw error
       
       toast.success("Check your email for the confirmation link!")
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create account")
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to create account")
     } finally {
       setIsLoading(false)
     }

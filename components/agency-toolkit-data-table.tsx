@@ -149,8 +149,8 @@ const columns: ColumnDef<AgencyToolkit>[] = [
     accessorKey: "name",
     header: "Tool/Service",
     cell: ({ row, table }) => {
-      const onToolClick = (table.options.meta as any)?.onToolClick
-      return <ToolCellViewer item={row.original} onToolClick={onToolClick} />
+      const onToolClick = (table.options.meta as { onToolClick?: (tool: AgencyToolkit) => void })?.onToolClick
+      return <ToolCellViewer item={row.original} onToolClick={onToolClick || (() => {})} />
     },
     enableHiding: false,
   },

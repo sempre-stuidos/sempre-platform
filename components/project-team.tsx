@@ -10,7 +10,7 @@ interface Project {
   clientName: string
   status: string
   dueDate: string
-  progress: number
+  progress?: number
   description: string
   startDate: string
   budget: number
@@ -19,13 +19,14 @@ interface Project {
     id: number
     name: string
     role: string
-    avatar: string
+    avatar?: string
   }>
   tasks: Array<{
     id: number
     title: string
     status: string
-    assignee: string
+    assignee?: string
+    deliverable?: string
   }>
   deliverables: string[]
   timeline: Array<{

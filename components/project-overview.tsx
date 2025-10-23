@@ -11,7 +11,7 @@ interface Project {
   clientName: string
   status: string
   dueDate: string
-  progress: number
+  progress?: number
   description: string
   startDate: string
   budget: number
@@ -20,13 +20,14 @@ interface Project {
     id: number
     name: string
     role: string
-    avatar: string
+    avatar?: string
   }>
   tasks: Array<{
     id: number
     title: string
     status: string
-    assignee: string
+    assignee?: string
+    deliverable?: string
   }>
   deliverables: string[]
   timeline: Array<{
@@ -99,7 +100,7 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
             <div className="space-y-2">
               <h4 className="font-medium">Progress</h4>
               <p className="text-sm text-muted-foreground">
-                {project.progress}% complete
+                {project.progress ?? 0}% complete
               </p>
             </div>
           </CardContent>

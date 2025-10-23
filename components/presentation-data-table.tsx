@@ -147,7 +147,7 @@ const columns: ColumnDef<Presentation>[] = [
     header: "Title",
     cell: ({ row, table }) => {
       const presentation = row.original
-      const onPresentationClick = (table.options.meta as any)?.onPresentationClick
+      const onPresentationClick = (table.options.meta as { onPresentationClick?: (presentation: Presentation) => void })?.onPresentationClick
       return (
         <div className="flex flex-col gap-1">
           <button
@@ -263,8 +263,8 @@ const columns: ColumnDef<Presentation>[] = [
     id: "actions",
     cell: ({ row, table }) => {
       const presentation = row.original
-      const onEditClick = (table.options.meta as any)?.onEditClick
-      const onDeleteClick = (table.options.meta as any)?.onDeleteClick
+      const onEditClick = (table.options.meta as { onEditClick?: (presentation: Presentation) => void; onDeleteClick?: (presentation: Presentation) => void })?.onEditClick
+      const onDeleteClick = (table.options.meta as { onEditClick?: (presentation: Presentation) => void; onDeleteClick?: (presentation: Presentation) => void })?.onDeleteClick
       
       return (
         <DropdownMenu>

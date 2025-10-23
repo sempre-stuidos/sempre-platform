@@ -114,7 +114,7 @@ export function PresentationDrawer({
                     Presentation Preview
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Click "Open in Gamma" to view the full presentation
+                    Click &quot;Open in Gamma&quot; to view the full presentation
                   </p>
                 </div>
               </div>
@@ -180,7 +180,7 @@ export function PresentationDrawer({
               <IconCopy className="h-4 w-4 mr-2" />
               Duplicate
             </Button>
-            <Button className="w-full" variant="outline" className="text-destructive hover:text-destructive">
+            <Button className="w-full text-destructive hover:text-destructive" variant="outline">
               <IconTrash className="h-4 w-4 mr-2" />
               Delete
             </Button>

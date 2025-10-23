@@ -54,6 +54,17 @@ import {
 import { toast } from "sonner"
 import { z } from "zod"
 
+interface Service {
+  id: number
+  name: string
+  status: "Active" | "Completed" | "On Hold" | "Cancelled"
+  startDate: string
+  endDate?: string
+  description: string
+  price: number
+  progress: number
+}
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -304,7 +315,7 @@ export function ServicesDataTable({
   onAddService,
 }: {
   data: z.infer<typeof serviceSchema>[]
-  onAddService: (service: any) => void
+  onAddService: (service: Service) => void
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
@@ -321,7 +332,7 @@ export function ServicesDataTable({
   const [isAddingService, setIsAddingService] = React.useState(false)
   const [newService, setNewService] = React.useState({
     name: "",
-    status: "Active" as const,
+    status: "Active" as "Active" | "Completed" | "On Hold" | "Cancelled",
     startDate: "",
     description: "",
     price: 0,
@@ -382,7 +393,7 @@ export function ServicesDataTable({
         ...newService
       }
       setData([service, ...data])
-      onAddService(service)
+      onAddService(service as Service)
       setNewService({
         name: "",
         status: "Active",
@@ -670,7 +681,7 @@ export function ServicesDataTable({
                 <Label htmlFor="serviceStatus">Status</Label>
                 <Select
                   value={newService.status}
-                  onValueChange={(value: any) => setNewService({ ...newService, status: value })}
+                  onValueChange={(value: string) => setNewService({ ...newService, status: value as "Active" | "Completed" | "On Hold" | "Cancelled" })}
                 >
                   <SelectTrigger>
                     <SelectValue />

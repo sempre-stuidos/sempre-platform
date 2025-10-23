@@ -43,7 +43,7 @@ export default async function ClientDetailsPage({ params }: ClientDetailsPagePro
               <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                 <div className="text-center py-12">
                   <h1 className="text-2xl font-semibold">Client not found</h1>
-                  <p className="text-muted-foreground mt-2">The client you're looking for doesn't exist.</p>
+                  <p className="text-muted-foreground mt-2">The client you&apos;re looking for doesn&apos;t exist.</p>
                   <Link href="/clients">
                     <Button className="mt-4">
                       <IconArrowLeft className="mr-2 h-4 w-4" />

@@ -2,35 +2,35 @@ import { supabase } from './supabase';
 import { AgencyToolkit, Invoice, CostHistory } from './types';
 
 // Transform database record to match frontend interface
-function transformAgencyToolkitRecord(record: any, invoices: any[], costHistory: any[]): AgencyToolkit {
+function transformAgencyToolkitRecord(record: Record<string, unknown>, invoices: Record<string, unknown>[], costHistory: Record<string, unknown>[]): AgencyToolkit {
   return {
-    id: record.id,
-    name: record.name,
-    logo: record.logo || '',
-    category: record.category,
-    planType: record.plan_type,
-    seats: record.seats,
-    renewalCycle: record.renewal_cycle,
-    price: parseFloat(record.price),
-    currency: record.currency,
-    paymentMethod: record.payment_method,
-    nextBillingDate: record.next_billing_date,
-    status: record.status,
-    notes: record.notes || '',
+    id: record.id as number,
+    name: record.name as string,
+    logo: (record.logo as string) || '',
+    category: record.category as "Design" | "Hosting" | "AI" | "Marketing" | "Productivity",
+    planType: record.plan_type as string,
+    seats: record.seats as number,
+    renewalCycle: record.renewal_cycle as "Monthly" | "Yearly",
+    price: parseFloat(record.price as string),
+    currency: record.currency as string,
+    paymentMethod: record.payment_method as string,
+    nextBillingDate: record.next_billing_date as string,
+    status: record.status as "Active" | "Trial" | "Canceled",
+    notes: (record.notes as string) || '',
     invoices: invoices.map(inv => ({
-      id: inv.invoice_id,
-      date: inv.date,
-      amount: parseFloat(inv.amount),
-      currency: inv.currency,
-      status: inv.status
+      id: inv.invoice_id as string,
+      date: inv.date as string,
+      amount: parseFloat(inv.amount as string),
+      currency: inv.currency as string,
+      status: inv.status as "Paid" | "Pending" | "Overdue"
     })),
     costHistory: costHistory.map(cost => ({
-      date: cost.date,
-      amount: parseFloat(cost.amount),
-      currency: cost.currency
+      date: cost.date as string,
+      amount: parseFloat(cost.amount as string),
+      currency: cost.currency as string
     })),
-    created_at: record.created_at,
-    updated_at: record.updated_at,
+    created_at: record.created_at as string,
+    updated_at: record.updated_at as string,
   };
 }
 
@@ -81,15 +81,17 @@ export async function getAllAgencyToolkit(): Promise<AgencyToolkit[]> {
     ]);
 
     // Group related data by toolkit_id
-    const invoicesByToolkit = (invoices || []).reduce((acc: any, invoice: any) => {
-      if (!acc[invoice.toolkit_id]) acc[invoice.toolkit_id] = [];
-      acc[invoice.toolkit_id].push(invoice);
+    const invoicesByToolkit = (invoices || []).reduce((acc: Record<string, Record<string, unknown>[]>, invoice: Record<string, unknown>) => {
+      const toolkitId = invoice.toolkit_id as string;
+      if (!acc[toolkitId]) acc[toolkitId] = [];
+      acc[toolkitId].push(invoice);
       return acc;
     }, {});
 
-    const costHistoryByToolkit = (costHistory || []).reduce((acc: any, cost: any) => {
-      if (!acc[cost.toolkit_id]) acc[cost.toolkit_id] = [];
-      acc[cost.toolkit_id].push(cost);
+    const costHistoryByToolkit = (costHistory || []).reduce((acc: Record<string, Record<string, unknown>[]>, cost: Record<string, unknown>) => {
+      const toolkitId = cost.toolkit_id as string;
+      if (!acc[toolkitId]) acc[toolkitId] = [];
+      acc[toolkitId].push(cost);
       return acc;
     }, {});
 

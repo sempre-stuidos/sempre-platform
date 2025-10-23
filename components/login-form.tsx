@@ -43,8 +43,8 @@ export function LoginForm({
         }
       })
       if (error) throw error
-    } catch (error: any) {
-      toast.error(error.message || "Failed to sign in with Google")
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to sign in with Google")
     } finally {
       setIsLoading(false)
     }
@@ -64,8 +64,8 @@ export function LoginForm({
       
       // Redirect will be handled by auth state change
       window.location.href = '/dashboard'
-    } catch (error: any) {
-      toast.error(error.message || "Failed to sign in")
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to sign in")
     } finally {
       setIsLoading(false)
     }

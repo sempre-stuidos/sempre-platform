@@ -422,7 +422,7 @@ export function ClientDataTable({
     setIsEditClientModalOpen(true)
   }
 
-  const handleEditSubmit = async (updatedClient: any) => {
+  const handleEditSubmit = async (updatedClient: Partial<Client>) => {
     if (editingClient) {
       await handleUpdateClient(editingClient.id, updatedClient)
       setIsEditClientModalOpen(false)
@@ -471,15 +471,15 @@ export function ClientDataTable({
     }
   }
 
-  const handleAddClient = async (newClient: any) => {
+  const handleAddClient = async (newClient: Partial<Client>) => {
     try {
       const client = await createClient({
-        name: newClient.name,
-        businessType: newClient.businessType,
-        status: newClient.status,
+        name: newClient.name || "",
+        businessType: newClient.businessType || "",
+        status: newClient.status || "Active",
         projectCount: 0,
-        priority: newClient.priority,
-        contactEmail: newClient.contactEmail,
+        priority: newClient.priority || "Medium",
+        contactEmail: newClient.contactEmail || "",
         lastContact: new Date().toISOString().split('T')[0],
         totalValue: 0,
         phone: newClient.phone,
@@ -788,7 +788,7 @@ export function ClientDataTable({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Client</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{clientToDelete?.name}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{clientToDelete?.name}&quot;? This action cannot be undone.
               {clientToDelete?.projectCount && clientToDelete.projectCount > 0 && (
                 <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
                   <strong>Warning:</strong> This client has {clientToDelete.projectCount} active project(s). 
@@ -800,7 +800,6 @@ export function ClientDataTable({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              variant="destructive"
               onClick={() => clientToDelete && handleDeleteClient(clientToDelete.id)}
             >
               Delete Client
@@ -842,7 +841,6 @@ export function ClientDataTable({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              variant="destructive"
               onClick={handleBulkDelete}
             >
               Delete {table.getFilteredSelectedRowModel().rows.length} Client(s)

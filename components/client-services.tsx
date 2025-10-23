@@ -59,7 +59,7 @@ export function ClientServices({ clientId }: ClientServicesProps) {
     }
   ])
 
-  const handleAddService = (newService: any) => {
+  const handleAddService = (newService: Service) => {
     setServices([newService, ...services])
   }
 

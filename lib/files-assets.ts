@@ -2,19 +2,19 @@ import { supabase } from './supabase';
 import { FilesAssets } from './types';
 
 // Transform database record to match frontend interface
-function transformFilesAssetsRecord(record: any): FilesAssets {
+function transformFilesAssetsRecord(record: Record<string, unknown>): FilesAssets {
   return {
-    id: record.id,
-    name: record.name,
-    type: record.type,
-    category: record.category,
-    project: record.project,
-    size: record.size,
-    format: record.format,
-    uploaded: record.uploaded,
-    status: record.status,
-    created_at: record.created_at,
-    updated_at: record.updated_at,
+    id: record.id as number,
+    name: record.name as string,
+    type: record.type as "Template" | "Logo" | "Document" | "Mockup" | "Content" | "Images" | "Wireframe" | "Prototype" | "Templates" | "Video" | "Design System" | "Icons" | "Presentation",
+    category: record.category as "Client Assets" | "Project Assets",
+    project: record.project as string,
+    size: record.size as string,
+    format: record.format as string,
+    uploaded: record.uploaded as string,
+    status: record.status as "Active" | "Review" | "Draft" | "Processing" | "Archive",
+    created_at: record.created_at as string,
+    updated_at: record.updated_at as string,
   };
 }
 

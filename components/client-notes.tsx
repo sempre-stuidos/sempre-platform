@@ -271,7 +271,7 @@ export function ClientNotes({ clientId }: ClientNotesProps) {
 
             {notes.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                No notes added yet. Click "Add Note" to get started.
+                No notes added yet. Click &quot;Add Note&quot; to get started.
               </div>
             )}
           </div>

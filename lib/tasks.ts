@@ -2,22 +2,23 @@ import { supabase } from './supabase';
 import { Task } from './types';
 
 // Transform database record to match frontend interface
-function transformTaskRecord(record: any): Task {
+function transformTaskRecord(record: Record<string, unknown>): Task {
   return {
-    id: record.id,
-    title: record.title,
-    projectId: record.project_id,
-    assigneeId: record.assignee_id,
-    status: record.status,
-    priority: record.priority,
-    dueDate: record.due_date,
+    id: record.id as number,
+    title: record.title as string,
+    projectId: record.project_id as number,
+    assigneeId: record.assignee_id as number | null,
+    status: record.status as "To Do" | "In Progress" | "Review" | "Done",
+    priority: record.priority as "High" | "Medium" | "Low",
+    dueDate: record.due_date as string,
+    progress: record.progress as number,
     // Derived fields will be populated from joins in the calling function
     projectName: undefined,
     assigneeName: undefined,
     assigneeRole: undefined,
     assigneeAvatar: undefined,
-    created_at: record.created_at,
-    updated_at: record.updated_at,
+    created_at: record.created_at as string,
+    updated_at: record.updated_at as string,
   };
 }
 

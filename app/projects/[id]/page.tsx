@@ -42,7 +42,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                 <div className="text-center py-12">
                   <h1 className="text-2xl font-semibold">Project not found</h1>
-                  <p className="text-muted-foreground mt-2">The project you're looking for doesn't exist.</p>
+                  <p className="text-muted-foreground mt-2">The project you&apos;re looking for doesn&apos;t exist.</p>
                   <Link href="/projects">
                     <Button className="mt-4">
                       <IconArrowLeft className="mr-2 h-4 w-4" />

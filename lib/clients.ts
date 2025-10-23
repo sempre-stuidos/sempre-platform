@@ -2,37 +2,37 @@ import { supabase } from './supabase';
 import { Client } from './types';
 
 // Transform database record to match frontend interface
-function transformClientRecord(record: any): Client {
+function transformClientRecord(record: Record<string, unknown>): Client {
   return {
-    id: record.id,
-    name: record.name,
-    businessType: record.business_type, // Transform snake_case to camelCase
-    status: record.status,
-    projectCount: record.project_count, // Transform snake_case to camelCase
-    priority: record.priority,
-    contactEmail: record.contact_email, // Transform snake_case to camelCase
-    lastContact: record.last_contact, // Transform snake_case to camelCase
-    totalValue: record.total_value, // Transform snake_case to camelCase
-    phone: record.phone,
-    address: record.address,
-    website: record.website,
-    notes: record.notes,
-    created_at: record.created_at,
-    updated_at: record.updated_at,
+    id: record.id as number,
+    name: record.name as string,
+    businessType: record.business_type as string, // Transform snake_case to camelCase
+    status: record.status as "Active" | "Past",
+    projectCount: record.project_count as number, // Transform snake_case to camelCase
+    priority: record.priority as "High" | "Medium" | "Low",
+    contactEmail: record.contact_email as string, // Transform snake_case to camelCase
+    lastContact: record.last_contact as string, // Transform snake_case to camelCase
+    totalValue: record.total_value as number, // Transform snake_case to camelCase
+    phone: record.phone as string,
+    address: record.address as string,
+    website: record.website as string,
+    notes: record.notes as string,
+    created_at: record.created_at as string,
+    updated_at: record.updated_at as string,
   };
 }
 
 // Transform frontend interface to database record format
 function transformClientToRecord(client: Partial<Client> & { businessType?: string, projectCount?: number, contactEmail?: string, lastContact?: string, totalValue?: number, phone?: string, address?: string, website?: string, notes?: string }) {
-  const record: any = {
+  const record: Record<string, unknown> = {
     name: client.name,
-    business_type: client.businessType || client.business_type,
+    business_type: client.businessType,
     status: client.status,
-    project_count: client.projectCount || client.project_count || 0,
+    project_count: client.projectCount || 0,
     priority: client.priority,
-    contact_email: client.contactEmail || client.contact_email,
-    last_contact: client.lastContact || client.last_contact,
-    total_value: client.totalValue || client.total_value || 0,
+    contact_email: client.contactEmail,
+    last_contact: client.lastContact,
+    total_value: client.totalValue || 0,
   };
 
   // Add optional fields if they exist

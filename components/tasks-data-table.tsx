@@ -377,9 +377,20 @@ export function TasksDataTable({
   )
 
   // CRUD handlers
-  const handleAddTask = async (taskData: any) => {
+  const handleAddTask = async (taskData: Partial<Task>) => {
     try {
-      const newTask = await createTask(taskData)
+      const newTask = await createTask({
+        title: taskData.title || "",
+        status: taskData.status || "To Do",
+        priority: taskData.priority || "Medium",
+        assigneeId: taskData.assigneeId || null,
+        assigneeName: taskData.assigneeName || undefined,
+        assigneeRole: taskData.assigneeRole || undefined,
+        projectId: taskData.projectId || 0,
+        projectName: taskData.projectName || "",
+        dueDate: taskData.dueDate || "",
+        progress: taskData.progress || 0
+      })
       if (newTask) {
         setData(prev => [...prev, newTask])
         toast.success('Task created successfully')
@@ -393,7 +404,7 @@ export function TasksDataTable({
     }
   }
 
-  const handleUpdateTask = async (taskData: any) => {
+  const handleUpdateTask = async (taskData: Partial<Task>) => {
     if (!editingTask) return
     
     try {
@@ -738,7 +749,7 @@ export function TasksDataTable({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Task</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete "{taskToDelete?.title}"? This action cannot be undone.
+            Are you sure you want to delete &quot;{taskToDelete?.title}&quot;? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -2,43 +2,47 @@ import { supabase } from './supabase';
 import { Project, TeamMember, ProjectTask, TimelineMilestone } from './types';
 
 // Transform database record to match frontend interface
-function transformProjectRecord(record: any, teamMembers: any[], tasks: any[], deliverables: any[], timeline: any[]): Project {
+function transformProjectRecord(record: Record<string, unknown>, teamMembers: Record<string, unknown>[], tasks: Record<string, unknown>[], deliverables: Record<string, unknown>[], timeline: Record<string, unknown>[]): Project {
   return {
-    id: record.id,
-    name: record.name,
-    clientId: record.client_id,
-    clientName: record.client_name,
-    status: record.status,
-    dueDate: record.due_date,
-    description: record.description,
-    startDate: record.start_date,
-    budget: record.budget,
-    priority: record.priority,
+    id: record.id as number,
+    name: record.name as string,
+    clientId: record.client_id as number,
+    clientName: record.client_name as string,
+    status: record.status as "Planned" | "In Progress" | "Review" | "Completed",
+    dueDate: record.due_date as string,
+    description: record.description as string,
+    startDate: record.start_date as string,
+    budget: record.budget as number,
+    priority: record.priority as "High" | "Medium" | "Low",
+    progress: record.progress as number,
     teamMembers: teamMembers.map(tm => ({
-      id: tm.member_id,
-      name: tm.name,
-      role: tm.role,
-      avatar: tm.avatar
+      id: tm.member_id as number,
+      name: tm.name as string,
+      role: tm.role as string,
+      status: "Active" as const,
+      email: tm.email as string || "",
+      timezone: tm.timezone as string || "UTC",
+      avatar: tm.avatar as string
     })),
     tasks: tasks.map(task => ({
-      id: task.task_id,
-      title: task.title,
-      status: task.status,
-      deliverable: task.deliverable
+      id: task.task_id as number,
+      title: task.title as string,
+      status: task.status as "completed" | "in-progress" | "pending",
+      deliverable: task.deliverable as string
     })),
-    deliverables: deliverables.map(d => d.deliverable),
+    deliverables: deliverables.map(d => d.deliverable as string),
     timeline: timeline.map(t => ({
-      milestone: t.milestone,
-      date: t.date,
-      status: t.status
+      milestone: t.milestone as string,
+      date: t.date as string,
+      status: t.status as "completed" | "in-progress" | "pending"
     })),
-    created_at: record.created_at,
-    updated_at: record.updated_at,
+    created_at: record.created_at as string,
+    updated_at: record.updated_at as string,
   };
 }
 
 // Transform frontend interface to database record format
-function transformProjectToRecord(project: any) {
+function transformProjectToRecord(project: Partial<Project>) {
   return {
     name: project.name, // Required field - should not be null
     client_id: project.clientId && project.clientId !== 0 ? project.clientId : null,
@@ -85,27 +89,31 @@ export async function getAllProjects(): Promise<Project[]> {
     ]);
 
     // Group related data by project_id
-    const teamMembersByProject = (teamMembers || []).reduce((acc: any, tm: any) => {
-      if (!acc[tm.project_id]) acc[tm.project_id] = [];
-      acc[tm.project_id].push(tm);
+    const teamMembersByProject = (teamMembers || []).reduce((acc: Record<string, Record<string, unknown>[]>, tm: Record<string, unknown>) => {
+      const projectId = tm.project_id as string;
+      if (!acc[projectId]) acc[projectId] = [];
+      acc[projectId].push(tm);
       return acc;
     }, {});
 
-    const tasksByProject = (tasks || []).reduce((acc: any, task: any) => {
-      if (!acc[task.project_id]) acc[task.project_id] = [];
-      acc[task.project_id].push(task);
+    const tasksByProject = (tasks || []).reduce((acc: Record<string, Record<string, unknown>[]>, task: Record<string, unknown>) => {
+      const projectId = task.project_id as string;
+      if (!acc[projectId]) acc[projectId] = [];
+      acc[projectId].push(task);
       return acc;
     }, {});
 
-    const deliverablesByProject = (deliverables || []).reduce((acc: any, d: any) => {
-      if (!acc[d.project_id]) acc[d.project_id] = [];
-      acc[d.project_id].push(d);
+    const deliverablesByProject = (deliverables || []).reduce((acc: Record<string, Record<string, unknown>[]>, d: Record<string, unknown>) => {
+      const projectId = d.project_id as string;
+      if (!acc[projectId]) acc[projectId] = [];
+      acc[projectId].push(d);
       return acc;
     }, {});
 
-    const timelineByProject = (timeline || []).reduce((acc: any, t: any) => {
-      if (!acc[t.project_id]) acc[t.project_id] = [];
-      acc[t.project_id].push(t);
+    const timelineByProject = (timeline || []).reduce((acc: Record<string, Record<string, unknown>[]>, t: Record<string, unknown>) => {
+      const projectId = t.project_id as string;
+      if (!acc[projectId]) acc[projectId] = [];
+      acc[projectId].push(t);
       return acc;
     }, {});
 
@@ -168,7 +176,7 @@ export async function getProjectById(id: number): Promise<Project | null> {
   }
 }
 
-export async function createProject(project: any): Promise<Project | null> {
+export async function createProject(project: Partial<Project>): Promise<Project | null> {
   try {
     // Insert project
     const { data: newProject, error: projectError } = await supabase

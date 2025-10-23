@@ -1,6 +1,6 @@
 "use client"
 
-import { IconMail, IconPhone, IconBuilding, IconMapPin, IconCalendar, IconDollarSign } from "@tabler/icons-react"
+import { IconMail, IconPhone, IconBuilding, IconMapPin, IconCalendar, IconCurrencyDollar } from "@tabler/icons-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

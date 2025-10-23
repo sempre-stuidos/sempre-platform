@@ -14,6 +14,21 @@ export interface DashboardStats {
   inProgressItems: number;
   pendingReviewItems: number;
   completionRate: number;
+  activeClients: number;
+  clientGrowth: number;
+  activeProjects: number;
+  projectProgress: number;
+  tasksThisWeek: number;
+  recentNotes: number;
+  notesToday: number;
+}
+
+export interface DashboardChartData {
+  month: string;
+  date: string;
+  completed: number;
+  inProgress: number;
+  pending: number;
 }
 
 export interface Client {
@@ -75,6 +90,7 @@ export interface Project {
   startDate: string;
   budget: number;
   priority: 'High' | 'Medium' | 'Low';
+  progress?: number;
   teamMembers: TeamMember[];
   tasks: ProjectTask[];
   deliverables: string[];
@@ -91,6 +107,7 @@ export interface Task {
   status: 'To Do' | 'In Progress' | 'Review' | 'Done';
   priority: 'High' | 'Medium' | 'Low';
   dueDate: string;
+  progress?: number;
   // Derived fields populated from related tables
   projectName?: string;
   assigneeName?: string;
@@ -106,22 +123,6 @@ export interface Deadline {
   type: string;
 }
 
-export interface TeamMember {
-  id: number;
-  name: string;
-  role: string;
-  status: 'Active' | 'Contractor' | 'Past Collaborator';
-  email: string;
-  timezone: string;
-  avatar: string;
-  skills: string[];
-  currentProjects: number;
-  activeTasks: number;
-  upcomingDeadlines: Deadline[];
-  workload: number;
-  created_at?: string;
-  updated_at?: string;
-}
 
 export interface NotesKnowledge {
   id: number;

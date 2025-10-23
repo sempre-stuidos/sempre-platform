@@ -2,18 +2,18 @@ import { supabase } from './supabase';
 import { NotesKnowledge } from './types';
 
 // Transform database record to match frontend interface
-function transformNotesKnowledgeRecord(record: any): NotesKnowledge {
+function transformNotesKnowledgeRecord(record: Record<string, unknown>): NotesKnowledge {
   return {
-    id: record.id,
-    title: record.title,
-    type: record.type,
-    status: record.status,
-    client: record.client || '',
-    project: record.project || '',
-    date: record.date,
-    author: record.author,
-    created_at: record.created_at,
-    updated_at: record.updated_at,
+    id: record.id as number,
+    title: record.title as string,
+    type: record.type as "Meeting Notes" | "Internal Playbook" | "Research Notes" | "Bug Report" | "Feature Request" | "Standup Notes" | "Documentation",
+    status: record.status as "Draft" | "Published" | "Archived" | "Template" | "Open" | "Under Review",
+    client: (record.client as string) || '',
+    project: (record.project as string) || '',
+    date: record.date as string,
+    author: record.author as string,
+    created_at: record.created_at as string,
+    updated_at: record.updated_at as string,
   };
 }
 

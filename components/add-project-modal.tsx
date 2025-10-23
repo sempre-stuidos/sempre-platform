@@ -15,7 +15,7 @@ interface AddProjectModalProps {
   isOpen: boolean
   onClose: () => void
   onAddProject: (project: NewProject) => void
-  initialData?: any
+  initialData?: Partial<NewProject>
   isEdit?: boolean
 }
 
@@ -45,7 +45,7 @@ export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, is
         description: initialData.description || "",
         startDate: initialData.startDate || "",
         dueDate: initialData.dueDate || "",
-        budget: initialData.budget || "",
+        budget: typeof initialData.budget === 'number' ? initialData.budget : 0,
         isOngoing: initialData.isOngoing || false
       }
     }
@@ -58,12 +58,12 @@ export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, is
       description: "",
       startDate: "",
       dueDate: "",
-      budget: "",
+      budget: 0,
       isOngoing: false
     }
   })
 
-  const [errors, setErrors] = useState<Partial<NewProject>>({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Fetch clients when modal opens
   useEffect(() => {
@@ -84,7 +84,7 @@ export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, is
         description: initialData.description || "",
         startDate: initialData.startDate || "",
         dueDate: initialData.dueDate || "",
-        budget: initialData.budget || "",
+        budget: typeof initialData.budget === 'number' ? initialData.budget : 0,
         isOngoing: initialData.isOngoing || false
       })
     } else if (!isEdit) {
@@ -98,14 +98,14 @@ export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, is
         description: "",
         startDate: "",
         dueDate: "",
-        budget: "",
+        budget: 0,
         isOngoing: false
       })
     }
   }, [initialData, isEdit])
 
   const validateForm = () => {
-    const newErrors: Partial<NewProject> = {}
+    const newErrors: Record<string, string> = {}
     
     // Required fields: name and client_id
     if (!formData.name.trim()) {
@@ -121,7 +121,7 @@ export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, is
     }
     
     // Budget validation if provided
-    if (formData.budget !== "" && (isNaN(Number(formData.budget)) || Number(formData.budget) < 0)) {
+    if (formData.budget < 0) {
       newErrors.budget = "Budget must be a positive number"
     }
 
@@ -133,11 +133,7 @@ export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, is
     e.preventDefault()
     
     if (validateForm()) {
-      const projectData = {
-        ...formData,
-        budget: formData.budget === "" ? 0 : Number(formData.budget)
-      }
-      onAddProject(projectData)
+      onAddProject(formData)
       setFormData({
         name: "",
         clientId: 0,
@@ -147,7 +143,7 @@ export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, is
         description: "",
         startDate: "",
         dueDate: "",
-        budget: "",
+        budget: 0,
         isOngoing: false
       })
       setErrors({})
@@ -165,7 +161,7 @@ export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, is
       description: "",
       startDate: "",
       dueDate: "",
-      budget: "",
+      budget: 0,
       isOngoing: false
     })
     setErrors({})
@@ -305,14 +301,11 @@ export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, is
               <Label htmlFor="budget">Budget ($)</Label>
               <Input
                 id="budget"
-                type="text"
+                type="number"
                 value={formData.budget}
                 onChange={(e) => {
-                  const value = e.target.value
-                  // Allow only numbers, decimal point, and empty string
-                  if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                    setFormData({ ...formData, budget: value })
-                  }
+                  const value = parseFloat(e.target.value) || 0
+                  setFormData({ ...formData, budget: value })
                 }}
                 placeholder="Enter budget amount"
                 className={errors.budget ? "border-red-500" : ""}

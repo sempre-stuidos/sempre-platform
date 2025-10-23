@@ -52,7 +52,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
               <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                 <div className="text-center py-8">
                   <h1 className="text-2xl font-semibold">Task not found</h1>
-                  <p className="text-muted-foreground mt-2">The task you're looking for doesn't exist.</p>
+                  <p className="text-muted-foreground mt-2">The task you&apos;re looking for doesn&apos;t exist.</p>
                   <Link href="/tasks">
                     <Button className="mt-4">
                       <IconArrowLeft className="mr-2 size-4" />
@@ -224,12 +224,12 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
                         <Avatar className="size-10">
                           <AvatarImage src={task.assigneeAvatar} alt={task.assigneeName} />
                           <AvatarFallback>
-                            {task.assigneeName.split(' ').map(n => n[0]).join('')}
+                            {task.assigneeName ? task.assigneeName.split(' ').map(n => n[0]).join('') : '?'}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">{task.assigneeName}</p>
-                          <p className="text-sm text-muted-foreground">{task.assigneeRole}</p>
+                          <p className="font-medium">{task.assigneeName || 'Unassigned'}</p>
+                          <p className="text-sm text-muted-foreground">{task.assigneeRole || 'No role'}</p>
                         </div>
                       </div>
                     </CardContent>
