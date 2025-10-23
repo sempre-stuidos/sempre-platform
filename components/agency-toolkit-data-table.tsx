@@ -57,6 +57,7 @@ import { toast } from "sonner"
 
 import Link from "next/link"
 import { AgencyToolkit } from "@/lib/types"
+import { createAgencyToolkit, updateAgencyToolkit, deleteAgencyToolkit } from "@/lib/agency-toolkit"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -92,6 +93,17 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { AgencyToolkitDrawer } from "@/components/agency-toolkit-drawer"
+import { AddToolModal } from "@/components/add-tool-modal"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
@@ -234,27 +246,38 @@ const columns: ColumnDef<AgencyToolkit>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
-            size="icon"
-          >
-            <IconDotsVertical />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>View Details</DropdownMenuItem>
-          <DropdownMenuItem>Edit Subscription</DropdownMenuItem>
-          <DropdownMenuItem>Download Invoice</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Cancel Subscription</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
+    cell: ({ row, table }) => {
+      const onEditTool = (table.options.meta as { onEditTool?: (tool: AgencyToolkit) => void })?.onEditTool
+      const onDeleteTool = (table.options.meta as { onDeleteTool?: (tool: AgencyToolkit) => void })?.onDeleteTool
+      
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+              size="icon"
+            >
+              <IconDotsVertical />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-32">
+            <DropdownMenuItem onClick={() => onEditTool && onEditTool(row.original)}>
+              Edit Tool
+            </DropdownMenuItem>
+            <DropdownMenuItem>Download Invoice</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              variant="destructive"
+              onClick={() => onDeleteTool && onDeleteTool(row.original)}
+            >
+              Delete Tool
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    },
   },
 ]
 
@@ -302,6 +325,11 @@ export function AgencyToolkitDataTable({
   })
   const [selectedTool, setSelectedTool] = React.useState<AgencyToolkit | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false)
+  const [isAddModalOpen, setIsAddModalOpen] = React.useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false)
+  const [editingTool, setEditingTool] = React.useState<AgencyToolkit | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false)
+  const [deletingTool, setDeletingTool] = React.useState<AgencyToolkit | null>(null)
   const sortableId = React.useId()
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
@@ -317,6 +345,97 @@ export function AgencyToolkitDataTable({
   const handleToolClick = (tool: AgencyToolkit) => {
     setSelectedTool(tool)
     setIsDrawerOpen(true)
+  }
+
+  const handleAddTool = async (newTool: Partial<AgencyToolkit>) => {
+    try {
+      const tool = await createAgencyToolkit({
+        name: newTool.name || "",
+        logo: "",
+        category: newTool.category || "Productivity",
+        planType: newTool.planType || "",
+        seats: newTool.seats || 1,
+        renewalCycle: newTool.renewalCycle || "Monthly",
+        price: newTool.price || 0,
+        currency: newTool.currency || "USD",
+        paymentMethod: "",
+        nextBillingDate: newTool.nextBillingDate || new Date().toISOString().split('T')[0],
+        status: newTool.status || "Active",
+        notes: newTool.notes || "",
+        invoices: [],
+        costHistory: []
+      })
+      
+      if (tool) {
+        setData([tool, ...data])
+        toast.success("Tool added successfully")
+      } else {
+        toast.error("Failed to add tool")
+      }
+    } catch (error) {
+      console.error("Error adding tool:", error)
+      toast.error("Failed to add tool")
+    }
+  }
+
+  const handleEditTool = (tool: AgencyToolkit) => {
+    setEditingTool(tool)
+    setIsEditModalOpen(true)
+  }
+
+  const handleUpdateTool = async (updatedTool: Partial<AgencyToolkit>) => {
+    if (!editingTool) return
+
+    try {
+      const tool = await updateAgencyToolkit(editingTool.id, {
+        name: updatedTool.name,
+        category: updatedTool.category,
+        planType: updatedTool.planType,
+        seats: updatedTool.seats,
+        renewalCycle: updatedTool.renewalCycle,
+        price: updatedTool.price,
+        currency: updatedTool.currency,
+        nextBillingDate: updatedTool.nextBillingDate,
+        status: updatedTool.status,
+        notes: updatedTool.notes,
+      })
+      
+      if (tool) {
+        setData(data.map(t => t.id === tool.id ? tool : t))
+        toast.success("Tool updated successfully")
+      } else {
+        toast.error("Failed to update tool")
+      }
+    } catch (error) {
+      console.error("Error updating tool:", error)
+      toast.error("Failed to update tool")
+    }
+  }
+
+  const handleDeleteTool = (tool: AgencyToolkit) => {
+    setDeletingTool(tool)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteTool = async () => {
+    if (!deletingTool) return
+
+    try {
+      const success = await deleteAgencyToolkit(deletingTool.id)
+      
+      if (success) {
+        setData(data.filter(t => t.id !== deletingTool.id))
+        toast.success("Tool deleted successfully")
+      } else {
+        toast.error("Failed to delete tool")
+      }
+    } catch (error) {
+      console.error("Error deleting tool:", error)
+      toast.error("Failed to delete tool")
+    } finally {
+      setIsDeleteDialogOpen(false)
+      setDeletingTool(null)
+    }
   }
 
   const table = useReactTable({
@@ -344,6 +463,8 @@ export function AgencyToolkitDataTable({
     getFacetedUniqueValues: getFacetedUniqueValues(),
     meta: {
       onToolClick: handleToolClick,
+      onEditTool: handleEditTool,
+      onDeleteTool: handleDeleteTool,
     },
   })
 
@@ -427,9 +548,9 @@ export function AgencyToolkitDataTable({
                   })}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => setIsAddModalOpen(true)}>
               <IconPlus />
-              <span className="hidden lg:inline">Add Subscription</span>
+              <span className="hidden lg:inline">Add Tool</span>
             </Button>
           </div>
         </div>
@@ -588,6 +709,45 @@ export function AgencyToolkitDataTable({
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
       />
+
+      <AddToolModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAddTool={handleAddTool}
+      />
+
+      <AddToolModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false)
+          setEditingTool(null)
+        }}
+        onAddTool={handleUpdateTool}
+        initialData={editingTool || undefined}
+        isEdit={true}
+      />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {deletingTool?.name} from your toolkit. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setIsDeleteDialogOpen(false)
+              setDeletingTool(null)
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteTool}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

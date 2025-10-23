@@ -39,6 +39,8 @@ interface AddTaskModalProps {
   onAddTask: (taskData: NewTask) => void
   initialData?: Task | null
   isEdit?: boolean
+  preSelectedProjectId?: number
+  disableProjectSelection?: boolean
 }
 
 export function AddTaskModal({
@@ -47,6 +49,8 @@ export function AddTaskModal({
   onAddTask,
   initialData,
   isEdit = false,
+  preSelectedProjectId,
+  disableProjectSelection = false,
 }: AddTaskModalProps) {
   const [formData, setFormData] = useState<NewTask>({
     title: "",
@@ -71,6 +75,17 @@ export function AddTaskModal({
           getAllProjects(),
           getAllTeamMembers()
         ])
+        
+        // Ensure the pre-selected project is in the projects list
+        if (preSelectedProjectId && projectsData.length > 0) {
+          const currentProject = projectsData.find(p => p.id === preSelectedProjectId)
+          if (!currentProject) {
+            // If current project is not in the list, we need to fetch it
+            // For now, we'll add a placeholder - in a real app you'd fetch the project details
+            console.warn('Pre-selected project not found in projects list')
+          }
+        }
+        
         setProjects(projectsData)
         setTeamMembers(teamMembersData)
       } catch (error) {
@@ -83,9 +98,9 @@ export function AddTaskModal({
     if (isOpen) {
       loadDropdownData()
     }
-  }, [isOpen])
+  }, [isOpen, preSelectedProjectId])
 
-  // Populate form data when editing
+  // Populate form data when editing or when pre-selected project is provided
   useEffect(() => {
     if (initialData && isEdit) {
       setFormData({
@@ -100,7 +115,7 @@ export function AddTaskModal({
       // Reset form for new task
       setFormData({
         title: "",
-        projectId: 0,
+        projectId: preSelectedProjectId || 0,
         assigneeId: null,
         status: "To Do",
         priority: "Medium",
@@ -108,7 +123,17 @@ export function AddTaskModal({
       })
     }
     setErrors({})
-  }, [initialData, isEdit])
+  }, [initialData, isEdit, preSelectedProjectId])
+
+  // Update form data when preSelectedProjectId changes and projects are loaded
+  useEffect(() => {
+    if (preSelectedProjectId && projects.length > 0 && !isEdit) {
+      setFormData(prev => ({
+        ...prev,
+        projectId: preSelectedProjectId
+      }))
+    }
+  }, [preSelectedProjectId, projects, isEdit])
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -181,6 +206,7 @@ export function AddTaskModal({
               <Select
                 value={formData.projectId ? formData.projectId.toString() : ""}
                 onValueChange={(value) => handleInputChange("projectId", parseInt(value) || 0)}
+                disabled={disableProjectSelection}
               >
                 <SelectTrigger className={errors.projectId ? "border-red-500" : ""}>
                   <SelectValue placeholder="Select a project" />

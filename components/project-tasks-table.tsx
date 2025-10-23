@@ -53,6 +53,9 @@ import {
 import { toast } from "sonner"
 import { z } from "zod"
 
+import { updateTask, deleteTask } from "@/lib/tasks"
+import { Task } from "@/lib/types"
+import { AddTaskModal } from "@/components/add-task-modal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -81,19 +84,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
 
 export const taskSchema = z.object({
   id: z.number(),
   title: z.string(),
   status: z.string(),
   deliverable: z.string(),
+  priority: z.string(),
+  dueDate: z.string(),
 })
+
+// Helper function to convert status formats
+function convertStatusToTaskFormat(status: string): 'To Do' | 'In Progress' | 'Review' | 'Done' {
+  const statusMap: Record<string, 'To Do' | 'In Progress' | 'Review' | 'Done'> = {
+    'pending': 'To Do',
+    'in-progress': 'In Progress',
+    'review': 'Review',
+    'completed': 'Done',
+    'done': 'Done',
+  }
+  return statusMap[status.toLowerCase()] || 'To Do'
+}
 
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
@@ -196,28 +207,71 @@ const columns: ColumnDef<z.infer<typeof taskSchema>>[] = [
     ),
   },
   {
+    accessorKey: "priority",
+    header: "Priority",
+    cell: ({ row }) => {
+      const priority = row.original.priority
+      const priorityColors = {
+        "High": "bg-red-100 text-red-800 border-red-200",
+        "Medium": "bg-yellow-100 text-yellow-800 border-yellow-200",
+        "Low": "bg-green-100 text-green-800 border-green-200"
+      }
+      return (
+        <Badge variant="outline" className={priorityColors[priority as keyof typeof priorityColors]}>
+          {priority}
+        </Badge>
+      )
+    },
+  },
+  {
+    accessorKey: "dueDate",
+    header: "Due Date",
+    cell: ({ row }) => {
+      const date = new Date(row.original.dueDate)
+      return (
+        <div className="text-sm flex items-center gap-1">
+          <IconCalendar className="h-3 w-3" />
+          {date.toLocaleDateString()}
+        </div>
+      )
+    },
+  },
+  {
     id: "actions",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
-            size="icon"
-          >
-            <IconDotsVertical />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Edit Task</DropdownMenuItem>
-          <DropdownMenuItem>Mark Complete</DropdownMenuItem>
-          <DropdownMenuItem>Duplicate</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
+    cell: ({ row, table }) => {
+      const task = row.original
+      const { handleEditTask, handleMarkComplete, handleDuplicate, handleDelete } = table.options.meta as any
+      
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+              size="icon"
+            >
+              <IconDotsVertical />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-32">
+            <DropdownMenuItem onClick={() => handleEditTask(task)}>
+              Edit Task
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleMarkComplete(task.id)}>
+              Mark Complete
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleDuplicate(task)}>
+              Duplicate
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={() => handleDelete(task.id)}>
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    },
   },
 ]
 
@@ -248,10 +302,16 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof taskSchema>> }) {
 
 export function ProjectTasksTable({
   data: initialData,
+  onAddTask,
+  onTaskUpdate,
 }: {
   data: z.infer<typeof taskSchema>[]
+  onAddTask?: () => void
+  onTaskUpdate?: () => void
 }) {
   const [data, setData] = React.useState(() => initialData)
+  const [editingTask, setEditingTask] = React.useState<z.infer<typeof taskSchema> | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false)
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
@@ -274,6 +334,81 @@ export function ProjectTasksTable({
     () => data?.map(({ id }) => id) || [],
     [data]
   )
+
+  // Update local data when initialData changes
+  React.useEffect(() => {
+    setData(initialData)
+  }, [initialData])
+
+  // Handler functions - defined before useReactTable
+  const handleEditTask = (task: z.infer<typeof taskSchema>) => {
+    setEditingTask(task)
+    setIsEditModalOpen(true)
+  }
+
+  const handleSaveEdit = async (taskData: any) => {
+    if (!editingTask) return
+
+    try {
+      await updateTask(editingTask.id, {
+        title: taskData.title,
+        projectId: taskData.projectId,
+        assigneeId: taskData.assigneeId,
+        status: taskData.status,
+        priority: taskData.priority,
+        dueDate: taskData.dueDate,
+      })
+      toast.success('Task updated successfully!')
+      setIsEditModalOpen(false)
+      setEditingTask(null)
+      if (onTaskUpdate) {
+        onTaskUpdate()
+      }
+    } catch (error) {
+      console.error('Error updating task:', error)
+      toast.error('Failed to update task')
+    }
+  }
+
+  const handleMarkComplete = async (taskId: number) => {
+    try {
+      await updateTask(taskId, { status: 'Done' as any })
+      toast.success('Task marked as complete!')
+      if (onTaskUpdate) {
+        onTaskUpdate()
+      }
+    } catch (error) {
+      console.error('Error marking task complete:', error)
+      toast.error('Failed to mark task as complete')
+    }
+  }
+
+  const handleDuplicate = async (task: z.infer<typeof taskSchema>) => {
+    try {
+      // Note: You'll need to implement createTask in tasks.ts if not already available
+      toast.info('Duplicate functionality coming soon!')
+    } catch (error) {
+      console.error('Error duplicating task:', error)
+      toast.error('Failed to duplicate task')
+    }
+  }
+
+  const handleDelete = async (taskId: number) => {
+    if (!confirm('Are you sure you want to delete this task?')) {
+      return
+    }
+    
+    try {
+      await deleteTask(taskId)
+      toast.success('Task deleted successfully!')
+      if (onTaskUpdate) {
+        onTaskUpdate()
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error)
+      toast.error('Failed to delete task')
+    }
+  }
 
   const table = useReactTable({
     data,
@@ -298,6 +433,12 @@ export function ProjectTasksTable({
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    meta: {
+      handleEditTask,
+      handleMarkComplete,
+      handleDuplicate,
+      handleDelete,
+    },
   })
 
   function handleDragEnd(event: DragEndEvent) {
@@ -312,85 +453,16 @@ export function ProjectTasksTable({
   }
 
   return (
-    <Tabs
-      defaultValue="outline"
-      className="w-full flex-col justify-start gap-6"
-    >
-      <div className="flex items-center justify-between px-4 lg:px-6">
-        <Label htmlFor="view-selector" className="sr-only">
-          View
-        </Label>
-        <Select defaultValue="outline">
-          <SelectTrigger
-            className="flex w-fit @4xl/main:hidden"
-            size="sm"
-            id="view-selector"
-          >
-            <SelectValue placeholder="Select a view" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="outline">All Tasks</SelectItem>
-            <SelectItem value="in-progress">In Progress</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-          </SelectContent>
-        </Select>
-        <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex">
-          <TabsTrigger value="outline">All Tasks</TabsTrigger>
-          <TabsTrigger value="in-progress">
-            In Progress <Badge variant="secondary">{data.filter(t => t.status === 'in-progress').length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="completed">
-            Completed <Badge variant="secondary">{data.filter(t => t.status === 'completed').length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="pending">
-            Pending <Badge variant="secondary">{data.filter(t => t.status === 'pending').length}</Badge>
-          </TabsTrigger>
-        </TabsList>
+    <div className="w-full flex flex-col justify-start gap-6">
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <IconLayoutColumns />
-                <span className="hidden lg:inline">Customize Columns</span>
-                <span className="lg:hidden">Columns</span>
-                <IconChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {table
-                .getAllColumns()
-                .filter(
-                  (column) =>
-                    typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
-                )
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  )
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={onAddTask}>
             <IconPlus />
             <span className="hidden lg:inline">Add Task</span>
           </Button>
         </div>
       </div>
-      <TabsContent
-        value="outline"
-        className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
-      >
+      <div className="relative flex flex-col gap-4 overflow-auto">
         <div className="overflow-hidden rounded-lg border">
           <DndContext
             collisionDetection={closestCenter}
@@ -519,22 +591,36 @@ export function ProjectTasksTable({
             </div>
           </div>
         </div>
-      </TabsContent>
-      <TabsContent
-        value="in-progress"
-        className="flex flex-col px-4 lg:px-6"
-      >
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
-      </TabsContent>
-      <TabsContent value="completed" className="flex flex-col px-4 lg:px-6">
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
-      </TabsContent>
-      <TabsContent
-        value="pending"
-        className="flex flex-col px-4 lg:px-6"
-      >
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
-      </TabsContent>
-    </Tabs>
+      </div>
+      
+      {/* Edit Task Modal */}
+      {editingTask && (
+        <AddTaskModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false)
+            setEditingTask(null)
+          }}
+          onAddTask={handleSaveEdit}
+          initialData={{
+            id: editingTask.id,
+            title: editingTask.title,
+            projectId: 0, // This will be set from the form
+            assigneeId: null,
+            status: convertStatusToTaskFormat(editingTask.status),
+            priority: editingTask.priority as 'High' | 'Medium' | 'Low',
+            dueDate: editingTask.dueDate,
+            progress: 0,
+            projectName: undefined,
+            assigneeName: undefined,
+            assigneeRole: undefined,
+            assigneeAvatar: undefined,
+            created_at: '',
+            updated_at: '',
+          }}
+          isEdit={true}
+        />
+      )}
+    </div>
   )
 }

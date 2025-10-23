@@ -71,6 +71,8 @@ export interface ProjectTask {
   title: string;
   status: 'completed' | 'in-progress' | 'pending';
   deliverable: string;
+  priority: string;
+  dueDate: string;
 }
 
 export interface TimelineMilestone {

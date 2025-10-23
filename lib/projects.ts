@@ -25,10 +25,12 @@ function transformProjectRecord(record: Record<string, unknown>, teamMembers: Re
       avatar: tm.avatar as string
     })),
     tasks: tasks.map(task => ({
-      id: task.task_id as number,
+      id: task.id as number,
       title: task.title as string,
-      status: task.status as "completed" | "in-progress" | "pending",
-      deliverable: task.deliverable as string
+      status: (task.status as string).toLowerCase().replace(' ', '-') as "completed" | "in-progress" | "pending",
+      deliverable: task.deliverable as string || "",
+      priority: task.priority as string,
+      dueDate: task.due_date as string
     })),
     deliverables: deliverables.map(d => d.deliverable as string),
     timeline: timeline.map(t => ({
@@ -158,7 +160,7 @@ export async function getProjectById(id: number): Promise<Project | null> {
       { data: timeline }
     ] = await Promise.all([
       supabase.from('project_team_members').select('*').eq('project_id', id),
-      supabase.from('project_tasks').select('*').eq('project_id', id),
+      supabase.from('tasks').select('*').eq('project_id', id),
       supabase.from('project_deliverables').select('*').eq('project_id', id),
       supabase.from('project_timeline').select('*').eq('project_id', id)
     ]);

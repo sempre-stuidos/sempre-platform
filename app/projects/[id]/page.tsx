@@ -1,9 +1,13 @@
+"use client"
+
+import React, { useState, use } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { ProjectOverview } from "@/components/project-overview"
 import { ProjectTeam } from "@/components/project-team"
 import { ProjectTasksTable } from "@/components/project-tasks-table"
 import { ProjectTimeline } from "@/components/project-timeline"
 import { SiteHeader } from "@/components/site-header"
+import { AddTaskModal } from "@/components/add-task-modal"
 import {
   SidebarInset,
   SidebarProvider,
@@ -14,6 +18,9 @@ import { IconArrowLeft, IconEdit, IconShare } from "@tabler/icons-react"
 import Link from "next/link"
 
 import { getProjectById } from "@/lib/projects"
+import { createTask } from "@/lib/tasks"
+import { Task } from "@/lib/types"
+import { toast } from "sonner"
 
 interface ProjectPageProps {
   params: {
@@ -21,8 +28,99 @@ interface ProjectPageProps {
   }
 }
 
-export default async function ProjectPage({ params }: ProjectPageProps) {
-  const project = await getProjectById(parseInt(params.id))
+export default function ProjectPage({ params }: ProjectPageProps) {
+  const resolvedParams = use(params)
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
+  const [project, setProject] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Load project data
+  const loadProjectData = React.useCallback(async () => {
+    try {
+      const projectData = await getProjectById(parseInt(resolvedParams.id))
+      setProject(projectData)
+    } catch (error) {
+      console.error('Error loading project:', error)
+    }
+  }, [resolvedParams.id])
+
+  React.useEffect(() => {
+    const loadProject = async () => {
+      try {
+        await loadProjectData()
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadProject()
+  }, [loadProjectData])
+
+  const handleAddTask = async (taskData: any) => {
+    try {
+      console.log('Adding task:', taskData)
+      
+      // Create the task in the database
+      const newTask = await createTask({
+        title: taskData.title,
+        projectId: taskData.projectId,
+        assigneeId: taskData.assigneeId,
+        status: taskData.status,
+        priority: taskData.priority,
+        dueDate: taskData.dueDate,
+        progress: 0,
+        projectName: project?.name,
+        assigneeName: undefined,
+        assigneeRole: undefined,
+        assigneeAvatar: undefined,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+
+      if (newTask) {
+        console.log('Task created successfully:', newTask)
+        toast.success('Task created successfully!')
+        
+        // Reload the project data to show the new task
+        await loadProjectData()
+      } else {
+        console.error('Failed to create task')
+        toast.error('Failed to create task')
+      }
+    } catch (error) {
+      console.error('Error creating task:', error)
+      toast.error('Error creating task')
+    } finally {
+      setIsAddTaskModalOpen(false)
+    }
+  }
+
+
+  if (loading) {
+    return (
+      <SidebarProvider
+        style={
+          {
+            "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--header-height": "calc(var(--spacing) * 12)",
+          } as React.CSSProperties
+        }
+      >
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <SiteHeader />
+          <div className="flex flex-1 flex-col">
+            <div className="@container/main flex flex-1 flex-col gap-2">
+              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                <div className="text-center py-12">
+                  <h1 className="text-2xl font-semibold">Loading...</h1>
+                </div>
+              </div>
+            </div>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    )
+  }
 
   if (!project) {
     return (
@@ -114,7 +212,11 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   </TabsContent>
                   
                   <TabsContent value="tasks" className="mt-6">
-                    <ProjectTasksTable data={project.tasks} />
+                    <ProjectTasksTable 
+                      data={project.tasks} 
+                      onAddTask={() => setIsAddTaskModalOpen(true)}
+                      onTaskUpdate={loadProjectData}
+                    />
                   </TabsContent>
                   
                   <TabsContent value="timeline" className="mt-6">
@@ -126,6 +228,13 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           </div>
         </div>
       </SidebarInset>
+      <AddTaskModal
+        isOpen={isAddTaskModalOpen}
+        onClose={() => setIsAddTaskModalOpen(false)}
+        onAddTask={handleAddTask}
+        preSelectedProjectId={project?.id}
+        disableProjectSelection={true}
+      />
     </SidebarProvider>
   )
 }

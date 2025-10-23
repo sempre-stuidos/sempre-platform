@@ -61,18 +61,8 @@ const staticData = {
       url: "/tasks",
       icon: IconListDetails,
     },
-    {
-      title: "Team",
-      url: "/team",
-      icon: IconUsers,
-    },
   ],
   navSub: [
-    {
-      title: "Notes & Knowledge Base",
-      url: "/notes-knowledge",
-      icon: IconFileDescription,
-    },
     {
       title: "Files & Assets",
       url: "/files-assets",
