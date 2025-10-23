@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,11 +20,21 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [redirectTo, setRedirectTo] = useState("/dashboard")
   const [formData, setFormData] = useState({
     email: "",
     password: ""
   })
+
+  useEffect(() => {
+    const redirect = searchParams.get('redirectTo')
+    if (redirect) {
+      setRedirectTo(redirect)
+    }
+  }, [searchParams])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -39,7 +50,7 @@ export function LoginForm({
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${window.location.origin}${redirectTo}`
         }
       })
       if (error) throw error
@@ -55,18 +66,20 @@ export function LoginForm({
     setIsLoading(true)
     try {
       checkSupabaseConfig()
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       })
       
       if (error) throw error
       
-      // Redirect will be handled by auth state change
-      window.location.href = '/dashboard'
+      if (data.session) {
+        toast.success("Signed in successfully!")
+        // The middleware will handle the redirect after the page reloads
+        window.location.href = redirectTo
+      }
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Failed to sign in")
-    } finally {
       setIsLoading(false)
     }
   }

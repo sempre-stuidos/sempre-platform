@@ -1,4 +1,5 @@
 import { GalleryVerticalEnd } from "lucide-react"
+import { Suspense } from "react"
 
 import { LoginForm } from "@/components/login-form"
 import { HeroGeometric } from "@/components/hero-geometric"
@@ -21,7 +22,9 @@ export default function LoginPage() {
             </div>
             Sempre Studios
           </a>
-          <LoginForm />
+          <Suspense fallback={<div className="text-white text-center">Loading...</div>}>
+            <LoginForm />
+          </Suspense>
         </div>
       </div>
     </div>
