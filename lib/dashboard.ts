@@ -125,15 +125,15 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 export async function getDashboardChartData(): Promise<DashboardChartData[]> {
   try {
-    // Get project activity data for the last 90 days
+    // Get project and task activity data for the last 90 days
     const today = new Date();
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(today.getDate() - 90);
 
-    // Get projects created over time
+    // Get projects with their status
     const { data: projectsData, error: projectsError } = await supabase
       .from('projects')
-      .select('created_at')
+      .select('created_at, updated_at, status')
       .gte('created_at', ninetyDaysAgo.toISOString())
       .order('created_at', { ascending: true });
 
@@ -142,10 +142,10 @@ export async function getDashboardChartData(): Promise<DashboardChartData[]> {
       return generateFallbackChartData();
     }
 
-    // Get tasks created over time
+    // Get tasks with their status
     const { data: tasksData, error: tasksError } = await supabase
       .from('tasks')
-      .select('created_at')
+      .select('created_at, updated_at, status')
       .gte('created_at', ninetyDaysAgo.toISOString())
       .order('created_at', { ascending: true });
 
@@ -154,43 +154,63 @@ export async function getDashboardChartData(): Promise<DashboardChartData[]> {
     }
 
     // Create chart data by aggregating projects and tasks by date
-    const chartData: DashboardChartData[] = [];
-    const dateMap = new Map<string, { desktop: number; mobile: number }>();
+    const dateMap = new Map<string, { completed: number; inProgress: number; pending: number }>();
 
     // Initialize all dates in the range
     for (let i = 0; i < 90; i++) {
       const date = new Date(ninetyDaysAgo);
       date.setDate(date.getDate() + i);
       const dateStr = date.toISOString().split('T')[0];
-      dateMap.set(dateStr, { desktop: 0, mobile: 0 });
+      dateMap.set(dateStr, { completed: 0, inProgress: 0, pending: 0 });
     }
 
-    // Count projects by date (desktop)
+    // Count projects by date and status
     projectsData?.forEach(project => {
       const dateStr = project.created_at.split('T')[0];
       const existing = dateMap.get(dateStr);
       if (existing) {
-        existing.desktop += 1;
+        if (project.status === 'Completed') {
+          existing.completed += 1;
+        } else if (project.status === 'In Progress' || project.status === 'Review') {
+          existing.inProgress += 1;
+        } else if (project.status === 'Planned') {
+          existing.pending += 1;
+        }
       }
     });
 
-    // Count tasks by date (mobile)
+    // Count tasks by date and status
     tasksData?.forEach(task => {
       const dateStr = task.created_at.split('T')[0];
       const existing = dateMap.get(dateStr);
       if (existing) {
-        existing.mobile += 1;
+        if (task.status === 'Done') {
+          existing.completed += 1;
+        } else if (task.status === 'In Progress' || task.status === 'Review') {
+          existing.inProgress += 1;
+        } else if (task.status === 'To Do') {
+          existing.pending += 1;
+        }
       }
     });
 
-    // Convert to array format
+    // Convert to array format with cumulative counts for better visualization
+    const chartData: DashboardChartData[] = [];
+    let cumulativeCompleted = 0;
+    let cumulativeInProgress = 0;
+    let cumulativePending = 0;
+
     dateMap.forEach((value, date) => {
+      cumulativeCompleted += value.completed;
+      cumulativeInProgress += value.inProgress;
+      cumulativePending += value.pending;
+      
       chartData.push({
         month: date,
         date,
-        completed: value.desktop || 0,
-        inProgress: value.mobile || 0,
-        pending: 0,
+        completed: cumulativeCompleted,
+        inProgress: cumulativeInProgress,
+        pending: cumulativePending,
       });
     });
 
@@ -231,8 +251,12 @@ export async function getRecentTasks(limit: number = 10) {
         status,
         priority,
         due_date,
-        assignee_name,
-        project_name
+        projects!tasks_project_id_fkey (
+          name
+        ),
+        team_members!tasks_assignee_id_fkey (
+          name
+        )
       `)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -245,14 +269,221 @@ export async function getRecentTasks(limit: number = 10) {
     return tasks?.map(task => ({
       id: task.id,
       title: task.title,
-      type: 'Task', // Default type
+      type: 'Task',
       status: task.status,
       priority: task.priority,
-      dueDate: task.due_date,
-      assignee: task.assignee_name,
+      dueDate: task.due_date || 'No due date',
+      assignee: (task.team_members as any)?.name || 'Unassigned',
+      projectName: (task.projects as any)?.name || 'No Project',
     })) || [];
   } catch (error) {
     console.error('Error in getRecentTasks:', error);
+    return [];
+  }
+}
+
+export async function getHighPriorityTasks(limit: number = 50) {
+  try {
+    const { data: tasks, error } = await supabase
+      .from('tasks')
+      .select(`
+        id,
+        title,
+        status,
+        priority,
+        due_date,
+        projects!tasks_project_id_fkey (
+          name
+        ),
+        team_members!tasks_assignee_id_fkey (
+          name
+        )
+      `)
+      .eq('priority', 'High')
+      .in('status', ['To Do', 'In Progress', 'Review'])
+      .order('due_date', { ascending: true })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching high priority tasks:', error);
+      return [];
+    }
+
+    return tasks?.map(task => ({
+      id: task.id,
+      title: task.title,
+      type: 'Task',
+      status: task.status,
+      priority: task.priority,
+      dueDate: task.due_date || 'No due date',
+      assignee: (task.team_members as any)?.name || 'Unassigned',
+      projectName: (task.projects as any)?.name || 'No Project',
+    })) || [];
+  } catch (error) {
+    console.error('Error in getHighPriorityTasks:', error);
+    return [];
+  }
+}
+
+export async function getTasksDueThisWeek(limit: number = 50) {
+  try {
+    const today = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(today.getDate() + 7);
+
+    const { data: tasks, error } = await supabase
+      .from('tasks')
+      .select(`
+        id,
+        title,
+        status,
+        priority,
+        due_date,
+        projects!tasks_project_id_fkey (
+          name
+        ),
+        team_members!tasks_assignee_id_fkey (
+          name
+        )
+      `)
+      .gte('due_date', today.toISOString().split('T')[0])
+      .lte('due_date', nextWeek.toISOString().split('T')[0])
+      .in('status', ['To Do', 'In Progress', 'Review'])
+      .order('due_date', { ascending: true })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching tasks due this week:', error);
+      return [];
+    }
+
+    return tasks?.map(task => ({
+      id: task.id,
+      title: task.title,
+      type: 'Task',
+      status: task.status,
+      priority: task.priority,
+      dueDate: task.due_date || 'No due date',
+      assignee: (task.team_members as any)?.name || 'Unassigned',
+      projectName: (task.projects as any)?.name || 'No Project',
+    })) || [];
+  } catch (error) {
+    console.error('Error in getTasksDueThisWeek:', error);
+    return [];
+  }
+}
+
+export async function getCompletedTasks(limit: number = 50) {
+  try {
+    const { data: tasks, error } = await supabase
+      .from('tasks')
+      .select(`
+        id,
+        title,
+        status,
+        priority,
+        due_date,
+        projects!tasks_project_id_fkey (
+          name
+        ),
+        team_members!tasks_assignee_id_fkey (
+          name
+        )
+      `)
+      .eq('status', 'Done')
+      .order('updated_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching completed tasks:', error);
+      return [];
+    }
+
+    return tasks?.map(task => ({
+      id: task.id,
+      title: task.title,
+      type: 'Task',
+      status: task.status,
+      priority: task.priority,
+      dueDate: task.due_date || 'No due date',
+      assignee: (task.team_members as any)?.name || 'Unassigned',
+      projectName: (task.projects as any)?.name || 'No Project',
+    })) || [];
+  } catch (error) {
+    console.error('Error in getCompletedTasks:', error);
+    return [];
+  }
+}
+
+export async function getTaskCounts() {
+  try {
+    // Get high priority tasks count
+    const { count: highPriorityCount, error: highPriorityError } = await supabase
+      .from('tasks')
+      .select('*', { count: 'exact', head: true })
+      .eq('priority', 'High')
+      .in('status', ['To Do', 'In Progress', 'Review']);
+
+    if (highPriorityError) {
+      console.error('Error fetching high priority count:', highPriorityError);
+    }
+
+    // Get tasks due this week count
+    const today = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(today.getDate() + 7);
+
+    const { count: dueThisWeekCount, error: dueThisWeekError } = await supabase
+      .from('tasks')
+      .select('*', { count: 'exact', head: true })
+      .gte('due_date', today.toISOString().split('T')[0])
+      .lte('due_date', nextWeek.toISOString().split('T')[0])
+      .in('status', ['To Do', 'In Progress', 'Review']);
+
+    if (dueThisWeekError) {
+      console.error('Error fetching due this week count:', dueThisWeekError);
+    }
+
+    // Get completed tasks count
+    const { count: completedCount, error: completedError } = await supabase
+      .from('tasks')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'Done');
+
+    if (completedError) {
+      console.error('Error fetching completed count:', completedError);
+    }
+
+    return {
+      highPriority: highPriorityCount || 0,
+      dueThisWeek: dueThisWeekCount || 0,
+      completed: completedCount || 0,
+    };
+  } catch (error) {
+    console.error('Error in getTaskCounts:', error);
+    return {
+      highPriority: 0,
+      dueThisWeek: 0,
+      completed: 0,
+    };
+  }
+}
+
+export async function getProjectsList() {
+  try {
+    const { data: projects, error } = await supabase
+      .from('projects')
+      .select('id, name')
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching projects list:', error);
+      return [];
+    }
+
+    return projects || [];
+  } catch (error) {
+    console.error('Error in getProjectsList:', error);
     return [];
   }
 }

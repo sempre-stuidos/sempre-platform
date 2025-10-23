@@ -1,6 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
-import { DataTable } from "@/components/data-table"
+import { DashboardDataTable } from "@/components/dashboard-data-table"
 import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
 import {
@@ -8,14 +8,28 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
-import { getDashboardStats, getDashboardChartData, getRecentTasks } from "@/lib/dashboard"
+import { 
+  getDashboardStats, 
+  getDashboardChartData, 
+  getRecentTasks,
+  getHighPriorityTasks,
+  getTasksDueThisWeek,
+  getCompletedTasks,
+  getTaskCounts,
+  getProjectsList
+} from "@/lib/dashboard"
 
 export default async function Page() {
   // Fetch dashboard data from database
-  const [stats, chartData, recentTasks] = await Promise.all([
+  const [stats, chartData, recentTasks, highPriorityTasks, tasksDueThisWeek, completedTasks, taskCounts, projectsList] = await Promise.all([
     getDashboardStats(),
     getDashboardChartData(),
-    getRecentTasks(15)
+    getRecentTasks(50),
+    getHighPriorityTasks(50),
+    getTasksDueThisWeek(50),
+    getCompletedTasks(50),
+    getTaskCounts(),
+    getProjectsList()
   ])
   return (
     <SidebarProvider
@@ -36,7 +50,14 @@ export default async function Page() {
               <div className="px-4 lg:px-6">
                 <ChartAreaInteractive data={chartData} />
               </div>
-              <DataTable data={recentTasks} />
+              <DashboardDataTable 
+                allTasks={recentTasks}
+                highPriorityTasks={highPriorityTasks}
+                tasksDueThisWeek={tasksDueThisWeek}
+                completedTasks={completedTasks}
+                taskCounts={taskCounts}
+                projectsList={projectsList}
+              />
             </div>
           </div>
         </div>
