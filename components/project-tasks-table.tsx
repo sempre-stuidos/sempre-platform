@@ -240,7 +240,12 @@ const columns: ColumnDef<z.infer<typeof taskSchema>>[] = [
     id: "actions",
     cell: ({ row, table }) => {
       const task = row.original
-      const { handleEditTask, handleMarkComplete, handleDuplicate, handleDelete } = table.options.meta as any
+      const { handleEditTask, handleMarkComplete, handleDuplicate, handleDelete } = table.options.meta as {
+        handleEditTask: (task: z.infer<typeof taskSchema>) => void;
+        handleMarkComplete: (taskId: number) => void;
+        handleDuplicate: (task: z.infer<typeof taskSchema>) => void;
+        handleDelete: (taskId: number) => void;
+      }
       
       return (
         <DropdownMenu>
@@ -346,7 +351,7 @@ export function ProjectTasksTable({
     setIsEditModalOpen(true)
   }
 
-  const handleSaveEdit = async (taskData: any) => {
+  const handleSaveEdit = async (taskData: Partial<Task>) => {
     if (!editingTask) return
 
     try {
@@ -372,7 +377,7 @@ export function ProjectTasksTable({
 
   const handleMarkComplete = async (taskId: number) => {
     try {
-      await updateTask(taskId, { status: 'Done' as any })
+      await updateTask(taskId, { status: 'Done' })
       toast.success('Task marked as complete!')
       if (onTaskUpdate) {
         onTaskUpdate()

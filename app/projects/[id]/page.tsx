@@ -19,19 +19,19 @@ import Link from "next/link"
 
 import { getProjectById } from "@/lib/projects"
 import { createTask } from "@/lib/tasks"
-import { Task } from "@/lib/types"
+import { Task, Project } from "@/lib/types"
 import { toast } from "sonner"
 
 interface ProjectPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function ProjectPage({ params }: ProjectPageProps) {
   const resolvedParams = use(params)
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
-  const [project, setProject] = useState<any>(null)
+  const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Load project data
@@ -55,15 +55,21 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     loadProject()
   }, [loadProjectData])
 
-  const handleAddTask = async (taskData: any) => {
+  const handleAddTask = async (taskData: Partial<Task>) => {
     try {
       console.log('Adding task:', taskData)
+      
+      // Validate required fields
+      if (!taskData.title || !taskData.projectId || !taskData.status || !taskData.priority || !taskData.dueDate) {
+        toast.error('Missing required task fields')
+        return
+      }
       
       // Create the task in the database
       const newTask = await createTask({
         title: taskData.title,
         projectId: taskData.projectId,
-        assigneeId: taskData.assigneeId,
+        assigneeId: taskData.assigneeId ?? null,
         status: taskData.status,
         priority: taskData.priority,
         dueDate: taskData.dueDate,
@@ -72,8 +78,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         assigneeName: undefined,
         assigneeRole: undefined,
         assigneeAvatar: undefined,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       })
 
       if (newTask) {

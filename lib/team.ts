@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { TeamMember, Deadline } from './types';
+import { TeamMember } from './types';
 
 // Transform database record to match frontend interface
 function transformTeamMemberRecord(record: Record<string, unknown>, skills: Record<string, unknown>[], deadlines: Record<string, unknown>[]): TeamMember {
@@ -192,7 +192,7 @@ export async function createTeamMember(teamMember: Omit<TeamMember, 'id' | 'crea
 export async function updateTeamMember(id: number, updates: Partial<TeamMember>): Promise<TeamMember | null> {
   try {
     // Update team member
-    const { data: updatedTeamMember, error: teamMemberError } = await supabase
+    const { error: teamMemberError } = await supabase
       .from('team_members')
       .update(transformTeamMemberToRecord(updates))
       .eq('id', id)

@@ -26,13 +26,14 @@ import Link from "next/link"
 import { getTaskById } from "@/lib/tasks"
 
 interface TaskDetailPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
-  const task = await getTaskById(parseInt(params.id))
+  const resolvedParams = await params
+  const task = await getTaskById(parseInt(resolvedParams.id))
 
   if (!task) {
     return (

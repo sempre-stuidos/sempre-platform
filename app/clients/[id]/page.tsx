@@ -16,13 +16,14 @@ import Link from "next/link"
 import { getClientById } from "@/lib/clients"
 
 interface ClientDetailsPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function ClientDetailsPage({ params }: ClientDetailsPageProps) {
-  const clientId = parseInt(params.id)
+  const resolvedParams = await params
+  const clientId = parseInt(resolvedParams.id)
   const client = await getClientById(clientId)
 
   if (!client) {
