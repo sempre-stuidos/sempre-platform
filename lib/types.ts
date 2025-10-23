@@ -183,6 +183,7 @@ export interface FilesAssets {
   format: string;
   uploaded: string;
   status: 'Active' | 'Review' | 'Draft' | 'Processing' | 'Archive';
+  file_url?: string;
   created_at?: string;
   updated_at?: string;
 }

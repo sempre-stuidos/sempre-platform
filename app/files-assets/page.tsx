@@ -1,17 +1,55 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { FilesAssetsDataTable } from "@/components/files-assets-data-table"
 import { FilesAssetsSectionCards } from "@/components/files-assets-section-cards"
 import { SiteHeader } from "@/components/site-header"
+import { UploadFileModal } from "@/components/upload-file-modal"
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
-import { getAllFilesAssets } from "@/lib/files-assets"
+import { getAllFilesAssets, getFilesAssetsStats } from "@/lib/files-assets"
+import { FilesAssets } from "@/lib/types"
 
-export default async function Page() {
-  // Fetch files-assets data from database
-  const data = await getAllFilesAssets()
+export default function Page() {
+  const [data, setData] = useState<FilesAssets[]>([])
+  const [stats, setStats] = useState({
+    totalFiles: 0,
+    filesThisWeek: 0,
+    uploadsToday: 0,
+    totalProjects: 0,
+    storageUsedBytes: 0,
+    storageUsedGB: 0,
+    storagePercentage: 0,
+    storageLimit: 5,
+  })
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Fetch files-assets data and stats from database
+  const fetchData = async () => {
+    setIsLoading(true)
+    const [filesAssets, fileStats] = await Promise.all([
+      getAllFilesAssets(),
+      getFilesAssetsStats()
+    ])
+    setData(filesAssets)
+    setStats(fileStats)
+    setIsLoading(false)
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const handleUploadSuccess = () => {
+    // Refresh data after successful upload
+    fetchData()
+  }
+
   return (
     <SidebarProvider
       style={
@@ -27,12 +65,27 @@ export default async function Page() {
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <FilesAssetsSectionCards />
-              <FilesAssetsDataTable data={data} />
+              <FilesAssetsSectionCards stats={stats} />
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <p className="text-muted-foreground">Loading files...</p>
+                </div>
+              ) : (
+                <FilesAssetsDataTable 
+                  data={data} 
+                  onUploadClick={() => setIsUploadModalOpen(true)}
+                />
+              )}
             </div>
           </div>
         </div>
       </SidebarInset>
+      
+      <UploadFileModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onUploadSuccess={handleUploadSuccess}
+      />
     </SidebarProvider>
   )
 }

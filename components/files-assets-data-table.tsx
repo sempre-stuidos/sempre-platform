@@ -58,6 +58,7 @@ import { toast } from "sonner"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { FilesAssets } from "@/lib/types"
+import { getFilePublicUrl, deleteFilesAssets } from "@/lib/files-assets"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -266,28 +267,68 @@ const columns: ColumnDef<FilesAssets>[] = [
   },
   {
     id: "actions",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
-            size="icon"
-          >
-            <IconDotsVertical />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Download</DropdownMenuItem>
-          <DropdownMenuItem>Preview</DropdownMenuItem>
-          <DropdownMenuItem>Rename</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>Move to Archive</DropdownMenuItem>
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
+    cell: ({ row }) => {
+      const fileAsset = row.original
+      
+      const handleDownload = () => {
+        if (fileAsset.file_url) {
+          const publicUrl = getFilePublicUrl(fileAsset.file_url)
+          window.open(publicUrl, '_blank')
+        } else {
+          toast.error("No file URL available for download")
+        }
+      }
+
+      const handlePreview = () => {
+        if (fileAsset.file_url) {
+          const publicUrl = getFilePublicUrl(fileAsset.file_url)
+          window.open(publicUrl, '_blank')
+        } else {
+          toast.error("No file URL available for preview")
+        }
+      }
+
+      const handleDelete = async () => {
+        if (confirm(`Are you sure you want to delete "${fileAsset.name}"?`)) {
+          const success = await deleteFilesAssets(fileAsset.id)
+          if (success) {
+            toast.success("File deleted successfully")
+            window.location.reload()
+          } else {
+            toast.error("Failed to delete file")
+          }
+        }
+      }
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+              size="icon"
+            >
+              <IconDotsVertical />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-32">
+            <DropdownMenuItem onClick={handleDownload} disabled={!fileAsset.file_url}>
+              Download
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handlePreview} disabled={!fileAsset.file_url}>
+              Preview
+            </DropdownMenuItem>
+            <DropdownMenuItem>Rename</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Move to Archive</DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onClick={handleDelete}>
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    },
   },
 ]
 
@@ -318,8 +359,10 @@ function DraggableRow({ row }: { row: Row<FilesAssets> }) {
 
 export function FilesAssetsDataTable({
   data: initialData,
+  onUploadClick,
 }: {
   data: FilesAssets[]
+  onUploadClick?: () => void
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
@@ -449,7 +492,7 @@ export function FilesAssetsDataTable({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={onUploadClick}>
             <IconPlus />
             <span className="hidden lg:inline">Upload File</span>
           </Button>
