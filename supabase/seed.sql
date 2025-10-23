@@ -466,3 +466,26 @@ INSERT INTO files_assets (
     ('Icon Set - Custom', 'Icons', 'Project Assets', 'Design System', '4.2 MB', 'SVG', '2023-12-29', 'Active'),
     ('Client Presentation Deck', 'Presentation', 'Client Assets', 'Q4 Review', '28.3 MB', 'PPTX', '2023-12-28', 'Active'),
     ('Website Screenshots', 'Images', 'Project Assets', 'Website Audit', '12.6 MB', 'PNG', '2023-12-27', 'Archive');
+
+-- Seed data for presentations table
+INSERT INTO presentations (
+    title, 
+    client_id, 
+    type, 
+    created_date, 
+    owner_id, 
+    status, 
+    link, 
+    description, 
+    last_modified
+) VALUES 
+    ('Infinity Property Management – Landing Page Proposal', 1, 'Proposal', '2024-01-15', 1, 'Approved', 'https://gamma.app/p/infinity-property-proposal', 'Comprehensive proposal for landing page redesign including wireframes, mockups, and development timeline', '2024-01-20'),
+    ('TechStart Inc – Q1 Progress Update', 2, 'Progress Update', '2024-01-10', 2, 'Sent', 'https://gamma.app/p/techstart-q1-update', 'Quarterly progress report showcasing completed features and upcoming milestones', '2024-01-12'),
+    ('EcoGreen Solutions – Onboarding Presentation', 3, 'Onboarding', '2024-01-08', 1, 'Draft', 'https://gamma.app/p/ecogreen-onboarding', 'Client onboarding presentation covering project scope, team introduction, and communication protocols', '2024-01-15'),
+    ('RetailMax – E-commerce Case Study', 4, 'Case Study', '2024-01-05', 3, 'Approved', 'https://gamma.app/p/retailmax-case-study', 'Detailed case study showcasing successful e-commerce platform implementation and results', '2024-01-18'),
+    ('HealthCare Plus – Mobile App Proposal', 5, 'Proposal', '2024-01-03', 2, 'Sent', 'https://gamma.app/p/healthcare-mobile-proposal', 'Mobile application proposal including user research, design concepts, and technical specifications', '2024-01-10'),
+    ('FinanceFlow – Q4 Report', 6, 'Report', '2023-12-28', 1, 'Archived', 'https://gamma.app/p/financeflow-q4-report', 'End-of-year report summarizing project achievements and financial performance', '2023-12-30'),
+    ('EduTech Solutions – Platform Onboarding', 7, 'Onboarding', '2024-01-12', 3, 'Draft', 'https://gamma.app/p/edutech-onboarding', 'Educational platform onboarding guide for new client team members', '2024-01-16'),
+    ('FoodieHub – Brand Identity Proposal', 8, 'Proposal', '2024-01-18', 1, 'Draft', 'https://gamma.app/p/foodiehub-brand-proposal', 'Complete brand identity proposal including logo concepts, color palette, and brand guidelines', '2024-01-20'),
+    ('LogiChain – Supply Chain Case Study', 9, 'Case Study', '2024-01-14', 2, 'Sent', 'https://gamma.app/p/logichain-case-study', 'Supply chain optimization case study highlighting efficiency improvements and cost savings', '2024-01-17'),
+    ('GreenEnergy Corp – Sustainability Report', 10, 'Report', '2024-01-16', 3, 'Approved', 'https://gamma.app/p/greenenergy-sustainability-report', 'Annual sustainability report showcasing environmental impact and green initiatives', '2024-01-19');

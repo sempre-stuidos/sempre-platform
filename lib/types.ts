@@ -38,7 +38,17 @@ export interface TeamMember {
   id: number;
   name: string;
   role: string;
-  avatar: string;
+  status: 'Active' | 'Contractor' | 'Past Collaborator';
+  email: string;
+  timezone: string;
+  avatar?: string;
+  currentProjects?: number;
+  activeTasks?: number;
+  workload?: number;
+  skills?: string[];
+  upcomingDeadlines?: Deadline[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ProjectTask {
@@ -170,6 +180,23 @@ export interface FilesAssets {
   format: string;
   uploaded: string;
   status: 'Active' | 'Review' | 'Draft' | 'Processing' | 'Archive';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Presentation {
+  id: number;
+  title: string;
+  clientId: number;
+  clientName: string;
+  type: 'Proposal' | 'Onboarding' | 'Progress Update' | 'Report' | 'Case Study';
+  createdDate: string;
+  ownerId: number;
+  ownerName: string;
+  status: 'Draft' | 'Sent' | 'Approved' | 'Archived';
+  link: string;
+  description?: string;
+  lastModified?: string;
   created_at?: string;
   updated_at?: string;
 }

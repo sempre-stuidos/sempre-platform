@@ -11,11 +11,11 @@ function transformTaskRecord(record: any): Task {
     status: record.status,
     priority: record.priority,
     dueDate: record.due_date,
-    // Derived fields populated from joins
-    projectName: record.project_name,
-    assigneeName: record.assignee_name,
-    assigneeRole: record.assignee_role,
-    assigneeAvatar: record.assignee_avatar,
+    // Derived fields will be populated from joins in the calling function
+    projectName: undefined,
+    assigneeName: undefined,
+    assigneeRole: undefined,
+    assigneeAvatar: undefined,
     created_at: record.created_at,
     updated_at: record.updated_at,
   };
@@ -39,8 +39,8 @@ export async function getAllTasks(): Promise<Task[]> {
       .from('tasks')
       .select(`
         *,
-        projects:project_id(name),
-        team_members:assignee_id(name, role, avatar)
+        projects!project_id(name),
+        team_members!assignee_id(name, role, avatar)
       `)
       .order('id', { ascending: true });
 
@@ -208,8 +208,8 @@ export async function getTasksByAssignee(assigneeId: number): Promise<Task[]> {
       .from('tasks')
       .select(`
         *,
-        projects:project_id(name),
-        team_members:assignee_id(name, role, avatar)
+        projects!project_id(name),
+        team_members!assignee_id(name, role, avatar)
       `)
       .eq('assignee_id', assigneeId)
       .order('id', { ascending: true });
