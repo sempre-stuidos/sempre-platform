@@ -198,5 +198,38 @@
     "project": "CRM Implementation",
     "date": "2024-01-09",
     "author": "Maria Garcia"
+  },
+  {
+    "id": 21,
+    "title": "E-commerce Platform Redesign Proposal",
+    "type": "Proposal",
+    "status": "Draft",
+    "client": "Retail Plus",
+    "project": "",
+    "date": "2024-01-21",
+    "author": "Sarah Chen",
+    "content": "Comprehensive proposal for redesigning the e-commerce platform with modern UI/UX, improved performance, and enhanced user experience. Includes mobile optimization, payment gateway integration, and analytics dashboard."
+  },
+  {
+    "id": 22,
+    "title": "AI-Powered Customer Service Solution",
+    "type": "Proposal",
+    "status": "Under Review",
+    "client": "TechStart Inc",
+    "project": "",
+    "date": "2024-01-22",
+    "author": "Eddie Lake",
+    "content": "Proposal for implementing an AI-powered customer service solution including chatbot integration, automated ticket routing, and sentiment analysis. Features include 24/7 support, multilingual capabilities, and detailed analytics."
+  },
+  {
+    "id": 23,
+    "title": "Digital Marketing Campaign Strategy",
+    "type": "Proposal",
+    "status": "Published",
+    "client": "Creative Agency",
+    "project": "",
+    "date": "2024-01-23",
+    "author": "Leila Ahmadi",
+    "content": "Strategic proposal for a comprehensive digital marketing campaign including social media management, content creation, SEO optimization, and paid advertising. Budget allocation and ROI projections included."
   }
 ]

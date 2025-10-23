@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import {
   IconChevronDown,
   IconChevronLeft,
@@ -20,6 +21,7 @@ import {
   IconFileText,
   IconEdit,
   IconClipboardText,
+  IconExternalLink,
 } from "@tabler/icons-react"
 import {
   ColumnDef,
@@ -687,6 +689,7 @@ export function NotesKnowledgeDataTable({
 }
 
 function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit: (note: NotesKnowledge) => void; onDelete: (note: NotesKnowledge) => void }) {
+  const router = useRouter()
   const isMobile = useIsMobile()
   const isPlaybook = item.type === "Internal Playbook"
   const statusColors = {
@@ -696,6 +699,12 @@ function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit
     "Template": "bg-blue-100 text-blue-800 border-blue-200",
     "Open": "bg-red-100 text-red-800 border-red-200",
     "Under Review": "bg-orange-100 text-orange-800 border-orange-200"
+  }
+
+  const handleItemClick = () => {
+    if (item.type === "Proposal") {
+      router.push(`/notes-knowledge/${item.id}`)
+    }
   }
 
   return (
@@ -759,12 +768,24 @@ function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit
           </DropdownMenu>
         </div>
         <CardTitle className="text-base leading-tight">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="link" className="text-foreground w-fit px-0 text-left h-auto p-0 font-semibold">
+          {item.type === "Proposal" ? (
+            <Button 
+              variant="link" 
+              className="text-foreground w-fit px-0 text-left h-auto p-0 font-semibold hover:text-sky-600"
+              onClick={handleItemClick}
+            >
+              <div className="flex items-center gap-2">
                 {item.title}
-              </Button>
-            </DialogTrigger>
+                <IconExternalLink className="h-3 w-3 opacity-60" />
+              </div>
+            </Button>
+          ) : (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="link" className="text-foreground w-fit px-0 text-left h-auto p-0 font-semibold">
+                  {item.title}
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
@@ -843,7 +864,8 @@ function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit
                 </div>
               </div>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          )}
         </CardTitle>
         <CardDescription className="text-sm">
           {item.type}
@@ -874,6 +896,7 @@ function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit
 }
 
 function TableCellViewer({ item }: { item: NotesKnowledge }) {
+  const router = useRouter()
   const isMobile = useIsMobile()
   const statusColors = {
     "Draft": "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -882,6 +905,27 @@ function TableCellViewer({ item }: { item: NotesKnowledge }) {
     "Template": "bg-blue-100 text-blue-800 border-blue-200",
     "Open": "bg-red-100 text-red-800 border-red-200",
     "Under Review": "bg-orange-100 text-orange-800 border-orange-200"
+  }
+
+  const handleItemClick = () => {
+    if (item.type === "Proposal") {
+      router.push(`/notes-knowledge/${item.id}`)
+    }
+  }
+
+  if (item.type === "Proposal") {
+    return (
+      <Button 
+        variant="link" 
+        className="text-foreground w-fit px-0 text-left hover:text-sky-600"
+        onClick={handleItemClick}
+      >
+        <div className="flex items-center gap-2">
+          {item.title}
+          <IconExternalLink className="h-3 w-3 opacity-60" />
+        </div>
+      </Button>
+    )
   }
 
   return (
