@@ -6,8 +6,8 @@ function transformNotesKnowledgeRecord(record: Record<string, unknown>): NotesKn
   return {
     id: record.id as number,
     title: record.title as string,
-    type: record.type as "Proposal" | "Meeting Notes" | "Internal Playbook" | "Research Notes" | "Bug Report" | "Feature Request" | "Standup Notes" | "Documentation",
-    status: record.status as "Draft" | "Published" | "Archived" | "Template" | "Open" | "Under Review",
+    type: record.type as NotesKnowledge['type'],
+    status: record.status as NotesKnowledge['status'],
     client: (record.client as string) || '',
     project: (record.project as string) || '',
     date: record.date as string,

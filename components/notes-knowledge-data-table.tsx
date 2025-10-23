@@ -713,7 +713,7 @@ function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             {(() => {
-              switch (item.type) {
+              switch (item.type as NotesKnowledge['type']) {
                 case "Proposal":
                   return <IconClipboardText className="size-4 text-sky-600" />
                 case "Internal Playbook":
@@ -790,7 +790,7 @@ function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   {(() => {
-                    switch (item.type) {
+                    switch (item.type as NotesKnowledge['type']) {
                       case "Proposal":
                         return <IconClipboardText className="size-5 text-sky-600" />
                       case "Internal Playbook":
@@ -939,7 +939,7 @@ function TableCellViewer({ item }: { item: NotesKnowledge }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {(() => {
-              switch (item.type) {
+              switch (item.type as NotesKnowledge['type']) {
                 case "Proposal":
                   return <IconClipboardText className="size-5 text-sky-600" />
                 case "Internal Playbook":

@@ -9,11 +9,8 @@ import {
   IconCalendar,
   IconUser,
   IconBuilding,
-  IconCalendarEvent,
   IconCheck,
-  IconClock,
   IconTarget,
-  IconUsers,
   IconFileText,
   IconBulb,
   IconSettings,
@@ -21,7 +18,7 @@ import {
 } from "@tabler/icons-react"
 import { toast } from "sonner"
 
-import { NotesKnowledge } from "@/lib/types"
+import { NotesKnowledge, Project, Task } from "@/lib/types"
 import { createProject } from "@/lib/projects"
 import { createTask } from "@/lib/tasks"
 import { AddProjectModal } from "@/components/add-project-modal"
@@ -43,7 +40,7 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = React.useState(false)
   const [activeTab, setActiveTab] = React.useState("overview")
 
-  const handleCreateProject = async (projectData: any) => {
+  const handleCreateProject = async (projectData: Partial<Project>) => {
     try {
       const newProject = await createProject({
         ...projectData,
@@ -73,15 +70,16 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
     }
   }
 
-  const handleCreateTask = async (taskData: any) => {
+  const handleCreateTask = async (taskData: Partial<Task>) => {
     try {
       const newTask = await createTask({
-        ...taskData,
+        title: taskData.title || "New Task",
         projectId: 1, // Default project ID - in real app, this would be dynamic
         assigneeId: null,
         status: "To Do",
         priority: taskData.priority || "Medium",
-        dueDate: taskData.dueDate || new Date().toISOString().split('T')[0]
+        dueDate: taskData.dueDate || new Date().toISOString().split('T')[0],
+        progress: 0
       })
       
       if (newTask) {
@@ -377,9 +375,14 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
         onClose={() => setIsAddTaskModalOpen(false)}
         onAddTask={handleCreateTask}
         initialData={{
+          id: 0, // Temporary ID
           title: `Task from: ${proposal.title}`,
-          description: proposal.content || "",
-          priority: "Medium"
+          projectId: 1,
+          assigneeId: null,
+          status: "To Do",
+          priority: "Medium",
+          dueDate: new Date().toISOString().split('T')[0],
+          progress: 0
         }}
       />
     </div>
