@@ -26,7 +26,6 @@ interface UpdateProjectModalProps {
     content: string
     author: string
     date: string
-    content: string
   }
   onUpdate: (updatedProject: Project) => void
 }
@@ -202,7 +201,7 @@ export function UpdateProjectModal({
       if (selectedFields.name) updateData.name = formData.name
       if (selectedFields.description) updateData.description = formData.description
       if (selectedFields.deliverables) updateData.deliverables = formData.deliverables.filter(d => d.trim())
-      if (selectedFields.timeline) updateData.timeline = formData.timeline.filter(t => t.milestone.trim())
+      if (selectedFields.timeline) updateData.timeline = formData.timeline.filter(t => t.milestone.trim()).map(t => ({ ...t, status: t.status as "completed" | "in-progress" | "pending" }))
       if (selectedFields.budget) updateData.budget = formData.budget
       if (selectedFields.dates) {
         updateData.startDate = formData.startDate

@@ -21,6 +21,7 @@ import { toast } from "sonner"
 import { NotesKnowledge, Project, Task } from "@/lib/types"
 import { createProject } from "@/lib/projects"
 import { createTask } from "@/lib/tasks"
+import { generateProjectData, GenerationProgress } from "@/lib/ai-service"
 import { AddProjectModal } from "@/components/add-project-modal"
 import { AddTaskModal } from "@/components/add-task-modal"
 import { ProjectCreationTypeModal, ProjectCreationOptions } from "@/components/project-creation-type-modal"
@@ -28,6 +29,7 @@ import { TaskProjectSelectorModal } from "@/components/task-project-selector-mod
 import { DeliverablesSelectorModal } from "@/components/deliverables-selector-modal"
 import { EditProposalModal } from "@/components/edit-proposal-modal"
 import { UpdateProjectModal } from "@/components/update-project-modal"
+import { GeneratingOverlay } from "@/components/generating-overlay"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -52,6 +54,14 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
   const [selectedCreationType, setSelectedCreationType] = React.useState<ProjectCreationOptions | null>(null)
   const [activeTab, setActiveTab] = React.useState("overview")
   const [currentProposal, setCurrentProposal] = React.useState(proposal)
+  
+  // AI Generation state
+  const [isGenerating, setIsGenerating] = React.useState(false)
+  const [generationProgress, setGenerationProgress] = React.useState<GenerationProgress>({
+    currentStep: '',
+    progress: 0,
+    steps: []
+  })
 
   const handleCreateProject = async (projectData: Partial<Project>) => {
     try {
@@ -114,6 +124,54 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
     setSelectedCreationType(options)
     setIsProjectCreationTypeModalOpen(false)
     setIsAddProjectModalOpen(true)
+  }
+
+  const handleAIProjectGeneration = async (options: ProjectCreationOptions) => {
+    try {
+      setIsGenerating(true)
+      setGenerationProgress({
+        currentStep: 'Starting generation...',
+        progress: 0,
+        steps: []
+      })
+
+      const generatedData = await generateProjectData({
+        proposalContent: currentProposal.content || '',
+        proposalTitle: currentProposal.title,
+        clientName: currentProposal.clientName || undefined,
+        creationOptions: options,
+        onProgress: setGenerationProgress
+      })
+
+      // Create project with generated data
+      const newProject = await createProject({
+        name: generatedData.name,
+        description: generatedData.description,
+        clientId: currentProposal.clientId || 0,
+        clientName: currentProposal.clientName || '',
+        status: 'Planned',
+        priority: generatedData.priority || 'Medium',
+        budget: generatedData.budget || 0,
+        startDate: generatedData.startDate || '',
+        dueDate: generatedData.dueDate || '',
+        deliverables: generatedData.deliverables,
+        timeline: generatedData.timeline,
+        tasks: generatedData.tasks
+      })
+
+      if (newProject) {
+        toast.success('Project created successfully with AI-generated data!')
+        setIsGenerating(false)
+        // Optionally redirect to the new project
+        // router.push(`/projects/${newProject.id}`)
+      } else {
+        throw new Error('Failed to create project')
+      }
+    } catch (error) {
+      console.error('Error generating project:', error)
+      toast.error('Failed to generate project data')
+      setIsGenerating(false)
+    }
   }
 
   const handleTaskProjectSelect = (projectId: number) => {
@@ -439,7 +497,8 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
       <ProjectCreationTypeModal
         isOpen={isProjectCreationTypeModalOpen}
         onClose={() => setIsProjectCreationTypeModalOpen(false)}
-        onSelectType={handleProjectCreationTypeSelect}
+        onCreateProject={handleProjectCreationTypeSelect}
+        onAIGenerate={handleAIProjectGeneration}
       />
 
          <TaskProjectSelectorModal
@@ -470,8 +529,7 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
           title: currentProposal.title,
           content: currentProposal.content || "",
           author: currentProposal.author,
-          date: currentProposal.date,
-          content: currentProposal.content || ""
+          date: currentProposal.date
         }}
         onUpdate={handleProjectUpdate}
       />
@@ -480,7 +538,7 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
         isOpen={isAddProjectModalOpen}
         onClose={() => setIsAddProjectModalOpen(false)}
         onAddProject={handleCreateProject}
-        creationType={selectedCreationType}
+        creationType={selectedCreationType || undefined}
         initialData={{
           name: currentProposal.title,
           description: currentProposal.content || "",
@@ -493,7 +551,7 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
         isOpen={isAddTaskModalOpen}
         onClose={() => setIsAddTaskModalOpen(false)}
         onAddTask={handleCreateTask}
-        preSelectedProjectId={selectedProjectId}
+        preSelectedProjectId={selectedProjectId || undefined}
         initialData={{
           id: 0, // Temporary ID
           title: `Task from: ${currentProposal.title}`,
@@ -504,6 +562,12 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
           dueDate: new Date().toISOString().split('T')[0],
           progress: 0
         }}
+      />
+
+      <GeneratingOverlay
+        isOpen={isGenerating}
+        progress={generationProgress}
+        onClose={() => setIsGenerating(false)}
       />
     </div>
   )

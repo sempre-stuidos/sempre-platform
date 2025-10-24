@@ -18,6 +18,7 @@ interface ProjectCreationTypeModalProps {
   isOpen: boolean
   onClose: () => void
   onCreateProject: (options: ProjectCreationOptions) => void
+  onAIGenerate?: (options: ProjectCreationOptions) => void
 }
 
 const creationOptions = [
@@ -51,7 +52,7 @@ const creationOptions = [
   }
 ]
 
-export function ProjectCreationTypeModal({ isOpen, onClose, onCreateProject }: ProjectCreationTypeModalProps) {
+export function ProjectCreationTypeModal({ isOpen, onClose, onCreateProject, onAIGenerate }: ProjectCreationTypeModalProps) {
   const [selectedOptions, setSelectedOptions] = useState<ProjectCreationOptions>({
     basic: true, // Basic info is always required
     timeline: false,
@@ -64,7 +65,11 @@ export function ProjectCreationTypeModal({ isOpen, onClose, onCreateProject }: P
   }
 
   const handleCreate = () => {
-    onCreateProject(selectedOptions)
+    if (onAIGenerate) {
+      onAIGenerate(selectedOptions)
+    } else {
+      onCreateProject(selectedOptions)
+    }
     onClose()
   }
 

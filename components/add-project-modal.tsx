@@ -35,11 +35,11 @@ interface NewProject {
   budget: number
   isOngoing: boolean
   deliverables?: string[]
-  timeline?: Array<{ milestone: string; date: string; status: string }>
-  tasks?: Array<{ title: string; assigneeId: number | null; priority: string; dueDate: string }>
+  timeline?: Array<{ milestone: string; date: string; status: "completed" | "in-progress" | "pending" }>
+  tasks?: Array<{ id: number; title: string; status: "completed" | "in-progress" | "pending"; deliverable: string; priority: string; dueDate: string }>
 }
 
-export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, isEdit = false, creationType = "basic" }: AddProjectModalProps) {
+export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, isEdit = false, creationType }: AddProjectModalProps) {
   const [clients, setClients] = useState<Client[]>([])
   const [formData, setFormData] = useState<NewProject>(() => {
     if (initialData && isEdit) {
@@ -419,7 +419,7 @@ export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, is
                       value={item.status}
                       onValueChange={(value) => {
                         const newTimeline = [...(formData.timeline || [])]
-                        newTimeline[index] = { ...newTimeline[index], status: value }
+                        newTimeline[index] = { ...newTimeline[index], status: value as "completed" | "in-progress" | "pending" }
                         setFormData({ ...formData, timeline: newTimeline })
                       }}
                     >
@@ -450,7 +450,7 @@ export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, is
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const newTimeline = [...(formData.timeline || []), { milestone: "", date: "", status: "pending" }]
+                    const newTimeline = [...(formData.timeline || []), { milestone: "", date: "", status: "pending" as const }]
                     setFormData({ ...formData, timeline: newTimeline })
                   }}
                 >
@@ -519,7 +519,7 @@ export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, is
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const newTasks = [...(formData.tasks || []), { title: "", assigneeId: null, priority: "Medium", dueDate: "" }]
+                    const newTasks = [...(formData.tasks || []), { id: 0, title: "", status: "pending" as const, deliverable: "", priority: "Medium", dueDate: "" }]
                     setFormData({ ...formData, tasks: newTasks })
                   }}
                 >

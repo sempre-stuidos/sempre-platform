@@ -140,8 +140,8 @@ export function AddNoteModal({ isOpen, onClose, onAddNote, initialData, isEdit =
         title: "",
         type: "Proposal",
         status: "Draft",
-        client: "",
-        project: "",
+        clientId: null,
+        projectId: null,
         date: new Date().toISOString().split('T')[0],
         author: currentUser?.name || "",
         content: "",
@@ -153,14 +153,14 @@ export function AddNoteModal({ isOpen, onClose, onAddNote, initialData, isEdit =
 
   const handleClose = () => {
     setFormData({
-      title: "",
-      type: "Proposal",
-      status: "Draft",
-      client: "",
-      project: "",
-      date: new Date().toISOString().split('T')[0],
-      author: currentUser?.name || "",
-      content: "",
+        title: "",
+        type: "Proposal",
+        status: "Draft",
+        clientId: null,
+        projectId: null,
+        date: new Date().toISOString().split('T')[0],
+        author: currentUser?.name || "",
+        content: "",
     })
     setErrors({})
     onClose()
