@@ -297,10 +297,10 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg flex items-center gap-2">
                           <IconTarget className="h-5 w-5" />
-                          Create Project
+                          Generate Project
                         </CardTitle>
                         <CardDescription>
-                          Start a new project based on this proposal
+                          Generate a new project based on this proposal
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -318,7 +318,7 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
                             className="w-full"
                           >
                             <IconPlus className="h-4 w-4 mr-2" />
-                            Create Project
+                            Generate Project
                           </Button>
                         )}
                       </CardContent>
@@ -328,10 +328,10 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg flex items-center gap-2">
                           <IconCheck className="h-5 w-5" />
-                          Create Task
+                          Generate Task
                         </CardTitle>
                         <CardDescription>
-                          Add specific tasks from this proposal
+                          Generate specific tasks from this proposal
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -341,7 +341,7 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
                           className="w-full"
                         >
                           <IconPlus className="h-4 w-4 mr-2" />
-                          Create Task
+                          Generate Task
                         </Button>
                       </CardContent>
                     </Card>
@@ -350,7 +350,7 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
                   <Alert>
                     <IconSettings className="h-4 w-4" />
                     <AlertDescription>
-                      Use the buttons above to create projects or tasks based on this proposal. 
+                      Use the buttons above to generate projects or tasks based on this proposal. 
                       The content will be pre-populated with relevant information from the proposal.
                     </AlertDescription>
                   </Alert>
@@ -383,7 +383,7 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
                   variant="outline"
                 >
                   <IconTarget className="h-4 w-4 mr-2" />
-                  Create Project
+                  Generate Project
                 </Button>
               )}
               <Button 
@@ -392,7 +392,7 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
                 variant="outline"
               >
                 <IconCheck className="h-4 w-4 mr-2" />
-                Create Task
+                Generate Task
               </Button>
               <Button 
                 onClick={() => router.push(`/notes-knowledge`)}
