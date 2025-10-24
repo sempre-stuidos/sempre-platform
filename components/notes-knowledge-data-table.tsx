@@ -213,27 +213,27 @@ const createColumns = (onEditNote?: (note: NotesKnowledge) => void, onDeleteNote
     },
   },
   {
-    accessorKey: "client",
+    accessorKey: "clientName",
     header: "Client",
     cell: ({ row }) => (
       <div className="text-sm">
-        {row.original.client === "" || row.original.client === "N/A" ? (
+        {!row.original.clientName || row.original.clientName === "" ? (
           <span className="text-muted-foreground">-</span>
         ) : (
-          row.original.client
+          row.original.clientName
         )}
       </div>
     ),
   },
   {
-    accessorKey: "project",
+    accessorKey: "projectName",
     header: "Project",
     cell: ({ row }) => (
       <div className="text-sm">
-        {row.original.project === "" || row.original.project === "Template" ? (
+        {!row.original.projectName || row.original.projectName === "" ? (
           <span className="text-muted-foreground">-</span>
         ) : (
-          row.original.project
+          row.original.projectName
         )}
       </div>
     ),
@@ -836,11 +836,11 @@ function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit
                   </div>
                   <div>
                     <span className="font-medium text-muted-foreground">Client:</span>
-                    <p className="mt-1">{item.client || "-"}</p>
+                    <p className="mt-1">{item.clientName || "-"}</p>
                   </div>
                   <div>
                     <span className="font-medium text-muted-foreground">Project:</span>
-                    <p className="mt-1">{item.project || "-"}</p>
+                    <p className="mt-1">{item.projectName || "-"}</p>
                   </div>
                   <div>
                     <span className="font-medium text-muted-foreground">Author:</span>
@@ -875,11 +875,11 @@ function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit
         <div className="space-y-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <span className="font-medium">Client:</span>
-            <span>{item.client || "-"}</span>
+            <span>{item.clientName || "-"}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="font-medium">Project:</span>
-            <span>{item.project || "-"}</span>
+            <span>{item.projectName || "-"}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="font-medium">Author:</span>
@@ -985,11 +985,11 @@ function TableCellViewer({ item }: { item: NotesKnowledge }) {
             </div>
             <div>
               <span className="font-medium text-muted-foreground">Client:</span>
-              <p className="mt-1">{item.client || "-"}</p>
+              <p className="mt-1">{item.clientName || "-"}</p>
             </div>
             <div>
               <span className="font-medium text-muted-foreground">Project:</span>
-              <p className="mt-1">{item.project || "-"}</p>
+              <p className="mt-1">{item.projectName || "-"}</p>
             </div>
             <div>
               <span className="font-medium text-muted-foreground">Author:</span>

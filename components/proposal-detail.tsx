@@ -23,6 +23,11 @@ import { createProject } from "@/lib/projects"
 import { createTask } from "@/lib/tasks"
 import { AddProjectModal } from "@/components/add-project-modal"
 import { AddTaskModal } from "@/components/add-task-modal"
+import { ProjectCreationTypeModal, ProjectCreationOptions } from "@/components/project-creation-type-modal"
+import { TaskProjectSelectorModal } from "@/components/task-project-selector-modal"
+import { DeliverablesSelectorModal } from "@/components/deliverables-selector-modal"
+import { EditProposalModal } from "@/components/edit-proposal-modal"
+import { UpdateProjectModal } from "@/components/update-project-modal"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,14 +43,22 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
   const router = useRouter()
   const [isAddProjectModalOpen, setIsAddProjectModalOpen] = React.useState(false)
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = React.useState(false)
+  const [isProjectCreationTypeModalOpen, setIsProjectCreationTypeModalOpen] = React.useState(false)
+  const [isTaskProjectSelectorModalOpen, setIsTaskProjectSelectorModalOpen] = React.useState(false)
+  const [isDeliverablesSelectorModalOpen, setIsDeliverablesSelectorModalOpen] = React.useState(false)
+  const [isEditProposalModalOpen, setIsEditProposalModalOpen] = React.useState(false)
+  const [isUpdateProjectModalOpen, setIsUpdateProjectModalOpen] = React.useState(false)
+  const [selectedProjectId, setSelectedProjectId] = React.useState<number | null>(null)
+  const [selectedCreationType, setSelectedCreationType] = React.useState<ProjectCreationOptions | null>(null)
   const [activeTab, setActiveTab] = React.useState("overview")
+  const [currentProposal, setCurrentProposal] = React.useState(proposal)
 
   const handleCreateProject = async (projectData: Partial<Project>) => {
     try {
       const newProject = await createProject({
         ...projectData,
-        clientId: 1, // Default client ID - in real app, this would be dynamic
-        clientName: proposal.client || "Unknown Client",
+        clientId: currentProposal.clientId || 1, // Use proposal's client or default
+        clientName: currentProposal.clientName || "Unknown Client",
         status: "Planned",
         startDate: new Date().toISOString().split('T')[0],
         budget: projectData.budget || 0,
@@ -74,7 +87,7 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
     try {
       const newTask = await createTask({
         title: taskData.title || "New Task",
-        projectId: 1, // Default project ID - in real app, this would be dynamic
+        projectId: selectedProjectId || 1, // Use selected project or default
         assigneeId: null,
         status: "To Do",
         priority: taskData.priority || "Medium",
@@ -85,6 +98,7 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
       if (newTask) {
         toast.success('Task created successfully')
         setIsAddTaskModalOpen(false)
+        setSelectedProjectId(null)
         // Optionally redirect to the new task
         // router.push(`/tasks/${newTask.id}`)
       } else {
@@ -94,6 +108,36 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
       console.error('Error creating task:', error)
       toast.error('Failed to create task')
     }
+  }
+
+  const handleProjectCreationTypeSelect = (options: ProjectCreationOptions) => {
+    setSelectedCreationType(options)
+    setIsProjectCreationTypeModalOpen(false)
+    setIsAddProjectModalOpen(true)
+  }
+
+  const handleTaskProjectSelect = (projectId: number) => {
+    setSelectedProjectId(projectId)
+    setIsTaskProjectSelectorModalOpen(false)
+    setIsDeliverablesSelectorModalOpen(true)
+  }
+
+  const handleCreateTasksFromDeliverables = (deliverableIds: number[]) => {
+    // Create tasks for selected deliverables
+    console.log('Creating tasks for deliverables:', deliverableIds)
+    // TODO: Implement task creation logic
+    setIsDeliverablesSelectorModalOpen(false)
+    setSelectedProjectId(null)
+  }
+
+  const handleProposalUpdate = (updatedProposal: NotesKnowledge) => {
+    setCurrentProposal(updatedProposal)
+    setIsEditProposalModalOpen(false)
+  }
+
+  const handleProjectUpdate = (updatedProject: Project) => {
+    toast.success('Project updated successfully')
+    setIsUpdateProjectModalOpen(false)
   }
 
   const getStatusColor = (status: string) => {
@@ -133,7 +177,11 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setIsEditProposalModalOpen(true)}
+          >
             <IconEdit className="h-4 w-4 mr-2" />
             Edit Proposal
           </Button>
@@ -168,30 +216,39 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
                       <label className="text-sm font-medium text-muted-foreground">Client</label>
                       <p className="flex items-center gap-2 mt-1">
                         <IconBuilding className="h-4 w-4" />
-                        {proposal.client || "Not specified"}
+                        {currentProposal.clientName || "Not specified"}
                       </p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Author</label>
                       <p className="flex items-center gap-2 mt-1">
                         <IconUser className="h-4 w-4" />
-                        {proposal.author}
+                        {currentProposal.author}
                       </p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Date</label>
                       <p className="flex items-center gap-2 mt-1">
                         <IconCalendar className="h-4 w-4" />
-                        {proposal.date}
+                        {currentProposal.date}
                       </p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Type</label>
                       <p className="flex items-center gap-2 mt-1">
                         <IconClipboardText className="h-4 w-4" />
-                        {proposal.type}
+                        {currentProposal.type}
                       </p>
                     </div>
+                    {currentProposal.projectName && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Connected Project</label>
+                        <p className="flex items-center gap-2 mt-1">
+                          <IconTarget className="h-4 w-4" />
+                          {currentProposal.projectName}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -207,9 +264,9 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {proposal.content ? (
+                  {currentProposal.content ? (
                     <div className="prose prose-sm max-w-none">
-                      <p className="whitespace-pre-wrap">{proposal.content}</p>
+                      <p className="whitespace-pre-wrap">{currentProposal.content}</p>
                     </div>
                   ) : (
                     <Alert>
@@ -247,13 +304,23 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <Button 
-                          onClick={() => setIsAddProjectModalOpen(true)}
-                          className="w-full"
-                        >
-                          <IconPlus className="h-4 w-4 mr-2" />
-                          Create Project
-                        </Button>
+                        {currentProposal.projectId ? (
+                          <Button 
+                            onClick={() => setIsUpdateProjectModalOpen(true)}
+                            className="w-full"
+                          >
+                            <IconEdit className="h-4 w-4 mr-2" />
+                            Update Project
+                          </Button>
+                        ) : (
+                          <Button 
+                            onClick={() => setIsProjectCreationTypeModalOpen(true)}
+                            className="w-full"
+                          >
+                            <IconPlus className="h-4 w-4 mr-2" />
+                            Create Project
+                          </Button>
+                        )}
                       </CardContent>
                     </Card>
 
@@ -269,7 +336,7 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
                       </CardHeader>
                       <CardContent>
                         <Button 
-                          onClick={() => setIsAddTaskModalOpen(true)}
+                          onClick={() => setIsTaskProjectSelectorModalOpen(true)}
                           variant="outline"
                           className="w-full"
                         >
@@ -300,16 +367,27 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
               <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {currentProposal.projectId ? (
+                <Button 
+                  onClick={() => setIsUpdateProjectModalOpen(true)}
+                  className="w-full justify-start"
+                  variant="outline"
+                >
+                  <IconEdit className="h-4 w-4 mr-2" />
+                  Update Project
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => setIsProjectCreationTypeModalOpen(true)}
+                  className="w-full justify-start"
+                  variant="outline"
+                >
+                  <IconTarget className="h-4 w-4 mr-2" />
+                  Create Project
+                </Button>
+              )}
               <Button 
-                onClick={() => setIsAddProjectModalOpen(true)}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <IconTarget className="h-4 w-4 mr-2" />
-                Create Project
-              </Button>
-              <Button 
-                onClick={() => setIsAddTaskModalOpen(true)}
+                onClick={() => setIsTaskProjectSelectorModalOpen(true)}
                 className="w-full justify-start"
                 variant="outline"
               >
@@ -337,18 +415,18 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
                   <span className="text-sm text-muted-foreground">Status</span>
                   <Badge 
                     variant="outline" 
-                    className={getStatusColor(proposal.status)}
+                    className={getStatusColor(currentProposal.status)}
                   >
-                    {proposal.status}
+                    {currentProposal.status}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Created</span>
-                  <span className="text-sm">{proposal.date}</span>
+                  <span className="text-sm">{currentProposal.date}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Author</span>
-                  <span className="text-sm">{proposal.author}</span>
+                  <span className="text-sm">{currentProposal.author}</span>
                 </div>
               </div>
             </CardContent>
@@ -358,14 +436,55 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
       </div>
 
       {/* Modals */}
+      <ProjectCreationTypeModal
+        isOpen={isProjectCreationTypeModalOpen}
+        onClose={() => setIsProjectCreationTypeModalOpen(false)}
+        onSelectType={handleProjectCreationTypeSelect}
+      />
+
+         <TaskProjectSelectorModal
+           isOpen={isTaskProjectSelectorModalOpen}
+           onClose={() => setIsTaskProjectSelectorModalOpen(false)}
+           onSelectProject={handleTaskProjectSelect}
+         />
+
+         <DeliverablesSelectorModal
+           isOpen={isDeliverablesSelectorModalOpen}
+           onClose={() => setIsDeliverablesSelectorModalOpen(false)}
+           projectId={selectedProjectId || 0}
+           onCreateTasks={handleCreateTasksFromDeliverables}
+         />
+
+      <EditProposalModal
+        isOpen={isEditProposalModalOpen}
+        onClose={() => setIsEditProposalModalOpen(false)}
+        proposal={currentProposal}
+        onUpdate={handleProposalUpdate}
+      />
+
+      <UpdateProjectModal
+        isOpen={isUpdateProjectModalOpen}
+        onClose={() => setIsUpdateProjectModalOpen(false)}
+        projectId={currentProposal.projectId!}
+        proposalData={{
+          title: currentProposal.title,
+          content: currentProposal.content || "",
+          author: currentProposal.author,
+          date: currentProposal.date,
+          content: currentProposal.content || ""
+        }}
+        onUpdate={handleProjectUpdate}
+      />
+
       <AddProjectModal
         isOpen={isAddProjectModalOpen}
         onClose={() => setIsAddProjectModalOpen(false)}
         onAddProject={handleCreateProject}
+        creationType={selectedCreationType}
         initialData={{
-          name: proposal.title,
-          description: proposal.content || "",
-          clientName: proposal.client || "",
+          name: currentProposal.title,
+          description: currentProposal.content || "",
+          clientName: currentProposal.clientName || "",
           priority: "Medium"
         }}
       />
@@ -374,10 +493,11 @@ export function ProposalDetail({ proposal }: ProposalDetailProps) {
         isOpen={isAddTaskModalOpen}
         onClose={() => setIsAddTaskModalOpen(false)}
         onAddTask={handleCreateTask}
+        preSelectedProjectId={selectedProjectId}
         initialData={{
           id: 0, // Temporary ID
-          title: `Task from: ${proposal.title}`,
-          projectId: 1,
+          title: `Task from: ${currentProposal.title}`,
+          projectId: selectedProjectId || 1,
           assigneeId: null,
           status: "To Do",
           priority: "Medium",

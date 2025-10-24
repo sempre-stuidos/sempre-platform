@@ -25,8 +25,8 @@ interface NewNote {
   title: string
   type: "Proposal" | "Meeting Notes" | "Internal Playbook" | "Research Notes" | "Bug Report" | "Feature Request" | "Standup Notes" | "Documentation"
   status: "Draft" | "Published" | "Archived" | "Template" | "Open" | "Under Review"
-  client: string
-  project: string
+  clientId: number | null
+  projectId: number | null
   date: string
   author: string
   content: string
@@ -43,8 +43,8 @@ export function AddNoteModal({ isOpen, onClose, onAddNote, initialData, isEdit =
         title: initialData.title || "",
         type: initialData.type || "Proposal",
         status: initialData.status || "Draft",
-        client: initialData.client || "",
-        project: initialData.project || "",
+        clientId: initialData.clientId || null,
+        projectId: initialData.projectId || null,
         date: initialData.date || "",
         author: initialData.author || currentUser?.name || "",
         content: initialData.content || "",
@@ -54,8 +54,8 @@ export function AddNoteModal({ isOpen, onClose, onAddNote, initialData, isEdit =
       title: "",
       type: "Proposal",
       status: "Draft",
-      client: "",
-      project: "",
+      clientId: null,
+      projectId: null,
       date: new Date().toISOString().split('T')[0],
       author: currentUser?.name || "",
       content: "",
@@ -86,8 +86,8 @@ export function AddNoteModal({ isOpen, onClose, onAddNote, initialData, isEdit =
         title: initialData.title || "",
         type: initialData.type || "Proposal",
         status: initialData.status || "Draft",
-        client: initialData.client || "",
-        project: initialData.project || "",
+        clientId: initialData.clientId || null,
+        projectId: initialData.projectId || null,
         date: initialData.date || "",
         author: initialData.author || currentUser?.name || "",
         content: initialData.content || "",
@@ -98,8 +98,8 @@ export function AddNoteModal({ isOpen, onClose, onAddNote, initialData, isEdit =
         title: "",
         type: "Proposal",
         status: "Draft",
-        client: "",
-        project: "",
+        clientId: null,
+        projectId: null,
         date: new Date().toISOString().split('T')[0],
         author: currentUser?.name || "",
         content: "",
@@ -240,8 +240,8 @@ export function AddNoteModal({ isOpen, onClose, onAddNote, initialData, isEdit =
             <div className="space-y-2">
               <Label htmlFor="client">Client</Label>
               <Select
-                value={formData.client || "unassigned"}
-                onValueChange={(value) => setFormData({ ...formData, client: value === "unassigned" ? "" : value })}
+                value={formData.clientId ? formData.clientId.toString() : "unassigned"}
+                onValueChange={(value) => setFormData({ ...formData, clientId: value === "unassigned" ? null : parseInt(value) })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select client (optional)" />
@@ -249,7 +249,7 @@ export function AddNoteModal({ isOpen, onClose, onAddNote, initialData, isEdit =
                 <SelectContent>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
                   {clients.map((client) => (
-                    <SelectItem key={`client-${client.id}`} value={client.name}>
+                    <SelectItem key={`client-${client.id}`} value={client.id.toString()}>
                       {client.name}
                     </SelectItem>
                   ))}
@@ -260,8 +260,8 @@ export function AddNoteModal({ isOpen, onClose, onAddNote, initialData, isEdit =
             <div className="space-y-2">
               <Label htmlFor="project">Project</Label>
               <Select
-                value={formData.project || "unassigned"}
-                onValueChange={(value) => setFormData({ ...formData, project: value === "unassigned" ? "" : value })}
+                value={formData.projectId ? formData.projectId.toString() : "unassigned"}
+                onValueChange={(value) => setFormData({ ...formData, projectId: value === "unassigned" ? null : parseInt(value) })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select project (optional)" />
@@ -269,7 +269,7 @@ export function AddNoteModal({ isOpen, onClose, onAddNote, initialData, isEdit =
                 <SelectContent>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
                   {projects.map((project) => (
-                    <SelectItem key={`project-${project.id}`} value={project.name}>
+                    <SelectItem key={`project-${project.id}`} value={project.id.toString()}>
                       {project.name}
                     </SelectItem>
                   ))}

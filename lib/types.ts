@@ -131,8 +131,10 @@ export interface NotesKnowledge {
   title: string;
   type: 'Proposal' | 'Meeting Notes' | 'Internal Playbook' | 'Research Notes' | 'Bug Report' | 'Feature Request' | 'Standup Notes' | 'Documentation';
   status: 'Draft' | 'Published' | 'Archived' | 'Template' | 'Open' | 'Under Review';
-  client: string;
-  project: string;
+  clientId: number | null;
+  clientName?: string;
+  projectId: number | null;
+  projectName?: string;
   date: string;
   author: string;
   content?: string;

@@ -8,8 +8,10 @@ function transformNotesKnowledgeRecord(record: Record<string, unknown>): NotesKn
     title: record.title as string,
     type: record.type as NotesKnowledge['type'],
     status: record.status as NotesKnowledge['status'],
-    client: (record.client as string) || '',
-    project: (record.project as string) || '',
+    clientId: record.client_id as number | null,
+    clientName: record.client_name as string | undefined,
+    projectId: record.project_id as number | null,
+    projectName: record.project_name as string | undefined,
     date: record.date as string,
     author: record.author as string,
     content: (record.content as string) || '',
@@ -24,8 +26,8 @@ function transformNotesKnowledgeToRecord(notesKnowledge: Partial<NotesKnowledge>
     title: notesKnowledge.title,
     type: notesKnowledge.type,
     status: notesKnowledge.status,
-    client: notesKnowledge.client || null,
-    project: notesKnowledge.project || null,
+    client_id: notesKnowledge.clientId || null,
+    project_id: notesKnowledge.projectId || null,
     date: notesKnowledge.date,
     author: notesKnowledge.author,
     content: notesKnowledge.content || null,
@@ -48,7 +50,29 @@ export async function getAllNotesKnowledge(): Promise<NotesKnowledge[]> {
       return [];
     }
 
-    return notesKnowledge.map(transformNotesKnowledgeRecord);
+    // Get client and project names separately
+    const clientIds = [...new Set(notesKnowledge.map(n => n.client_id).filter(Boolean))];
+    const projectIds = [...new Set(notesKnowledge.map(n => n.project_id).filter(Boolean))];
+
+    const [clientsData, projectsData] = await Promise.all([
+      clientIds.length > 0 ? supabase.from('clients').select('id, name').in('id', clientIds) : { data: [] },
+      projectIds.length > 0 ? supabase.from('projects').select('id, name').in('id', projectIds) : { data: [] }
+    ]);
+
+    const clientsMap = new Map((clientsData.data || []).map(c => [c.id, c.name]));
+    const projectsMap = new Map((projectsData.data || []).map(p => [p.id, p.name]));
+
+    return notesKnowledge.map(record => {
+      const transformed = transformNotesKnowledgeRecord(record);
+      // Add the joined names
+      if (record.client_id && clientsMap.has(record.client_id)) {
+        transformed.clientName = clientsMap.get(record.client_id);
+      }
+      if (record.project_id && projectsMap.has(record.project_id)) {
+        transformed.projectName = projectsMap.get(record.project_id);
+      }
+      return transformed;
+    });
   } catch (error) {
     console.error('Error in getAllNotesKnowledge:', error);
     return [];
@@ -72,7 +96,34 @@ export async function getNotesKnowledgeById(id: number): Promise<NotesKnowledge 
       return null;
     }
 
-    return transformNotesKnowledgeRecord(notesKnowledge);
+    const transformed = transformNotesKnowledgeRecord(notesKnowledge);
+    
+    // Get client and project names separately if they exist
+    if (notesKnowledge.client_id) {
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('name')
+        .eq('id', notesKnowledge.client_id)
+        .single();
+      
+      if (clientData) {
+        transformed.clientName = clientData.name;
+      }
+    }
+
+    if (notesKnowledge.project_id) {
+      const { data: projectData } = await supabase
+        .from('projects')
+        .select('name')
+        .eq('id', notesKnowledge.project_id)
+        .single();
+      
+      if (projectData) {
+        transformed.projectName = projectData.name;
+      }
+    }
+
+    return transformed;
   } catch (error) {
     console.error('Error in getNotesKnowledgeById:', error);
     return null;
@@ -173,7 +224,29 @@ export async function getNotesKnowledgeByType(type: NotesKnowledge['type']): Pro
       return [];
     }
 
-    return notesKnowledge.map(transformNotesKnowledgeRecord);
+    // Get client and project names separately
+    const clientIds = [...new Set(notesKnowledge.map(n => n.client_id).filter(Boolean))];
+    const projectIds = [...new Set(notesKnowledge.map(n => n.project_id).filter(Boolean))];
+
+    const [clientsData, projectsData] = await Promise.all([
+      clientIds.length > 0 ? supabase.from('clients').select('id, name').in('id', clientIds) : { data: [] },
+      projectIds.length > 0 ? supabase.from('projects').select('id, name').in('id', projectIds) : { data: [] }
+    ]);
+
+    const clientsMap = new Map((clientsData.data || []).map(c => [c.id, c.name]));
+    const projectsMap = new Map((projectsData.data || []).map(p => [p.id, p.name]));
+
+    return notesKnowledge.map(record => {
+      const transformed = transformNotesKnowledgeRecord(record);
+      // Add the joined names
+      if (record.client_id && clientsMap.has(record.client_id)) {
+        transformed.clientName = clientsMap.get(record.client_id);
+      }
+      if (record.project_id && projectsMap.has(record.project_id)) {
+        transformed.projectName = projectsMap.get(record.project_id);
+      }
+      return transformed;
+    });
   } catch (error) {
     console.error('Error in getNotesKnowledgeByType:', error);
     return [];
@@ -197,19 +270,41 @@ export async function getNotesKnowledgeByStatus(status: NotesKnowledge['status']
       return [];
     }
 
-    return notesKnowledge.map(transformNotesKnowledgeRecord);
+    // Get client and project names separately
+    const clientIds = [...new Set(notesKnowledge.map(n => n.client_id).filter(Boolean))];
+    const projectIds = [...new Set(notesKnowledge.map(n => n.project_id).filter(Boolean))];
+
+    const [clientsData, projectsData] = await Promise.all([
+      clientIds.length > 0 ? supabase.from('clients').select('id, name').in('id', clientIds) : { data: [] },
+      projectIds.length > 0 ? supabase.from('projects').select('id, name').in('id', projectIds) : { data: [] }
+    ]);
+
+    const clientsMap = new Map((clientsData.data || []).map(c => [c.id, c.name]));
+    const projectsMap = new Map((projectsData.data || []).map(p => [p.id, p.name]));
+
+    return notesKnowledge.map(record => {
+      const transformed = transformNotesKnowledgeRecord(record);
+      // Add the joined names
+      if (record.client_id && clientsMap.has(record.client_id)) {
+        transformed.clientName = clientsMap.get(record.client_id);
+      }
+      if (record.project_id && projectsMap.has(record.project_id)) {
+        transformed.projectName = projectsMap.get(record.project_id);
+      }
+      return transformed;
+    });
   } catch (error) {
     console.error('Error in getNotesKnowledgeByStatus:', error);
     return [];
   }
 }
 
-export async function getNotesKnowledgeByClient(client: string): Promise<NotesKnowledge[]> {
+export async function getNotesKnowledgeByClient(clientId: number): Promise<NotesKnowledge[]> {
   try {
     const { data: notesKnowledge, error } = await supabase
       .from('notes_knowledge')
       .select('*')
-      .eq('client', client)
+      .eq('client_id', clientId)
       .order('date', { ascending: false });
 
     if (error) {
@@ -221,7 +316,29 @@ export async function getNotesKnowledgeByClient(client: string): Promise<NotesKn
       return [];
     }
 
-    return notesKnowledge.map(transformNotesKnowledgeRecord);
+    // Get client and project names separately
+    const clientIds = [...new Set(notesKnowledge.map(n => n.client_id).filter(Boolean))];
+    const projectIds = [...new Set(notesKnowledge.map(n => n.project_id).filter(Boolean))];
+
+    const [clientsData, projectsData] = await Promise.all([
+      clientIds.length > 0 ? supabase.from('clients').select('id, name').in('id', clientIds) : { data: [] },
+      projectIds.length > 0 ? supabase.from('projects').select('id, name').in('id', projectIds) : { data: [] }
+    ]);
+
+    const clientsMap = new Map((clientsData.data || []).map(c => [c.id, c.name]));
+    const projectsMap = new Map((projectsData.data || []).map(p => [p.id, p.name]));
+
+    return notesKnowledge.map(record => {
+      const transformed = transformNotesKnowledgeRecord(record);
+      // Add the joined names
+      if (record.client_id && clientsMap.has(record.client_id)) {
+        transformed.clientName = clientsMap.get(record.client_id);
+      }
+      if (record.project_id && projectsMap.has(record.project_id)) {
+        transformed.projectName = projectsMap.get(record.project_id);
+      }
+      return transformed;
+    });
   } catch (error) {
     console.error('Error in getNotesKnowledgeByClient:', error);
     return [];
@@ -245,7 +362,29 @@ export async function getNotesKnowledgeByAuthor(author: string): Promise<NotesKn
       return [];
     }
 
-    return notesKnowledge.map(transformNotesKnowledgeRecord);
+    // Get client and project names separately
+    const clientIds = [...new Set(notesKnowledge.map(n => n.client_id).filter(Boolean))];
+    const projectIds = [...new Set(notesKnowledge.map(n => n.project_id).filter(Boolean))];
+
+    const [clientsData, projectsData] = await Promise.all([
+      clientIds.length > 0 ? supabase.from('clients').select('id, name').in('id', clientIds) : { data: [] },
+      projectIds.length > 0 ? supabase.from('projects').select('id, name').in('id', projectIds) : { data: [] }
+    ]);
+
+    const clientsMap = new Map((clientsData.data || []).map(c => [c.id, c.name]));
+    const projectsMap = new Map((projectsData.data || []).map(p => [p.id, p.name]));
+
+    return notesKnowledge.map(record => {
+      const transformed = transformNotesKnowledgeRecord(record);
+      // Add the joined names
+      if (record.client_id && clientsMap.has(record.client_id)) {
+        transformed.clientName = clientsMap.get(record.client_id);
+      }
+      if (record.project_id && projectsMap.has(record.project_id)) {
+        transformed.projectName = projectsMap.get(record.project_id);
+      }
+      return transformed;
+    });
   } catch (error) {
     console.error('Error in getNotesKnowledgeByAuthor:', error);
     return [];

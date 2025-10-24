@@ -1,15 +1,18 @@
 "use client"
 
-import { IconX } from "@tabler/icons-react"
+import { IconX, IconPlus, IconCheck } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
 import { useState, useEffect } from "react"
 import { getAllClients } from "@/lib/clients"
 import { Client } from "@/lib/types"
+import { ProjectCreationOptions } from "./project-creation-type-modal"
 
 interface AddProjectModalProps {
   isOpen: boolean
@@ -17,6 +20,7 @@ interface AddProjectModalProps {
   onAddProject: (project: NewProject) => void
   initialData?: Partial<NewProject>
   isEdit?: boolean
+  creationType?: ProjectCreationOptions
 }
 
 interface NewProject {
@@ -30,9 +34,12 @@ interface NewProject {
   dueDate: string
   budget: number
   isOngoing: boolean
+  deliverables?: string[]
+  timeline?: Array<{ milestone: string; date: string; status: string }>
+  tasks?: Array<{ title: string; assigneeId: number | null; priority: string; dueDate: string }>
 }
 
-export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, isEdit = false }: AddProjectModalProps) {
+export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, isEdit = false, creationType = "basic" }: AddProjectModalProps) {
   const [clients, setClients] = useState<Client[]>([])
   const [formData, setFormData] = useState<NewProject>(() => {
     if (initialData && isEdit) {
@@ -327,6 +334,201 @@ export function AddProjectModal({ isOpen, onClose, onAddProject, initialData, is
             />
             {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
           </div>
+
+          {/* Deliverables Section */}
+          {(creationType?.deliverables) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Project Deliverables</CardTitle>
+                <CardDescription>
+                  Define the expected deliverables for this project
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {formData.deliverables?.map((deliverable, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      value={deliverable}
+                      onChange={(e) => {
+                        const newDeliverables = [...(formData.deliverables || [])]
+                        newDeliverables[index] = e.target.value
+                        setFormData({ ...formData, deliverables: newDeliverables })
+                      }}
+                      placeholder="Enter deliverable"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newDeliverables = formData.deliverables?.filter((_, i) => i !== index) || []
+                        setFormData({ ...formData, deliverables: newDeliverables })
+                      }}
+                    >
+                      <IconX className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newDeliverables = [...(formData.deliverables || []), ""]
+                    setFormData({ ...formData, deliverables: newDeliverables })
+                  }}
+                >
+                  <IconPlus className="h-4 w-4 mr-2" />
+                  Add Deliverable
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Timeline Section */}
+          {(creationType?.timeline) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Project Timeline</CardTitle>
+                <CardDescription>
+                  Set up project milestones and timeline
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {formData.timeline?.map((item, index) => (
+                  <div key={index} className="grid grid-cols-4 gap-2">
+                    <Input
+                      value={item.milestone}
+                      onChange={(e) => {
+                        const newTimeline = [...(formData.timeline || [])]
+                        newTimeline[index] = { ...newTimeline[index], milestone: e.target.value }
+                        setFormData({ ...formData, timeline: newTimeline })
+                      }}
+                      placeholder="Milestone"
+                    />
+                    <Input
+                      type="date"
+                      value={item.date}
+                      onChange={(e) => {
+                        const newTimeline = [...(formData.timeline || [])]
+                        newTimeline[index] = { ...newTimeline[index], date: e.target.value }
+                        setFormData({ ...formData, timeline: newTimeline })
+                      }}
+                    />
+                    <Select
+                      value={item.status}
+                      onValueChange={(value) => {
+                        const newTimeline = [...(formData.timeline || [])]
+                        newTimeline[index] = { ...newTimeline[index], status: value }
+                        setFormData({ ...formData, timeline: newTimeline })
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="in-progress">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newTimeline = formData.timeline?.filter((_, i) => i !== index) || []
+                        setFormData({ ...formData, timeline: newTimeline })
+                      }}
+                    >
+                      <IconX className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newTimeline = [...(formData.timeline || []), { milestone: "", date: "", status: "pending" }]
+                    setFormData({ ...formData, timeline: newTimeline })
+                  }}
+                >
+                  <IconPlus className="h-4 w-4 mr-2" />
+                  Add Timeline Item
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Tasks Section */}
+          {(creationType?.tasks) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Initial Tasks</CardTitle>
+                <CardDescription>
+                  Set up initial tasks for this project
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {formData.tasks?.map((task, index) => (
+                  <div key={index} className="grid grid-cols-2 gap-2">
+                    <Input
+                      value={task.title}
+                      onChange={(e) => {
+                        const newTasks = [...(formData.tasks || [])]
+                        newTasks[index] = { ...newTasks[index], title: e.target.value }
+                        setFormData({ ...formData, tasks: newTasks })
+                      }}
+                      placeholder="Task title"
+                    />
+                    <div className="flex gap-2">
+                      <Select
+                        value={task.priority}
+                        onValueChange={(value) => {
+                          const newTasks = [...(formData.tasks || [])]
+                          newTasks[index] = { ...newTasks[index], priority: value }
+                          setFormData({ ...formData, tasks: newTasks })
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="High">High</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="Low">Low</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newTasks = formData.tasks?.filter((_, i) => i !== index) || []
+                          setFormData({ ...formData, tasks: newTasks })
+                        }}
+                      >
+                        <IconX className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newTasks = [...(formData.tasks || []), { title: "", assigneeId: null, priority: "Medium", dueDate: "" }]
+                    setFormData({ ...formData, tasks: newTasks })
+                  }}
+                >
+                  <IconPlus className="h-4 w-4 mr-2" />
+                  Add Task
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={handleClose}>
