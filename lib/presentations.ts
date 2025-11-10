@@ -7,7 +7,7 @@ export async function getAllPresentations(): Promise<Presentation[]> {
     .select(`
       *,
       clients!inner(name),
-      team_members!inner(name)
+      team_members(name)
     `)
     .order('created_date', { ascending: false })
 
@@ -24,7 +24,7 @@ export async function getAllPresentations(): Promise<Presentation[]> {
     type: presentation.type,
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
-    ownerName: presentation.team_members.name,
+    ownerName: presentation.team_members?.name || null,
     status: presentation.status,
     link: presentation.link,
     description: presentation.description,
@@ -40,7 +40,7 @@ export async function getPresentationById(id: number): Promise<Presentation | nu
     .select(`
       *,
       clients!inner(name),
-      team_members!inner(name)
+      team_members(name)
     `)
     .eq('id', id)
     .single()
@@ -58,7 +58,7 @@ export async function getPresentationById(id: number): Promise<Presentation | nu
     type: data.type,
     createdDate: data.created_date,
     ownerId: data.owner_id,
-    ownerName: data.team_members.name,
+    ownerName: data.team_members?.name || null,
     status: data.status,
     link: data.link,
     description: data.description,
@@ -74,7 +74,7 @@ export async function getPresentationsByClient(clientId: number): Promise<Presen
     .select(`
       *,
       clients!inner(name),
-      team_members!inner(name)
+      team_members(name)
     `)
     .eq('client_id', clientId)
     .order('created_date', { ascending: false })
@@ -92,7 +92,7 @@ export async function getPresentationsByClient(clientId: number): Promise<Presen
     type: presentation.type,
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
-    ownerName: presentation.team_members.name,
+    ownerName: presentation.team_members?.name || null,
     status: presentation.status,
     link: presentation.link,
     description: presentation.description,
@@ -108,7 +108,7 @@ export async function getPresentationsByType(type: Presentation['type']): Promis
     .select(`
       *,
       clients!inner(name),
-      team_members!inner(name)
+      team_members(name)
     `)
     .eq('type', type)
     .order('created_date', { ascending: false })
@@ -126,7 +126,7 @@ export async function getPresentationsByType(type: Presentation['type']): Promis
     type: presentation.type,
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
-    ownerName: presentation.team_members.name,
+    ownerName: presentation.team_members?.name || null,
     status: presentation.status,
     link: presentation.link,
     description: presentation.description,
@@ -142,7 +142,7 @@ export async function getPresentationsByStatus(status: Presentation['status']): 
     .select(`
       *,
       clients!inner(name),
-      team_members!inner(name)
+      team_members(name)
     `)
     .eq('status', status)
     .order('created_date', { ascending: false })
@@ -160,7 +160,7 @@ export async function getPresentationsByStatus(status: Presentation['status']): 
     type: presentation.type,
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
-    ownerName: presentation.team_members.name,
+    ownerName: presentation.team_members?.name || null,
     status: presentation.status,
     link: presentation.link,
     description: presentation.description,
@@ -176,7 +176,7 @@ export async function getPresentationsByOwner(ownerId: number): Promise<Presenta
     .select(`
       *,
       clients!inner(name),
-      team_members!inner(name)
+      team_members(name)
     `)
     .eq('owner_id', ownerId)
     .order('created_date', { ascending: false })
@@ -194,7 +194,7 @@ export async function getPresentationsByOwner(ownerId: number): Promise<Presenta
     type: presentation.type,
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
-    ownerName: presentation.team_members.name,
+    ownerName: presentation.team_members?.name || null,
     status: presentation.status,
     link: presentation.link,
     description: presentation.description,
@@ -207,11 +207,11 @@ export async function getPresentationsByOwner(ownerId: number): Promise<Presenta
 export async function createPresentation(presentationData: {
   title: string
   client_id: number
-  type: Presentation['type']
-  status: Presentation['status']
+  type: Presentation['type'] | null
+  status: Presentation['status'] | null
   link: string
   description?: string | null
-  owner_id: number
+  owner_id: number | null
   created_date: string
   last_modified: string
 }): Promise<Presentation> {
@@ -221,7 +221,7 @@ export async function createPresentation(presentationData: {
     .select(`
       *,
       clients!inner(name),
-      team_members!inner(name)
+      team_members(name)
     `)
     .single()
 
@@ -238,7 +238,7 @@ export async function createPresentation(presentationData: {
     type: data.type,
     createdDate: data.created_date,
     ownerId: data.owner_id,
-    ownerName: data.team_members.name,
+    ownerName: data.team_members?.name || null,
     status: data.status,
     link: data.link,
     description: data.description,
@@ -251,11 +251,11 @@ export async function createPresentation(presentationData: {
 export async function updatePresentation(id: number, presentationData: {
   title: string
   client_id: number
-  type: Presentation['type']
-  status: Presentation['status']
+  type: Presentation['type'] | null
+  status: Presentation['status'] | null
   link: string
   description?: string | null
-  owner_id: number
+  owner_id: number | null
   last_modified: string
 }): Promise<Presentation> {
   const { data, error } = await supabase
@@ -265,7 +265,7 @@ export async function updatePresentation(id: number, presentationData: {
     .select(`
       *,
       clients!inner(name),
-      team_members!inner(name)
+      team_members(name)
     `)
     .single()
 
@@ -282,7 +282,7 @@ export async function updatePresentation(id: number, presentationData: {
     type: data.type,
     createdDate: data.created_date,
     ownerId: data.owner_id,
-    ownerName: data.team_members.name,
+    ownerName: data.team_members?.name || null,
     status: data.status,
     link: data.link,
     description: data.description,

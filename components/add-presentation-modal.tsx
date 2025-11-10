@@ -59,14 +59,14 @@ export function AddPresentationModal({
       setFormData({
         title: presentation.title,
         clientId: presentation.clientId.toString(),
-        type: presentation.type,
-        status: presentation.status,
+        type: presentation.type || "",
+        status: presentation.status || "",
         link: presentation.link,
         description: presentation.description || "",
-        ownerId: presentation.ownerId.toString(),
+        ownerId: presentation.ownerId?.toString() || "",
       })
     } else {
-      // Set current user as default owner for new presentations
+      // Set current user as default owner for new presentations (optional)
       const currentUserOwner = teamMembers.find(member => member.isCurrentUser)
       setFormData({
         title: "",
@@ -88,11 +88,11 @@ export function AddPresentationModal({
       const presentationData = {
         title: formData.title,
         client_id: parseInt(formData.clientId),
-        type: formData.type as Presentation['type'],
-        status: formData.status as Presentation['status'],
+        type: formData.type || null,
+        status: formData.status || null,
         link: formData.link,
         description: formData.description || null,
-        owner_id: parseInt(formData.ownerId),
+        owner_id: formData.ownerId ? parseInt(formData.ownerId) : null,
         created_date: new Date().toISOString().split('T')[0],
         last_modified: new Date().toISOString().split('T')[0],
       }
@@ -160,11 +160,13 @@ export function AddPresentationModal({
                   <SelectValue placeholder="Select a client" />
                 </SelectTrigger>
                 <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id.toString()}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
+                  {clients
+                    .filter((client) => client.id != null && client.id.toString().trim() !== "")
+                    .map((client) => (
+                      <SelectItem key={client.id} value={client.id.toString()}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -172,14 +174,13 @@ export function AddPresentationModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="type">Type *</Label>
+              <Label htmlFor="type">Type</Label>
               <Select
-                value={formData.type}
+                value={formData.type || undefined}
                 onValueChange={(value) => handleInputChange("type", value)}
-                required
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder="Select type (optional)" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Proposal">Proposal</SelectItem>
@@ -191,14 +192,13 @@ export function AddPresentationModal({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="status">Status *</Label>
+              <Label htmlFor="status">Status</Label>
               <Select
-                value={formData.status}
+                value={formData.status || undefined}
                 onValueChange={(value) => handleInputChange("status", value)}
-                required
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder="Select status (optional)" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Draft">Draft</SelectItem>
@@ -222,25 +222,26 @@ export function AddPresentationModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="ownerId">Owner *</Label>
+            <Label htmlFor="ownerId">Owner</Label>
             <Select
-              value={formData.ownerId}
+              value={formData.ownerId || undefined}
               onValueChange={(value) => handleInputChange("ownerId", value)}
-              required
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select owner" />
+                <SelectValue placeholder="Select owner (optional)" />
               </SelectTrigger>
               <SelectContent>
-                {teamMembers.map((member) => (
-                  <SelectItem 
-                    key={member.id} 
-                    value={member.id.toString()}
-                    className={member.isCurrentUser ? "font-semibold bg-muted" : ""}
-                  >
-                    {member.name}
-                  </SelectItem>
-                ))}
+                {teamMembers
+                  .filter((member) => member.id != null && member.id.toString().trim() !== "")
+                  .map((member) => (
+                    <SelectItem 
+                      key={member.id} 
+                      value={member.id.toString()}
+                      className={member.isCurrentUser ? "font-semibold bg-muted" : ""}
+                    >
+                      {member.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

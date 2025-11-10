@@ -3,10 +3,10 @@ CREATE TABLE presentations (
     id BIGSERIAL PRIMARY KEY,
     title TEXT NOT NULL,
     client_id BIGINT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('Proposal', 'Onboarding', 'Progress Update', 'Report', 'Case Study')),
+    type TEXT CHECK (type IN ('Proposal', 'Onboarding', 'Progress Update', 'Report', 'Case Study')),
     created_date DATE NOT NULL,
-    owner_id BIGINT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('Draft', 'Sent', 'Approved', 'Archived')),
+    owner_id BIGINT,
+    status TEXT CHECK (status IN ('Draft', 'Sent', 'Approved', 'Archived')),
     link TEXT NOT NULL,
     description TEXT,
     last_modified DATE,
@@ -15,7 +15,7 @@ CREATE TABLE presentations (
     
     -- Foreign key constraints
     CONSTRAINT fk_presentations_client_id FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
-    CONSTRAINT fk_presentations_owner_id FOREIGN KEY (owner_id) REFERENCES team_members(id) ON DELETE CASCADE
+    CONSTRAINT fk_presentations_owner_id FOREIGN KEY (owner_id) REFERENCES team_members(id) ON DELETE SET NULL
 );
 
 -- Create indexes for faster filtering

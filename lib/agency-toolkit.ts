@@ -148,19 +148,45 @@ export async function getAgencyToolkitById(id: number): Promise<AgencyToolkit | 
 
 export async function createAgencyToolkit(agencyToolkit: Omit<AgencyToolkit, 'id' | 'created_at' | 'updated_at'>): Promise<AgencyToolkit | null> {
   try {
+    const record = transformAgencyToolkitToRecord(agencyToolkit);
+    
+    // Validate that all required fields are present
+    if (!record.name || !record.category || !record.plan_type || !record.renewal_cycle || 
+        record.price === undefined || record.price === null || !record.payment_method || 
+        !record.next_billing_date || !record.status) {
+      console.error('Error creating agency toolkit: Missing required fields', {
+        name: record.name,
+        category: record.category,
+        plan_type: record.plan_type,
+        renewal_cycle: record.renewal_cycle,
+        price: record.price,
+        payment_method: record.payment_method,
+        next_billing_date: record.next_billing_date,
+        status: record.status,
+      });
+      throw new Error('Missing required fields for agency_toolkit insert');
+    }
+
     // Insert agency toolkit
     const { data: newAgencyToolkit, error: agencyToolkitError } = await supabase
       .from('agency_toolkit')
-      .insert([transformAgencyToolkitToRecord(agencyToolkit)])
+      .insert([record])
       .select()
       .single();
 
     if (agencyToolkitError) {
-      console.error('Error creating agency toolkit:', agencyToolkitError);
+      console.error('Error creating agency toolkit:', {
+        message: agencyToolkitError.message,
+        details: agencyToolkitError.details,
+        hint: agencyToolkitError.hint,
+        code: agencyToolkitError.code,
+        record: record,
+      });
       throw agencyToolkitError;
     }
 
     if (!newAgencyToolkit) {
+      console.error('Error creating agency toolkit: No data returned from insert');
       return null;
     }
 
@@ -200,7 +226,7 @@ export async function createAgencyToolkit(agencyToolkit: Omit<AgencyToolkit, 'id
     // Return the complete agency toolkit with all related data
     return await getAgencyToolkitById(toolkitId);
   } catch (error) {
-    console.error('Error in createAgencyToolkit:', error);
+    console.error('Error in createAgencyToolkit:', error instanceof Error ? error.message : error);
     return null;
   }
 }

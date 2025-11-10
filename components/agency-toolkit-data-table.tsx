@@ -351,14 +351,14 @@ export function AgencyToolkitDataTable({
     try {
       const tool = await createAgencyToolkit({
         name: newTool.name || "",
-        logo: "",
+        logo: newTool.logo || "",
         category: newTool.category || "Productivity",
-        planType: newTool.planType || "",
+        planType: newTool.planType || "Standard",
         seats: newTool.seats || 1,
         renewalCycle: newTool.renewalCycle || "Monthly",
         price: newTool.price || 0,
         currency: newTool.currency || "USD",
-        paymentMethod: "",
+        paymentMethod: newTool.paymentMethod || "Credit Card",
         nextBillingDate: newTool.nextBillingDate || new Date().toISOString().split('T')[0],
         status: newTool.status || "Active",
         notes: newTool.notes || "",

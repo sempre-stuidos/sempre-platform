@@ -83,24 +83,48 @@ export async function getFilesAssetsById(id: number): Promise<FilesAssets | null
 
 export async function createFilesAssets(filesAssets: Omit<FilesAssets, 'id' | 'created_at' | 'updated_at'>): Promise<FilesAssets | null> {
   try {
+    const record = transformFilesAssetsToRecord(filesAssets);
+    
+    // Validate that all required fields are present
+    if (!record.name || !record.type || !record.category || !record.project || !record.size || !record.format || !record.uploaded || !record.status) {
+      console.error('Error creating files assets: Missing required fields', {
+        name: record.name,
+        type: record.type,
+        category: record.category,
+        project: record.project,
+        size: record.size,
+        format: record.format,
+        uploaded: record.uploaded,
+        status: record.status,
+      });
+      throw new Error('Missing required fields for files_assets insert');
+    }
+
     const { data: newFilesAssets, error } = await supabase
       .from('files_assets')
-      .insert([transformFilesAssetsToRecord(filesAssets)])
+      .insert([record])
       .select()
       .single();
 
     if (error) {
-      console.error('Error creating files assets:', error);
+      console.error('Error creating files assets:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        record: record,
+      });
       throw error;
     }
 
     if (!newFilesAssets) {
+      console.error('Error creating files assets: No data returned from insert');
       return null;
     }
 
     return transformFilesAssetsRecord(newFilesAssets);
   } catch (error) {
-    console.error('Error in createFilesAssets:', error);
+    console.error('Error in createFilesAssets:', error instanceof Error ? error.message : error);
     return null;
   }
 }
@@ -272,7 +296,6 @@ export async function uploadFileToStorage(
     
     // Create unique filename to avoid collisions
     const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop();
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '-');
     const fileName = `${timestamp}-${sanitizedFileName}`;
     

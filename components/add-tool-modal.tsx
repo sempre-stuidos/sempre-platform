@@ -26,6 +26,7 @@ interface NewTool {
   renewalCycle?: "Monthly" | "Yearly"
   price: number
   currency?: string
+  paymentMethod?: string
   nextBillingDate?: string
   status: "Active" | "Trial" | "Canceled"
   notes?: string
@@ -120,7 +121,13 @@ export function AddToolModal({ isOpen, onClose, onAddTool, initialData, isEdit =
     e.preventDefault()
     
     if (validateForm()) {
-      onAddTool(formData)
+      // Ensure planType has a default value if empty
+      const toolData = {
+        ...formData,
+        planType: formData.planType || "Standard",
+        paymentMethod: "Credit Card", // Default payment method
+      }
+      onAddTool(toolData)
       setFormData({
         name: "",
         category: "Productivity",

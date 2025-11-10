@@ -181,7 +181,8 @@ export function UploadFileModal({ isOpen, onClose, onUploadSuccess }: UploadFile
       onClose()
     } catch (error) {
       console.error("Error uploading file:", error)
-      toast.error("Failed to upload file. Please try again.")
+      const errorMessage = error instanceof Error ? error.message : "Failed to upload file. Please try again."
+      toast.error(errorMessage)
       setUploadProgress(0)
     } finally {
       setIsUploading(false)

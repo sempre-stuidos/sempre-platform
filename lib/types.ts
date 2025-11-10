@@ -196,11 +196,11 @@ export interface Presentation {
   title: string;
   clientId: number;
   clientName: string;
-  type: 'Proposal' | 'Onboarding' | 'Progress Update' | 'Report' | 'Case Study';
+  type: 'Proposal' | 'Onboarding' | 'Progress Update' | 'Report' | 'Case Study' | null;
   createdDate: string;
-  ownerId: number;
-  ownerName: string;
-  status: 'Draft' | 'Sent' | 'Approved' | 'Archived';
+  ownerId: number | null;
+  ownerName: string | null;
+  status: 'Draft' | 'Sent' | 'Approved' | 'Archived' | null;
   link: string;
   description?: string;
   lastModified?: string;
