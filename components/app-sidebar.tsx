@@ -10,6 +10,7 @@ import {
   IconListDetails,
   IconMoon,
   IconPresentation,
+  IconRobot,
   IconSearch,
   IconSun,
   IconUsers,
@@ -80,6 +81,11 @@ const staticData = {
     },
   ],
   navSubTools: [
+    {
+      title: "AI Project Manager",
+      url: "/agent",
+      icon: IconRobot,
+    },
     {
       title: "Slides Library",
       url: "/presentation",

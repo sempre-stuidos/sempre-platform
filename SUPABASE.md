@@ -66,3 +66,21 @@ Access the Supabase Studio at http://127.0.0.1:54323 to:
 3. Configure Row Level Security (RLS) policies
 4. Add your tables and relationships
 5. Start building your application features
+
+## Agent Chat Configuration
+
+The AI Coach page relies on signed-in users and never uses anonymous credentials.
+
+1. In Supabase Studio, open **Authentication → Settings** and make sure `Enable anonymous sign-ins` stays **disabled**. The new `conversations`, `messages`, and `conversation_states` tables enforce RLS policies that require a valid `auth.uid()`.
+2. Review **Authentication → Providers** to confirm at least one provider (email, Google, etc.) is enabled so users can authenticate before visiting `/agent`.
+3. Verify the `auth.users` row for your test user exists; only authenticated users can insert or read chat history.
+
+Set the AI environment variables in `.env.local` (values already default to the demo keys, but you should supply your own in production):
+
+```
+AI_BASE_URL=https://api.aimlapi.com/v1
+AI_API_KEY=your_aiml_api_key
+AI_DEFAULT_MODEL=gpt-4o
+```
+
+After updating environment variables, restart the Next.js dev server so `/app/api/chat/route.ts` picks up the new values.
