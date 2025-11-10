@@ -28,9 +28,9 @@ export function ServicesSection() {
         {/* Services Description */}
         <div className="mx-auto max-w-5xl">
           <blockquote className="text-3xl font-light leading-relaxed text-foreground md:text-4xl lg:text-5xl">
-            "At Sempre Studios, we leverage cutting-edge technologies to deliver exceptional digital solutions. 
+            &quot;At Sempre Studios, we leverage cutting-edge technologies to deliver exceptional digital solutions. 
             From small startups to enterprise businesses, we provide efficient, scalable, and innovative services 
-            that drive growth and success in the digital landscape."
+            that drive growth and success in the digital landscape.&quot;
           </blockquote>
         </div>
       </div>

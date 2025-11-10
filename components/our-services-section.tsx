@@ -70,7 +70,7 @@ export function OurServicesSection() {
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-3xl font-bold text-white mb-2">Find Your Place</h3>
-                    <p className="text-white/70">Building what's next in the heart of Utah.</p>
+                    <p className="text-white/70">Building what&apos;s next in the heart of Utah.</p>
                   </div>
 
                   {/* Search Interface */}
