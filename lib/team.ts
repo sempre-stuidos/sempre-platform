@@ -1,15 +1,15 @@
-import { supabase } from './supabase';
+import { supabase, supabaseAdmin } from './supabase';
 import { TeamMember } from './types';
 
 // Transform database record to match frontend interface
 function transformTeamMemberRecord(record: Record<string, unknown>, skills: Record<string, unknown>[], deadlines: Record<string, unknown>[]): TeamMember {
   return {
     id: record.id as number,
-    name: record.name as string,
+    name: record.name as string | null,
     role: record.role as string,
     status: record.status as "Active" | "Contractor" | "Past Collaborator",
     email: record.email as string,
-    timezone: record.timezone as string,
+    timezone: record.timezone as string | null,
     avatar: record.avatar as string,
     currentProjects: record.current_projects as number,
     activeTasks: record.active_tasks as number,
@@ -20,6 +20,8 @@ function transformTeamMemberRecord(record: Record<string, unknown>, skills: Reco
       deadline: d.deadline as string,
       type: d.type as string
     })),
+    auth_user_id: record.auth_user_id as string | null | undefined,
+    invited_email: record.invited_email as string | null | undefined,
     created_at: record.created_at as string,
     updated_at: record.updated_at as string,
   };
@@ -37,6 +39,8 @@ function transformTeamMemberToRecord(teamMember: Partial<TeamMember>) {
     current_projects: teamMember.currentProjects,
     active_tasks: teamMember.activeTasks,
     workload: teamMember.workload,
+    auth_user_id: teamMember.auth_user_id,
+    invited_email: teamMember.invited_email,
   };
 }
 
@@ -283,5 +287,87 @@ export async function getTeamMembersByRole(role: string): Promise<TeamMember[]> 
   } catch (error) {
     console.error('Error in getTeamMembersByRole:', error);
     return [];
+  }
+}
+
+/**
+ * Link team member to auth user after they accept invitation
+ * Creates or updates team_members record with user info from Google OAuth
+ * Uses supabaseAdmin for server-side operations
+ */
+export async function linkTeamMemberToAuthUser(
+  userId: string,
+  email: string,
+  name: string,
+  avatar?: string
+): Promise<TeamMember | null> {
+  try {
+    // Use supabaseAdmin for server-side operations (bypasses RLS)
+    // Check if team member record already exists for this email
+    const { data: existingMember } = await supabaseAdmin
+      .from('team_members')
+      .select('*')
+      .eq('email', email.toLowerCase())
+      .single();
+
+    if (existingMember) {
+      // Update existing record with auth_user_id and user info
+      const { data: updatedMember, error: updateError } = await supabaseAdmin
+        .from('team_members')
+        .update({
+          auth_user_id: userId,
+          name: name || existingMember.name,
+          avatar: avatar || existingMember.avatar,
+          timezone: existingMember.timezone || 'UTC',
+          status: existingMember.status || 'Active',
+          // Clear invited_email since user has now accepted
+          invited_email: null,
+        })
+        .eq('id', existingMember.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Error updating team member:', updateError);
+        throw updateError;
+      }
+
+      return await getTeamMemberById(existingMember.id);
+    }
+
+    // Get role from user_roles table
+    const { data: userRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+
+    // Create new team member record
+    const { data: newMember, error: insertError } = await supabaseAdmin
+      .from('team_members')
+      .insert({
+        name,
+        role: userRole?.role || 'Member',
+        status: 'Active',
+        email,
+        timezone: 'UTC',
+        avatar,
+        auth_user_id: userId,
+        current_projects: 0,
+        active_tasks: 0,
+        workload: 0,
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error creating team member:', insertError);
+      throw insertError;
+    }
+
+    return await getTeamMemberById(newMember.id);
+  } catch (error) {
+    console.error('Error in linkTeamMemberToAuthUser:', error);
+    return null;
   }
 }

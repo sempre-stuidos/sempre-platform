@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { IconX } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -15,28 +14,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TeamMember } from "@/lib/types"
-import { createTeamMember, updateTeamMember } from "@/lib/team"
+import { updateTeamMember } from "@/lib/team"
+import { type UserRole } from "@/lib/invitations"
 import { toast } from "sonner"
-
-interface NewTeamMember {
-  name: string
-  role: string
-  status: 'Active' | 'Contractor' | 'Past Collaborator'
-  email: string
-  timezone: string
-  avatar?: string
-  currentProjects?: number
-  activeTasks?: number
-  workload?: number
-}
 
 interface AddTeamMemberModalProps {
   isOpen: boolean
   onClose: () => void
-  onAddTeamMember: (teamMemberData: NewTeamMember) => void
+  onAddTeamMember: () => void
   initialData?: TeamMember | null
   isEdit?: boolean
 }
+
+const AVAILABLE_ROLES: UserRole[] = ['Admin', 'Manager', 'Member', 'Developer', 'Designer']
 
 export function AddTeamMemberModal({
   isOpen,
@@ -45,48 +35,20 @@ export function AddTeamMemberModal({
   initialData,
   isEdit = false,
 }: AddTeamMemberModalProps) {
-  const [formData, setFormData] = useState<NewTeamMember>({
-    name: "",
-    role: "",
-    status: "Active",
-    email: "",
-    timezone: "",
-    avatar: "",
-    currentProjects: 0,
-    activeTasks: 0,
-    workload: 0,
-  })
-
+  const [email, setEmail] = useState("")
+  const [role, setRole] = useState<UserRole>("Member")
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
 
-  // Populate form data when editing
+  // Populate form data when editing (for existing team members)
   useEffect(() => {
     if (initialData && isEdit) {
-      setFormData({
-        name: initialData.name || "",
-        role: initialData.role || "",
-        status: initialData.status || "Active",
-        email: initialData.email || "",
-        timezone: initialData.timezone || "",
-        avatar: initialData.avatar || "",
-        currentProjects: initialData.currentProjects || 0,
-        activeTasks: initialData.activeTasks || 0,
-        workload: initialData.workload || 0,
-      })
+      setEmail(initialData.email || "")
+      setRole((initialData.role as UserRole) || "Member")
     } else {
-      // Reset form for new team member
-      setFormData({
-        name: "",
-        role: "",
-        status: "Active",
-        email: "",
-        timezone: "",
-        avatar: "",
-        currentProjects: 0,
-        activeTasks: 0,
-        workload: 0,
-      })
+      // Reset form for new invitation
+      setEmail("")
+      setRole("Member")
     }
     setErrors({})
   }, [initialData, isEdit])
@@ -94,25 +56,14 @@ export function AddTeamMemberModal({
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
-    // Required fields
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required"
-    }
-    if (!formData.role.trim()) {
-      newErrors.role = "Role is required"
-    }
-    if (!formData.email.trim()) {
+    if (!email.trim()) {
       newErrors.email = "Email is required"
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = "Please enter a valid email address"
     }
-    if (!formData.timezone.trim()) {
-      newErrors.timezone = "Timezone is required"
-    }
 
-    // Validate workload (0-100)
-    if (formData.workload !== undefined && (formData.workload < 0 || formData.workload > 100)) {
-      newErrors.workload = "Workload must be between 0 and 100"
+    if (!role) {
+      newErrors.role = "Role is required"
     }
 
     setErrors(newErrors)
@@ -129,185 +80,112 @@ export function AddTeamMemberModal({
     setLoading(true)
     try {
       if (isEdit && initialData) {
-        await updateTeamMember(initialData.id, formData)
+        // For editing existing team members, update their role
+        await updateTeamMember(initialData.id, { role })
         toast.success("Team member updated successfully")
+        onAddTeamMember()
+        onClose()
       } else {
-        await createTeamMember(formData)
-        toast.success("Team member added successfully")
+        // For new team members, send invitation via API route
+        const response = await fetch('/api/invitations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            role,
+          }),
+        })
+
+        const result = await response.json()
+        
+        if (result.success) {
+          toast.success(`Invitation sent to ${email}`)
+          onAddTeamMember()
+          onClose()
+        } else {
+          toast.error(result.error || "Failed to send invitation")
+        }
       }
-      
-      onAddTeamMember(formData)
-      onClose()
     } catch (error: unknown) {
-      console.error('Error saving team member:', error)
-      toast.error(error instanceof Error ? error.message : "Failed to save team member")
+      console.error('Error sending invitation:', error)
+      toast.error(error instanceof Error ? error.message : "Failed to send invitation")
     } finally {
       setLoading(false)
     }
   }
 
-  const handleInputChange = (field: keyof NewTeamMember, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => {
-        const newErrors = { ...prev }
-        delete newErrors[field]
-        return newErrors
-      })
-    }
-  }
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Edit Team Member" : "Add Team Member"}
+            {isEdit ? "Edit Team Member Role" : "Invite Team Member"}
           </DialogTitle>
           <DialogDescription>
             {isEdit 
-              ? "Update the team member information below." 
-              : "Add a new team member to your organization."
+              ? "Update the team member's role." 
+              : "Send an invitation email to add a new team member. They will be able to sign in with Google OAuth."
             }
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                className={errors.name ? "border-red-500" : ""}
-                placeholder="Enter full name"
-              />
-              {errors.name && (
-                <p className="text-sm text-red-500">{errors.name}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="role">Role *</Label>
-              <Input
-                id="role"
-                value={formData.role}
-                onChange={(e) => handleInputChange("role", e.target.value)}
-                className={errors.role ? "border-red-500" : ""}
-                placeholder="e.g., Developer, Designer"
-              />
-              {errors.role && (
-                <p className="text-sm text-red-500">{errors.role}</p>
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                if (errors.email) {
+                  setErrors(prev => {
+                    const newErrors = { ...prev }
+                    delete newErrors.email
+                    return newErrors
+                  })
+                }
+              }}
+              className={errors.email ? "border-red-500" : ""}
+              placeholder="Enter email address"
+              disabled={isEdit}
+            />
+            {errors.email && (
+              <p className="text-sm text-red-500">{errors.email}</p>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                className={errors.email ? "border-red-500" : ""}
-                placeholder="Enter email address"
-              />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Status *</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value: 'Active' | 'Contractor' | 'Past Collaborator') => handleInputChange("status", value)}
-              >
-                <SelectTrigger className={errors.status ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Contractor">Contractor</SelectItem>
-                  <SelectItem value="Past Collaborator">Past Collaborator</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.status && (
-                <p className="text-sm text-red-500">{errors.status}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="timezone">Timezone *</Label>
-              <Input
-                id="timezone"
-                value={formData.timezone}
-                onChange={(e) => handleInputChange("timezone", e.target.value)}
-                className={errors.timezone ? "border-red-500" : ""}
-                placeholder="e.g., UTC-5, PST"
-              />
-              {errors.timezone && (
-                <p className="text-sm text-red-500">{errors.timezone}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="avatar">Avatar URL</Label>
-              <Input
-                id="avatar"
-                value={formData.avatar}
-                onChange={(e) => handleInputChange("avatar", e.target.value)}
-                placeholder="Enter avatar URL"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="currentProjects">Current Projects</Label>
-              <Input
-                id="currentProjects"
-                type="number"
-                min="0"
-                value={formData.currentProjects}
-                onChange={(e) => handleInputChange("currentProjects", parseInt(e.target.value) || 0)}
-                placeholder="0"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="activeTasks">Active Tasks</Label>
-              <Input
-                id="activeTasks"
-                type="number"
-                min="0"
-                value={formData.activeTasks}
-                onChange={(e) => handleInputChange("activeTasks", parseInt(e.target.value) || 0)}
-                placeholder="0"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="workload">Workload (%)</Label>
-              <Input
-                id="workload"
-                type="number"
-                min="0"
-                max="100"
-                value={formData.workload}
-                onChange={(e) => handleInputChange("workload", parseInt(e.target.value) || 0)}
-                className={errors.workload ? "border-red-500" : ""}
-                placeholder="0"
-              />
-              {errors.workload && (
-                <p className="text-sm text-red-500">{errors.workload}</p>
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="role">Role *</Label>
+            <Select
+              value={role}
+              onValueChange={(value: UserRole) => {
+                setRole(value)
+                if (errors.role) {
+                  setErrors(prev => {
+                    const newErrors = { ...prev }
+                    delete newErrors.role
+                    return newErrors
+                  })
+                }
+              }}
+            >
+              <SelectTrigger className={errors.role ? "border-red-500" : ""}>
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                {AVAILABLE_ROLES.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.role && (
+              <p className="text-sm text-red-500">{errors.role}</p>
+            )}
           </div>
 
           <DialogFooter>
@@ -315,7 +193,10 @@ export function AddTeamMemberModal({
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : isEdit ? "Update Team Member" : "Add Team Member"}
+              {loading 
+                ? (isEdit ? "Updating..." : "Sending...") 
+                : (isEdit ? "Update Role" : "Send Invitation")
+              }
             </Button>
           </DialogFooter>
         </form>

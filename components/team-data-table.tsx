@@ -90,7 +90,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TeamMember } from "@/lib/types"
-import { createTeamMember, updateTeamMember, deleteTeamMember } from "@/lib/team"
+import { updateTeamMember, deleteTeamMember } from "@/lib/team"
 import { AddTeamMemberModal } from "@/components/add-team-member-modal"
 
 // Bulk Actions Floating Bar Component
@@ -303,28 +303,16 @@ export function TeamDataTable({
   const [teamMemberToDelete, setTeamMemberToDelete] = React.useState<TeamMember | null>(null)
 
   // CRUD handlers
-  const handleAddTeamMember = async (teamMemberData: Partial<TeamMember>) => {
+  const handleAddTeamMember = async () => {
+    // Refresh the data to show the newly invited member (if they've already accepted)
+    // In most cases, the invitation was just sent, so we'll refresh to show any updates
     try {
-      const newTeamMember = await createTeamMember({
-        name: teamMemberData.name || "",
-        role: teamMemberData.role || "",
-        status: teamMemberData.status || "Active",
-        email: teamMemberData.email || "",
-        timezone: teamMemberData.timezone || "UTC",
-        avatar: teamMemberData.avatar || "",
-        currentProjects: teamMemberData.currentProjects || 0,
-        activeTasks: teamMemberData.activeTasks || 0,
-        workload: teamMemberData.workload || 0,
-        skills: teamMemberData.skills || [],
-        upcomingDeadlines: teamMemberData.upcomingDeadlines || []
-      })
-      if (newTeamMember) {
-        setData(prev => [...prev, newTeamMember])
-        toast.success("Team member added successfully")
-      }
+      const { getAllTeamMembers } = await import('@/lib/team')
+      const updatedData = await getAllTeamMembers()
+      setData(updatedData)
     } catch (error: unknown) {
-      console.error('Error adding team member:', error)
-      toast.error(error instanceof Error ? error.message : "Failed to add team member")
+      console.error('Error refreshing team members:', error)
+      // Don't show error toast for refresh failures
     }
   }
 

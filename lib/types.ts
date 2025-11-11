@@ -51,17 +51,19 @@ export interface Client {
 
 export interface TeamMember {
   id: number;
-  name: string;
+  name: string | null;
   role: string;
   status: 'Active' | 'Contractor' | 'Past Collaborator';
   email: string;
-  timezone: string;
+  timezone: string | null;
   avatar?: string;
   currentProjects?: number;
   activeTasks?: number;
   workload?: number;
   skills?: string[];
   upcomingDeadlines?: Deadline[];
+  auth_user_id?: string | null;
+  invited_email?: string | null;
   created_at?: string;
   updated_at?: string;
 }

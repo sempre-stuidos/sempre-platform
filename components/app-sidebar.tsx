@@ -53,6 +53,11 @@ const staticData = {
       icon: IconUsers,
     },
     {
+      title: "Teams",
+      url: "/team",
+      icon: IconUsers,
+    },
+    {
       title: "Projects",
       url: "/projects",
       icon: IconFolder,
