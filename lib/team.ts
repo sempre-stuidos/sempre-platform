@@ -46,54 +46,76 @@ function transformTeamMemberToRecord(teamMember: Partial<TeamMember>) {
 
 export async function getAllTeamMembers(): Promise<TeamMember[]> {
   try {
-    // Fetch team members
-    const { data: teamMembers, error: teamMembersError } = await supabase
-      .from('team_members')
+    // Fetch all users with their roles from user_roles table
+    const { data: userRoles, error: userRolesError } = await supabaseAdmin
+      .from('user_roles')
       .select('*')
-      .order('id', { ascending: true });
+      .not('user_id', 'is', null)
+      .order('created_at', { ascending: true });
 
-    if (teamMembersError) {
-      console.error('Error fetching team members:', teamMembersError);
-      throw teamMembersError;
+    if (userRolesError) {
+      console.error('Error fetching user roles:', userRolesError);
+      throw userRolesError;
     }
 
-    if (!teamMembers || teamMembers.length === 0) {
+    if (!userRoles || userRoles.length === 0) {
       return [];
     }
 
-    // Fetch all related data in parallel
-    const teamMemberIds = teamMembers.map(tm => tm.id);
+    // Fetch user details from auth.users for each user_id
+    const userIds = userRoles.map(ur => ur.user_id).filter(Boolean) as string[];
     
-    const [
-      { data: skills },
-      { data: deadlines }
-    ] = await Promise.all([
-      supabase.from('team_member_skills').select('*').in('team_member_id', teamMemberIds),
-      supabase.from('team_member_deadlines').select('*').in('team_member_id', teamMemberIds)
-    ]);
+    // Get users from auth.users using admin client
+    const { data: usersData, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (usersError) {
+      console.error('Error fetching users:', usersError);
+      throw usersError;
+    }
 
-    // Group related data by team_member_id
-    const skillsByTeamMember = (skills || []).reduce((acc: Record<string, Record<string, unknown>[]>, skill: Record<string, unknown>) => {
-      const teamMemberId = skill.team_member_id as string;
-      if (!acc[teamMemberId]) acc[teamMemberId] = [];
-      acc[teamMemberId].push(skill);
-      return acc;
-    }, {});
-
-    const deadlinesByTeamMember = (deadlines || []).reduce((acc: Record<string, Record<string, unknown>[]>, deadline: Record<string, unknown>) => {
-      const teamMemberId = deadline.team_member_id as string;
-      if (!acc[teamMemberId]) acc[teamMemberId] = [];
-      acc[teamMemberId].push(deadline);
-      return acc;
-    }, {});
-
-    return teamMembers.map(teamMember => 
-      transformTeamMemberRecord(
-        teamMember,
-        skillsByTeamMember[teamMember.id] || [],
-        deadlinesByTeamMember[teamMember.id] || []
-      )
+    // Filter users to only those with roles
+    const usersWithRoles = (usersData?.users || []).filter(user => 
+      userIds.includes(user.id)
     );
+
+    // Create a map of user_id to user_roles record
+    const roleMap = new Map(
+      userRoles.map(ur => [ur.user_id, ur])
+    );
+
+    // Transform auth.users + user_roles to TeamMember format
+    return usersWithRoles
+      .map((user) => {
+        const userRole = roleMap.get(user.id);
+        if (!userRole) {
+          return null; // Skip users without a role (shouldn't happen due to filtering, but safety check)
+        }
+        
+        const metadata = user.user_metadata || {};
+        const email = user.email || userRole.invited_email || '';
+        const name = metadata.full_name || metadata.name || email.split('@')[0] || 'Unknown';
+        const avatar = metadata.avatar_url || metadata.picture || '';
+
+        return {
+          id: userRole.id as number, // Use user_roles.id as the stable numeric ID
+          name: name,
+          role: userRole.role,
+          status: 'Active' as const,
+          email: email,
+          timezone: metadata.timezone || 'UTC',
+          avatar: avatar,
+          currentProjects: 0,
+          activeTasks: 0,
+          workload: 0,
+          skills: [],
+          upcomingDeadlines: [],
+          auth_user_id: user.id,
+          invited_email: userRole.invited_email || null,
+          created_at: userRole.created_at || user.created_at,
+          updated_at: userRole.updated_at || user.updated_at || user.created_at,
+        };
+      })
+      .filter((member): member is TeamMember => member !== null);
   } catch (error) {
     console.error('Error in getAllTeamMembers:', error);
     return [];
@@ -102,114 +124,119 @@ export async function getAllTeamMembers(): Promise<TeamMember[]> {
 
 export async function getTeamMemberById(id: number): Promise<TeamMember | null> {
   try {
-    // Fetch team member
-    const { data: teamMember, error: teamMemberError } = await supabase
-      .from('team_members')
+    // Fetch user_role by id
+    const { data: userRole, error: userRoleError } = await supabaseAdmin
+      .from('user_roles')
       .select('*')
       .eq('id', id)
       .single();
 
-    if (teamMemberError) {
-      console.error('Error fetching team member:', teamMemberError);
-      throw teamMemberError;
-    }
-
-    if (!teamMember) {
+    if (userRoleError || !userRole || !userRole.user_id) {
+      console.error('Error fetching user role:', userRoleError);
       return null;
     }
 
-    // Fetch all related data in parallel
-    const [
-      { data: skills },
-      { data: deadlines }
-    ] = await Promise.all([
-      supabase.from('team_member_skills').select('*').eq('team_member_id', id),
-      supabase.from('team_member_deadlines').select('*').eq('team_member_id', id)
-    ]);
+    // Fetch user from auth.users
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userRole.user_id);
+    
+    if (userError || !userData?.user) {
+      console.error('Error fetching user:', userError);
+      return null;
+    }
 
-    return transformTeamMemberRecord(
-      teamMember,
-      skills || [],
-      deadlines || []
-    );
+    const user = userData.user;
+    const metadata = user.user_metadata || {};
+    const email = user.email || userRole.invited_email || '';
+    const name = metadata.full_name || metadata.name || email.split('@')[0] || 'Unknown';
+    const avatar = metadata.avatar_url || metadata.picture || '';
+
+    return {
+      id: userRole.id as number,
+      name: name,
+      role: userRole.role,
+      status: 'Active' as const,
+      email: email,
+      timezone: metadata.timezone || 'UTC',
+      avatar: avatar,
+      currentProjects: 0,
+      activeTasks: 0,
+      workload: 0,
+      skills: [],
+      upcomingDeadlines: [],
+      auth_user_id: user.id,
+      invited_email: userRole.invited_email || null,
+      created_at: userRole.created_at || user.created_at,
+      updated_at: userRole.updated_at || user.updated_at || user.created_at,
+    };
   } catch (error) {
     console.error('Error in getTeamMemberById:', error);
     return null;
   }
 }
 
+// Note: createTeamMember is no longer needed
+// Team members are created through the invitation system (user_roles table)
+// Users are added to the team by creating a user_roles record via sendTeamMemberInvitation
 export async function createTeamMember(teamMember: Omit<TeamMember, 'id' | 'created_at' | 'updated_at'>): Promise<TeamMember | null> {
-  try {
-    // Insert team member
-    const { data: newTeamMember, error: teamMemberError } = await supabase
-      .from('team_members')
-      .insert([transformTeamMemberToRecord(teamMember)])
-      .select()
-      .single();
-
-    if (teamMemberError) {
-      console.error('Error creating team member:', teamMemberError);
-      throw teamMemberError;
-    }
-
-    if (!newTeamMember) {
-      return null;
-    }
-
-    const teamMemberId = newTeamMember.id;
-
-    // Insert related data in parallel
-    const insertPromises = [];
-
-    if (teamMember.skills && teamMember.skills.length > 0) {
-      const skillsData = teamMember.skills.map(skill => ({
-        team_member_id: teamMemberId,
-        skill
-      }));
-      insertPromises.push(
-        supabase.from('team_member_skills').insert(skillsData)
-      );
-    }
-
-    if (teamMember.upcomingDeadlines && teamMember.upcomingDeadlines.length > 0) {
-      const deadlinesData = teamMember.upcomingDeadlines.map(deadline => ({
-        team_member_id: teamMemberId,
-        project: deadline.project,
-        deadline: deadline.deadline,
-        type: deadline.type
-      }));
-      insertPromises.push(
-        supabase.from('team_member_deadlines').insert(deadlinesData)
-      );
-    }
-
-    await Promise.all(insertPromises);
-
-    // Return the complete team member with all related data
-    return await getTeamMemberById(teamMemberId);
-  } catch (error) {
-    console.error('Error in createTeamMember:', error);
-    return null;
-  }
+  // This function is deprecated - use invitation system instead
+  console.warn('createTeamMember is deprecated. Use sendTeamMemberInvitation from lib/invitations instead.');
+  return null;
 }
 
 export async function updateTeamMember(id: number, updates: Partial<TeamMember>): Promise<TeamMember | null> {
   try {
-    // Update team member
-    const { error: teamMemberError } = await supabase
-      .from('team_members')
-      .update(transformTeamMemberToRecord(updates))
+    // Find the user_role record by id
+    const { data: userRole, error: findError } = await supabaseAdmin
+      .from('user_roles')
+      .select('*')
       .eq('id', id)
-      .select()
       .single();
 
-    if (teamMemberError) {
-      console.error('Error updating team member:', teamMemberError);
-      throw teamMemberError;
+    if (findError || !userRole || !userRole.user_id) {
+      console.error('Error finding user role:', findError);
+      throw findError || new Error('User role not found');
     }
 
-    // Return the complete team member with all related data
-    return await getTeamMemberById(id);
+    // Update role in user_roles table if provided
+    if (updates.role) {
+      const { error: roleUpdateError } = await supabaseAdmin
+        .from('user_roles')
+        .update({ role: updates.role })
+        .eq('id', id);
+
+      if (roleUpdateError) {
+        console.error('Error updating role:', roleUpdateError);
+        throw roleUpdateError;
+      }
+    }
+
+    // Update user metadata in auth.users if name or avatar is provided
+    if (updates.name || updates.avatar) {
+      const { data: user } = await supabaseAdmin.auth.admin.getUserById(userRole.user_id);
+      
+      if (user?.user) {
+        const currentMetadata = user.user.user_metadata || {};
+        const updatedMetadata = {
+          ...currentMetadata,
+          ...(updates.name && { full_name: updates.name, name: updates.name }),
+          ...(updates.avatar && { avatar_url: updates.avatar, picture: updates.avatar }),
+        };
+
+        const { error: userUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
+          userRole.user_id,
+          { user_metadata: updatedMetadata }
+        );
+
+        if (userUpdateError) {
+          console.error('Error updating user metadata:', userUpdateError);
+          throw userUpdateError;
+        }
+      }
+    }
+
+    // Refresh and return the updated team member
+    const allMembers = await getAllTeamMembers();
+    return allMembers.find(member => member.id === id) || null;
   } catch (error) {
     console.error('Error in updateTeamMember:', error);
     return null;
@@ -218,14 +245,27 @@ export async function updateTeamMember(id: number, updates: Partial<TeamMember>)
 
 export async function deleteTeamMember(id: number): Promise<boolean> {
   try {
-    // Delete team member (cascading deletes will handle related data)
-    const { error } = await supabase
-      .from('team_members')
+    // Find the user_role record by id
+    const { data: userRole, error: findError } = await supabaseAdmin
+      .from('user_roles')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (findError || !userRole) {
+      console.error('Error finding user role:', findError);
+      throw findError || new Error('User role not found');
+    }
+
+    // Delete the user_role record (this removes the user from the team)
+    // Note: This does NOT delete the auth user, just removes their role
+    const { error } = await supabaseAdmin
+      .from('user_roles')
       .delete()
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting team member:', error);
+      console.error('Error deleting user role:', error);
       throw error;
     }
 
@@ -237,53 +277,81 @@ export async function deleteTeamMember(id: number): Promise<boolean> {
 }
 
 export async function getTeamMembersByStatus(status: 'Active' | 'Contractor' | 'Past Collaborator'): Promise<TeamMember[]> {
-  try {
-    const { data: teamMembers, error } = await supabase
-      .from('team_members')
-      .select('*')
-      .eq('status', status)
-      .order('id', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching team members by status:', error);
-      throw error;
-    }
-
-    if (!teamMembers || teamMembers.length === 0) {
-      return [];
-    }
-
-    // For filtered results, we can return simplified data without all relations
-    // or fetch full data if needed
-    return teamMembers.map(teamMember => 
-      transformTeamMemberRecord(teamMember, [], [])
-    );
-  } catch (error) {
-    console.error('Error in getTeamMembersByStatus:', error);
-    return [];
+  // Since user_roles doesn't have a status field, all users are considered 'Active'
+  // This function now returns all team members (all are Active)
+  if (status === 'Active') {
+    return await getAllTeamMembers();
   }
+  // For other statuses, return empty array since we don't track status anymore
+  return [];
 }
 
 export async function getTeamMembersByRole(role: string): Promise<TeamMember[]> {
   try {
-    const { data: teamMembers, error } = await supabase
-      .from('team_members')
+    // Fetch user_roles with the specified role
+    const { data: userRoles, error: userRolesError } = await supabaseAdmin
+      .from('user_roles')
       .select('*')
       .eq('role', role)
-      .order('id', { ascending: true });
+      .not('user_id', 'is', null)
+      .order('created_at', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching team members by role:', error);
-      throw error;
+    if (userRolesError) {
+      console.error('Error fetching user roles:', userRolesError);
+      throw userRolesError;
     }
 
-    if (!teamMembers || teamMembers.length === 0) {
+    if (!userRoles || userRoles.length === 0) {
       return [];
     }
 
-    return teamMembers.map(teamMember => 
-      transformTeamMemberRecord(teamMember, [], [])
+    // Fetch user details from auth.users
+    const userIds = userRoles.map(ur => ur.user_id).filter(Boolean) as string[];
+    const { data: usersData, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (usersError) {
+      console.error('Error fetching users:', usersError);
+      throw usersError;
+    }
+
+    const usersWithRoles = (usersData?.users || []).filter(user => 
+      userIds.includes(user.id)
     );
+
+    const roleMap = new Map(
+      userRoles.map(ur => [ur.user_id, ur])
+    );
+
+    return usersWithRoles
+      .map((user) => {
+        const userRole = roleMap.get(user.id);
+        if (!userRole) return null;
+        
+        const metadata = user.user_metadata || {};
+        const email = user.email || userRole.invited_email || '';
+        const name = metadata.full_name || metadata.name || email.split('@')[0] || 'Unknown';
+        const avatar = metadata.avatar_url || metadata.picture || '';
+
+        return {
+          id: userRole.id as number,
+          name: name,
+          role: userRole.role,
+          status: 'Active' as const,
+          email: email,
+          timezone: metadata.timezone || 'UTC',
+          avatar: avatar,
+          currentProjects: 0,
+          activeTasks: 0,
+          workload: 0,
+          skills: [],
+          upcomingDeadlines: [],
+          auth_user_id: user.id,
+          invited_email: userRole.invited_email || null,
+          created_at: userRole.created_at || user.created_at,
+          updated_at: userRole.updated_at || user.updated_at || user.created_at,
+        };
+      })
+      .filter((member): member is TeamMember => member !== null);
   } catch (error) {
     console.error('Error in getTeamMembersByRole:', error);
     return [];
@@ -292,7 +360,7 @@ export async function getTeamMembersByRole(role: string): Promise<TeamMember[]> 
 
 /**
  * Link team member to auth user after they accept invitation
- * Creates or updates team_members record with user info from Google OAuth
+ * Updates user_roles record with user_id and updates user metadata in auth.users
  * Uses supabaseAdmin for server-side operations
  */
 export async function linkTeamMemberToAuthUser(
@@ -302,70 +370,82 @@ export async function linkTeamMemberToAuthUser(
   avatar?: string
 ): Promise<TeamMember | null> {
   try {
-    // Use supabaseAdmin for server-side operations (bypasses RLS)
-    // Check if team member record already exists for this email
-    const { data: existingMember } = await supabaseAdmin
-      .from('team_members')
+    // Find the user_roles record by invited_email
+    const { data: userRole, error: findError } = await supabaseAdmin
+      .from('user_roles')
       .select('*')
-      .eq('email', email.toLowerCase())
+      .eq('invited_email', email.toLowerCase())
+      .is('user_id', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .single();
 
-    if (existingMember) {
-      // Update existing record with auth_user_id and user info
-      const { data: updatedMember, error: updateError } = await supabaseAdmin
-        .from('team_members')
-        .update({
-          auth_user_id: userId,
-          name: name || existingMember.name,
-          avatar: avatar || existingMember.avatar,
-          timezone: existingMember.timezone || 'UTC',
-          status: existingMember.status || 'Active',
-          // Clear invited_email since user has now accepted
-          invited_email: null,
-        })
-        .eq('id', existingMember.id)
-        .select()
+    if (findError || !userRole) {
+      // Check if user already has a role assigned
+      const { data: existingRole } = await supabaseAdmin
+        .from('user_roles')
+        .select('*')
+        .eq('user_id', userId)
         .single();
 
-      if (updateError) {
-        console.error('Error updating team member:', updateError);
-        throw updateError;
+      if (existingRole) {
+        // User already has a role, just update their metadata and return
+        if (name || avatar) {
+          const metadata: Record<string, unknown> = {};
+          if (name) {
+            metadata.full_name = name;
+            metadata.name = name;
+          }
+          if (avatar) {
+            metadata.avatar_url = avatar;
+            metadata.picture = avatar;
+          }
+
+          await supabaseAdmin.auth.admin.updateUserById(userId, {
+            user_metadata: metadata
+          });
+        }
+        return await getTeamMemberById(existingRole.id as number);
       }
 
-      return await getTeamMemberById(existingMember.id);
+      console.error('Error finding user role for invitation:', findError);
+      return null;
     }
 
-    // Get role from user_roles table
-    const { data: userRole } = await supabaseAdmin
+    // Update user_roles record with user_id
+    const { error: updateError } = await supabaseAdmin
       .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .single();
+      .update({ user_id: userId })
+      .eq('id', userRole.id);
 
-    // Create new team member record
-    const { data: newMember, error: insertError } = await supabaseAdmin
-      .from('team_members')
-      .insert({
-        name,
-        role: userRole?.role || 'Member',
-        status: 'Active',
-        email,
-        timezone: 'UTC',
-        avatar,
-        auth_user_id: userId,
-        current_projects: 0,
-        active_tasks: 0,
-        workload: 0,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error('Error creating team member:', insertError);
-      throw insertError;
+    if (updateError) {
+      console.error('Error updating user role:', updateError);
+      throw updateError;
     }
 
-    return await getTeamMemberById(newMember.id);
+    // Update user metadata in auth.users
+    if (name || avatar) {
+      const metadata: Record<string, unknown> = {};
+      if (name) {
+        metadata.full_name = name;
+        metadata.name = name;
+      }
+      if (avatar) {
+        metadata.avatar_url = avatar;
+        metadata.picture = avatar;
+      }
+
+      const { error: userUpdateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: metadata
+      });
+
+      if (userUpdateError) {
+        console.error('Error updating user metadata:', userUpdateError);
+        // Don't throw - role update succeeded
+      }
+    }
+
+    return await getTeamMemberById(userRole.id as number);
   } catch (error) {
     console.error('Error in linkTeamMemberToAuthUser:', error);
     return null;

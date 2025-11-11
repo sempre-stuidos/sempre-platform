@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import {
   IconDashboard,
   IconFileDescription,
@@ -205,7 +206,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <div className="flex items-center justify-between w-full px-2 py-1.5">
               <div className="flex items-center gap-2">
-                <IconInnerShadowTop className="!size-5" />
+                <Image 
+                  src="/se-logo.png" 
+                  alt="Sempre Studios Logo" 
+                  width={20} 
+                  height={20} 
+                  className="!size-5"
+                />
                 <span className="text-base font-semibold">Sempre Studios</span>
               </div>
               <Button

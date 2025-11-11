@@ -87,13 +87,23 @@ export async function sendTeamMemberInvitation(
       roleError = error;
     } else {
       // No existing invitation, create new pending invitation
-      const { error } = await supabaseAdmin
+      // Note: user_id is NULL for pending invitations, will be set when user accepts
+      const { error, data } = await supabaseAdmin
         .from('user_roles')
         .insert({
           user_id: null, // Will be populated when user accepts
           role,
           invited_email: lowerEmail,
-        });
+        })
+        .select();
+      
+      if (error) {
+        console.error('Error inserting user role:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+      } else {
+        console.log('Successfully created user_roles record:', data);
+      }
+      
       roleError = error;
     }
 
@@ -106,47 +116,8 @@ export async function sendTeamMemberInvitation(
       };
     }
 
-    // Create a placeholder team_members record so the invitation shows in the team list
-    // Check if one already exists first
-    const { data: existingTeamMember } = await supabaseAdmin
-      .from('team_members')
-      .select('id')
-      .eq('email', email.toLowerCase())
-      .single();
-
-    if (!existingTeamMember) {
-      const { error: teamMemberError } = await supabaseAdmin
-        .from('team_members')
-        .insert({
-          name: null, // Will be populated when user accepts
-          role,
-          status: 'Active',
-          email: email.toLowerCase(),
-          invited_email: email.toLowerCase(),
-          timezone: null, // Will be populated when user accepts
-          avatar: null,
-          auth_user_id: null, // Will be populated when user accepts
-          current_projects: 0,
-          active_tasks: 0,
-          workload: 0,
-        });
-
-      if (teamMemberError) {
-        console.error('Error creating placeholder team member:', teamMemberError);
-        // Role was stored, but team member record creation failed
-        // This is not critical, we can still link when user accepts
-      }
-    } else {
-      // Update existing record with new role and invited_email
-      await supabaseAdmin
-        .from('team_members')
-        .update({
-          role,
-          invited_email: email.toLowerCase(),
-        })
-        .eq('id', existingTeamMember.id);
-    }
-
+    // Role mapping stored successfully in user_roles table
+    // When user accepts invitation, linkUserToRole will update user_id
     return { success: true };
   } catch (error) {
     console.error('Error in sendTeamMemberInvitation:', error);

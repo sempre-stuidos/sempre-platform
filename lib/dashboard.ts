@@ -1,5 +1,35 @@
-import { supabase } from './supabase';
+import { supabase, supabaseAdmin } from './supabase';
 import { DashboardStats, DashboardChartData } from './types';
+
+// Helper function to get assignee name from user_roles.id
+async function getAssigneeNameFromRoleId(roleId: number | null): Promise<string> {
+  if (!roleId) {
+    return 'Unassigned';
+  }
+  
+  try {
+    const { data: userRole, error } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_id, invited_email')
+      .eq('id', roleId)
+      .single();
+    
+    if (error || !userRole || !userRole.user_id) {
+      return userRole?.invited_email || 'Unassigned';
+    }
+    
+    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userRole.user_id);
+    if (userData?.user) {
+      const metadata = userData.user.user_metadata || {};
+      return metadata.full_name || metadata.name || userData.user.email?.split('@')[0] || 'Unassigned';
+    }
+    
+    return userRole.invited_email || 'Unassigned';
+  } catch (error) {
+    console.error('Error fetching assignee name:', error);
+    return 'Unassigned';
+  }
+}
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
@@ -251,10 +281,8 @@ export async function getRecentTasks(limit: number = 10) {
         status,
         priority,
         due_date,
+        assignee_id,
         projects!tasks_project_id_fkey (
-          name
-        ),
-        team_members!tasks_assignee_id_fkey (
           name
         )
       `)
@@ -266,14 +294,19 @@ export async function getRecentTasks(limit: number = 10) {
       return [];
     }
 
-    return tasks?.map(task => ({
+    // Fetch assignee names for all tasks in parallel
+    const assigneeNames = await Promise.all(
+      (tasks || []).map(task => getAssigneeNameFromRoleId(task.assignee_id as number | null))
+    );
+
+    return tasks?.map((task, index) => ({
       id: task.id,
       title: task.title,
       type: 'Task',
       status: task.status,
       priority: task.priority,
       dueDate: task.due_date || 'No due date',
-      assignee: task.team_members ? (task.team_members as unknown as { name: string }).name : 'Unassigned',
+      assignee: assigneeNames[index],
       projectName: task.projects ? (task.projects as unknown as { name: string }).name : 'No Project',
     })) || [];
   } catch (error) {
@@ -292,10 +325,8 @@ export async function getHighPriorityTasks(limit: number = 50) {
         status,
         priority,
         due_date,
+        assignee_id,
         projects!tasks_project_id_fkey (
-          name
-        ),
-        team_members!tasks_assignee_id_fkey (
           name
         )
       `)
@@ -309,14 +340,19 @@ export async function getHighPriorityTasks(limit: number = 50) {
       return [];
     }
 
-    return tasks?.map(task => ({
+    // Fetch assignee names for all tasks in parallel
+    const assigneeNames = await Promise.all(
+      (tasks || []).map(task => getAssigneeNameFromRoleId(task.assignee_id as number | null))
+    );
+
+    return tasks?.map((task, index) => ({
       id: task.id,
       title: task.title,
       type: 'Task',
       status: task.status,
       priority: task.priority,
       dueDate: task.due_date || 'No due date',
-      assignee: task.team_members ? (task.team_members as unknown as { name: string }).name : 'Unassigned',
+      assignee: assigneeNames[index],
       projectName: task.projects ? (task.projects as unknown as { name: string }).name : 'No Project',
     })) || [];
   } catch (error) {
@@ -339,10 +375,8 @@ export async function getTasksDueThisWeek(limit: number = 50) {
         status,
         priority,
         due_date,
+        assignee_id,
         projects!tasks_project_id_fkey (
-          name
-        ),
-        team_members!tasks_assignee_id_fkey (
           name
         )
       `)
@@ -357,14 +391,19 @@ export async function getTasksDueThisWeek(limit: number = 50) {
       return [];
     }
 
-    return tasks?.map(task => ({
+    // Fetch assignee names for all tasks in parallel
+    const assigneeNames = await Promise.all(
+      (tasks || []).map(task => getAssigneeNameFromRoleId(task.assignee_id as number | null))
+    );
+
+    return tasks?.map((task, index) => ({
       id: task.id,
       title: task.title,
       type: 'Task',
       status: task.status,
       priority: task.priority,
       dueDate: task.due_date || 'No due date',
-      assignee: task.team_members ? (task.team_members as unknown as { name: string }).name : 'Unassigned',
+      assignee: assigneeNames[index],
       projectName: task.projects ? (task.projects as unknown as { name: string }).name : 'No Project',
     })) || [];
   } catch (error) {
@@ -383,10 +422,8 @@ export async function getCompletedTasks(limit: number = 50) {
         status,
         priority,
         due_date,
+        assignee_id,
         projects!tasks_project_id_fkey (
-          name
-        ),
-        team_members!tasks_assignee_id_fkey (
           name
         )
       `)
@@ -399,14 +436,19 @@ export async function getCompletedTasks(limit: number = 50) {
       return [];
     }
 
-    return tasks?.map(task => ({
+    // Fetch assignee names for all tasks in parallel
+    const assigneeNames = await Promise.all(
+      (tasks || []).map(task => getAssigneeNameFromRoleId(task.assignee_id as number | null))
+    );
+
+    return tasks?.map((task, index) => ({
       id: task.id,
       title: task.title,
       type: 'Task',
       status: task.status,
       priority: task.priority,
       dueDate: task.due_date || 'No due date',
-      assignee: task.team_members ? (task.team_members as unknown as { name: string }).name : 'Unassigned',
+      assignee: assigneeNames[index],
       projectName: task.projects ? (task.projects as unknown as { name: string }).name : 'No Project',
     })) || [];
   } catch (error) {

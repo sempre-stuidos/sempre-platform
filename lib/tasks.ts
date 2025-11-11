@@ -1,5 +1,51 @@
-import { supabase } from './supabase';
+import { supabase, supabaseAdmin } from './supabase';
 import { Task } from './types';
+
+// Helper function to get assignee info from user_roles.id
+async function getAssigneeInfoFromRoleId(roleId: number | null): Promise<{
+  name: string | null;
+  role: string | null;
+  avatar: string | null;
+}> {
+  if (!roleId) {
+    return { name: null, role: null, avatar: null };
+  }
+  
+  try {
+    const { data: userRole, error } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_id, role, invited_email')
+      .eq('id', roleId)
+      .single();
+    
+    if (error || !userRole || !userRole.user_id) {
+      return {
+        name: userRole?.invited_email || null,
+        role: userRole?.role || null,
+        avatar: null,
+      };
+    }
+    
+    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userRole.user_id);
+    if (userData?.user) {
+      const metadata = userData.user.user_metadata || {};
+      return {
+        name: metadata.full_name || metadata.name || userData.user.email?.split('@')[0] || null,
+        role: userRole.role,
+        avatar: metadata.avatar_url || metadata.picture || null,
+      };
+    }
+    
+    return {
+      name: userRole.invited_email || null,
+      role: userRole.role,
+      avatar: null,
+    };
+  } catch (error) {
+    console.error('Error fetching assignee info:', error);
+    return { name: null, role: null, avatar: null };
+  }
+}
 
 // Transform database record to match frontend interface
 function transformTaskRecord(record: Record<string, unknown>): Task {
@@ -40,8 +86,7 @@ export async function getAllTasks(): Promise<Task[]> {
       .from('tasks')
       .select(`
         *,
-        projects!project_id(name),
-        team_members!assignee_id(name, role, avatar)
+        projects!project_id(name)
       `)
       .order('id', { ascending: true });
 
@@ -50,13 +95,22 @@ export async function getAllTasks(): Promise<Task[]> {
       throw error;
     }
 
-    return data?.map(record => ({
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Fetch assignee info for all tasks in parallel
+    const assigneeInfos = await Promise.all(
+      data.map(record => getAssigneeInfoFromRoleId(record.assignee_id as number | null))
+    );
+
+    return data.map((record, index) => ({
       ...transformTaskRecord(record),
       projectName: record.projects?.name,
-      assigneeName: record.team_members?.name,
-      assigneeRole: record.team_members?.role,
-      assigneeAvatar: record.team_members?.avatar,
-    })) || [];
+      assigneeName: assigneeInfos[index].name,
+      assigneeRole: assigneeInfos[index].role,
+      assigneeAvatar: assigneeInfos[index].avatar,
+    }));
   } catch (error) {
     console.error('Error in getAllTasks:', error);
     return [];
@@ -209,8 +263,7 @@ export async function getTasksByAssignee(assigneeId: number): Promise<Task[]> {
       .from('tasks')
       .select(`
         *,
-        projects!project_id(name),
-        team_members!assignee_id(name, role, avatar)
+        projects!project_id(name)
       `)
       .eq('assignee_id', assigneeId)
       .order('id', { ascending: true });
@@ -220,13 +273,22 @@ export async function getTasksByAssignee(assigneeId: number): Promise<Task[]> {
       throw error;
     }
 
-    return data?.map(record => ({
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Fetch assignee info for all tasks in parallel
+    const assigneeInfos = await Promise.all(
+      data.map(record => getAssigneeInfoFromRoleId(record.assignee_id as number | null))
+    );
+
+    return data.map((record, index) => ({
       ...transformTaskRecord(record),
       projectName: record.projects?.name,
-      assigneeName: record.team_members?.name,
-      assigneeRole: record.team_members?.role,
-      assigneeAvatar: record.team_members?.avatar,
-    })) || [];
+      assigneeName: assigneeInfos[index].name,
+      assigneeRole: assigneeInfos[index].role,
+      assigneeAvatar: assigneeInfos[index].avatar,
+    }));
   } catch (error) {
     console.error('Error in getTasksByAssignee:', error);
     return [];
@@ -255,18 +317,16 @@ export async function getAllProjects(): Promise<{id: number, name: string}[]> {
 
 export async function getAllTeamMembers(): Promise<{id: number, name: string, role: string, avatar?: string}[]> {
   try {
-    const { data, error } = await supabase
-      .from('team_members')
-      .select('id, name, role, avatar')
-      .eq('status', 'Active')
-      .order('name', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching team members:', error);
-      throw error;
-    }
-
-    return data || [];
+    // Import from team.ts to use the new user_roles-based implementation
+    const { getAllTeamMembers: getTeamMembers } = await import('./team');
+    const teamMembers = await getTeamMembers();
+    
+    return teamMembers.map(member => ({
+      id: member.id,
+      name: member.name || 'Unknown',
+      role: member.role,
+      avatar: member.avatar,
+    }));
   } catch (error) {
     console.error('Error in getAllTeamMembers:', error);
     return [];

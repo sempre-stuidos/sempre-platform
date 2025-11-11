@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { usePathname } from "next/navigation"
 import { type Icon } from "@tabler/icons-react"
 
@@ -18,7 +19,7 @@ export function NavSub({
   items: {
     title: string
     url: string
-    icon?: Icon
+    icon?: Icon | React.ComponentType<any>
   }[]
 }) {
   const pathname = usePathname()

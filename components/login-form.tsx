@@ -85,7 +85,9 @@ export function LoginForm({
   }
 
   const handleGoToDashboard = () => {
-    router.push(redirectTo || '/dashboard')
+    const destination = redirectTo || '/dashboard'
+    // Use window.location for more reliable navigation
+    window.location.href = destination
   }
 
   if (checkingAuth) {

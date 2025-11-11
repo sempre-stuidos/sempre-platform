@@ -3,16 +3,22 @@
 -- Links auth.users to their assigned roles
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS user_roles (
+-- Drop table if it exists to ensure clean creation
+DROP TABLE IF EXISTS user_roles CASCADE;
+
+CREATE TABLE user_roles (
     id BIGSERIAL PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     role TEXT NOT NULL CHECK (role IN ('Admin', 'Manager', 'Member', 'Developer', 'Designer')),
     invited_email TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    UNIQUE(user_id),
-    UNIQUE(invited_email)
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
+
+-- Add unique constraints (user_id can be NULL for pending invitations)
+-- PostgreSQL allows multiple NULL values in a UNIQUE column
+CREATE UNIQUE INDEX IF NOT EXISTS user_roles_user_id_unique ON user_roles(user_id) WHERE user_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS user_roles_invited_email_unique ON user_roles(invited_email);
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON user_roles(user_id);

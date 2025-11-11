@@ -1,13 +1,40 @@
 import { Presentation } from "./types"
-import { supabase } from "./supabase"
+import { supabase, supabaseAdmin } from "./supabase"
+
+// Helper function to get user name from user_roles.id
+async function getUserNameFromRoleId(roleId: number | null): Promise<string | null> {
+  if (!roleId) return null;
+  
+  try {
+    const { data: userRole, error } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_id, invited_email')
+      .eq('id', roleId)
+      .single();
+    
+    if (error || !userRole || !userRole.user_id) {
+      return userRole?.invited_email || null;
+    }
+    
+    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userRole.user_id);
+    if (userData?.user) {
+      const metadata = userData.user.user_metadata || {};
+      return metadata.full_name || metadata.name || userData.user.email?.split('@')[0] || null;
+    }
+    
+    return userRole.invited_email || null;
+  } catch (error) {
+    console.error('Error fetching user name:', error);
+    return null;
+  }
+}
 
 export async function getAllPresentations(): Promise<Presentation[]> {
   const { data, error } = await supabase
     .from('presentations')
     .select(`
       *,
-      clients!inner(name),
-      team_members(name)
+      clients!inner(name)
     `)
     .order('created_date', { ascending: false })
 
@@ -16,7 +43,12 @@ export async function getAllPresentations(): Promise<Presentation[]> {
     return []
   }
 
-  return data.map(presentation => ({
+  // Fetch owner names for all presentations in parallel
+  const ownerNames = await Promise.all(
+    data.map(p => getUserNameFromRoleId(p.owner_id))
+  )
+
+  return data.map((presentation, index) => ({
     id: presentation.id,
     title: presentation.title,
     clientId: presentation.client_id,
@@ -24,7 +56,7 @@ export async function getAllPresentations(): Promise<Presentation[]> {
     type: presentation.type,
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
-    ownerName: presentation.team_members?.name || null,
+    ownerName: ownerNames[index],
     status: presentation.status,
     link: presentation.link,
     description: presentation.description,
@@ -39,8 +71,7 @@ export async function getPresentationById(id: number): Promise<Presentation | nu
     .from('presentations')
     .select(`
       *,
-      clients!inner(name),
-      team_members(name)
+      clients!inner(name)
     `)
     .eq('id', id)
     .single()
@@ -50,6 +81,8 @@ export async function getPresentationById(id: number): Promise<Presentation | nu
     return null
   }
 
+  const ownerName = await getUserNameFromRoleId(data.owner_id)
+
   return {
     id: data.id,
     title: data.title,
@@ -58,7 +91,7 @@ export async function getPresentationById(id: number): Promise<Presentation | nu
     type: data.type,
     createdDate: data.created_date,
     ownerId: data.owner_id,
-    ownerName: data.team_members?.name || null,
+    ownerName: ownerName,
     status: data.status,
     link: data.link,
     description: data.description,
@@ -74,7 +107,6 @@ export async function getPresentationsByClient(clientId: number): Promise<Presen
     .select(`
       *,
       clients!inner(name),
-      team_members(name)
     `)
     .eq('client_id', clientId)
     .order('created_date', { ascending: false })
@@ -84,7 +116,11 @@ export async function getPresentationsByClient(clientId: number): Promise<Presen
     return []
   }
 
-  return data.map(presentation => ({
+  const ownerNames = await Promise.all(
+    data.map(p => getUserNameFromRoleId(p.owner_id))
+  )
+
+  return data.map((presentation, index) => ({
     id: presentation.id,
     title: presentation.title,
     clientId: presentation.client_id,
@@ -92,7 +128,7 @@ export async function getPresentationsByClient(clientId: number): Promise<Presen
     type: presentation.type,
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
-    ownerName: presentation.team_members?.name || null,
+    ownerName: ownerNames[index],
     status: presentation.status,
     link: presentation.link,
     description: presentation.description,
@@ -108,7 +144,6 @@ export async function getPresentationsByType(type: Presentation['type']): Promis
     .select(`
       *,
       clients!inner(name),
-      team_members(name)
     `)
     .eq('type', type)
     .order('created_date', { ascending: false })
@@ -118,7 +153,11 @@ export async function getPresentationsByType(type: Presentation['type']): Promis
     return []
   }
 
-  return data.map(presentation => ({
+  const ownerNames = await Promise.all(
+    data.map(p => getUserNameFromRoleId(p.owner_id))
+  )
+
+  return data.map((presentation, index) => ({
     id: presentation.id,
     title: presentation.title,
     clientId: presentation.client_id,
@@ -126,7 +165,7 @@ export async function getPresentationsByType(type: Presentation['type']): Promis
     type: presentation.type,
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
-    ownerName: presentation.team_members?.name || null,
+    ownerName: ownerNames[index],
     status: presentation.status,
     link: presentation.link,
     description: presentation.description,
@@ -142,7 +181,6 @@ export async function getPresentationsByStatus(status: Presentation['status']): 
     .select(`
       *,
       clients!inner(name),
-      team_members(name)
     `)
     .eq('status', status)
     .order('created_date', { ascending: false })
@@ -152,7 +190,11 @@ export async function getPresentationsByStatus(status: Presentation['status']): 
     return []
   }
 
-  return data.map(presentation => ({
+  const ownerNames = await Promise.all(
+    data.map(p => getUserNameFromRoleId(p.owner_id))
+  )
+
+  return data.map((presentation, index) => ({
     id: presentation.id,
     title: presentation.title,
     clientId: presentation.client_id,
@@ -160,7 +202,7 @@ export async function getPresentationsByStatus(status: Presentation['status']): 
     type: presentation.type,
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
-    ownerName: presentation.team_members?.name || null,
+    ownerName: ownerNames[index],
     status: presentation.status,
     link: presentation.link,
     description: presentation.description,
@@ -176,7 +218,6 @@ export async function getPresentationsByOwner(ownerId: number): Promise<Presenta
     .select(`
       *,
       clients!inner(name),
-      team_members(name)
     `)
     .eq('owner_id', ownerId)
     .order('created_date', { ascending: false })
@@ -186,7 +227,11 @@ export async function getPresentationsByOwner(ownerId: number): Promise<Presenta
     return []
   }
 
-  return data.map(presentation => ({
+  const ownerNames = await Promise.all(
+    data.map(p => getUserNameFromRoleId(p.owner_id))
+  )
+
+  return data.map((presentation, index) => ({
     id: presentation.id,
     title: presentation.title,
     clientId: presentation.client_id,
@@ -194,7 +239,7 @@ export async function getPresentationsByOwner(ownerId: number): Promise<Presenta
     type: presentation.type,
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
-    ownerName: presentation.team_members?.name || null,
+    ownerName: ownerNames[index],
     status: presentation.status,
     link: presentation.link,
     description: presentation.description,
@@ -221,7 +266,6 @@ export async function createPresentation(presentationData: {
     .select(`
       *,
       clients!inner(name),
-      team_members(name)
     `)
     .single()
 
@@ -238,7 +282,7 @@ export async function createPresentation(presentationData: {
     type: data.type,
     createdDate: data.created_date,
     ownerId: data.owner_id,
-    ownerName: data.team_members?.name || null,
+    ownerName: await getUserNameFromRoleId(data.owner_id),
     status: data.status,
     link: data.link,
     description: data.description,
@@ -265,7 +309,6 @@ export async function updatePresentation(id: number, presentationData: {
     .select(`
       *,
       clients!inner(name),
-      team_members(name)
     `)
     .single()
 
@@ -282,7 +325,7 @@ export async function updatePresentation(id: number, presentationData: {
     type: data.type,
     createdDate: data.created_date,
     ownerId: data.owner_id,
-    ownerName: data.team_members?.name || null,
+    ownerName: await getUserNameFromRoleId(data.owner_id),
     status: data.status,
     link: data.link,
     description: data.description,
@@ -319,17 +362,14 @@ export async function getClients(): Promise<{ id: number; name: string }[]> {
 }
 
 export async function getTeamMembers(): Promise<{ id: number; name: string }[]> {
-  const { data, error } = await supabase
-    .from('team_members')
-    .select('id, name')
-    .order('name')
-
-  if (error) {
-    console.error('Error fetching team members:', error)
-    return []
-  }
-
-  return data
+  // Import getAllTeamMembers from team.ts
+  const { getAllTeamMembers } = await import('./team')
+  const teamMembers = await getAllTeamMembers()
+  
+  return teamMembers.map(member => ({
+    id: member.id,
+    name: member.name || 'Unknown'
+  }))
 }
 
 export async function getTeamMembersWithCurrentUser(currentUserId?: string): Promise<{ id: number; name: string; isCurrentUser?: boolean }[]> {
