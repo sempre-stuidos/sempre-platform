@@ -14,7 +14,19 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies()
     
     // Store cookies that are set during session exchange
-    const sessionCookies: Array<{ name: string; value: string; options?: any }> = []
+    const sessionCookies: Array<{ 
+      name: string
+      value: string
+      options?: {
+        httpOnly?: boolean
+        secure?: boolean
+        sameSite?: boolean | 'lax' | 'strict' | 'none'
+        path?: string
+        maxAge?: number
+        expires?: Date
+        domain?: string
+      }
+    }> = []
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -143,11 +155,17 @@ export async function GET(request: NextRequest) {
     
     // Apply all session cookies to the redirect response
     sessionCookies.forEach(({ name, value, options }) => {
+      // Convert boolean sameSite to string format if needed
+      const sameSite = options?.sameSite
+      const sameSiteValue = typeof sameSite === 'boolean' 
+        ? (sameSite ? 'lax' : 'none')
+        : (sameSite ?? 'lax')
+      
       redirectResponse.cookies.set(name, value, {
         ...options,
         httpOnly: options?.httpOnly ?? true,
         secure: options?.secure ?? (process.env.NODE_ENV === 'production'),
-        sameSite: options?.sameSite ?? 'lax',
+        sameSite: sameSiteValue as 'lax' | 'strict' | 'none',
         path: options?.path ?? '/',
       })
     })

@@ -107,9 +107,9 @@ export async function getAllTasks(): Promise<Task[]> {
     return data.map((record, index) => ({
       ...transformTaskRecord(record),
       projectName: record.projects?.name,
-      assigneeName: assigneeInfos[index].name,
-      assigneeRole: assigneeInfos[index].role,
-      assigneeAvatar: assigneeInfos[index].avatar,
+      assigneeName: assigneeInfos[index].name ?? undefined,
+      assigneeRole: assigneeInfos[index].role ?? undefined,
+      assigneeAvatar: assigneeInfos[index].avatar ?? undefined,
     }));
   } catch (error) {
     console.error('Error in getAllTasks:', error);
@@ -285,9 +285,9 @@ export async function getTasksByAssignee(assigneeId: number): Promise<Task[]> {
     return data.map((record, index) => ({
       ...transformTaskRecord(record),
       projectName: record.projects?.name,
-      assigneeName: assigneeInfos[index].name,
-      assigneeRole: assigneeInfos[index].role,
-      assigneeAvatar: assigneeInfos[index].avatar,
+      assigneeName: assigneeInfos[index].name ?? undefined,
+      assigneeRole: assigneeInfos[index].role ?? undefined,
+      assigneeAvatar: assigneeInfos[index].avatar ?? undefined,
     }));
   } catch (error) {
     console.error('Error in getTasksByAssignee:', error);

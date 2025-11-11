@@ -19,7 +19,7 @@ export function NavSub({
   items: {
     title: string
     url: string
-    icon?: Icon | React.ComponentType<any>
+    icon?: Icon | React.ComponentType<Record<string, never>>
   }[]
 }) {
   const pathname = usePathname()

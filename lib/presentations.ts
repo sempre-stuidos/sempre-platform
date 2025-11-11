@@ -43,23 +43,45 @@ export async function getAllPresentations(): Promise<Presentation[]> {
     return []
   }
 
+  if (!data || !Array.isArray(data)) {
+    return []
+  }
+
+  // Type assertion to work around Supabase type inference issue
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const presentationsData = data as any as Array<{
+    owner_id: number | null
+    id: number
+    title: string
+    client_id: number
+    type: string
+    created_date: string
+    status: string
+    link: string
+    description?: string | null
+    last_modified: string
+    clients: { name: string }
+    created_at?: string
+    updated_at?: string
+  }>
+
   // Fetch owner names for all presentations in parallel
   const ownerNames = await Promise.all(
-    data.map(p => getUserNameFromRoleId(p.owner_id))
+    presentationsData.map((p) => getUserNameFromRoleId(p.owner_id))
   )
 
-  return data.map((presentation, index) => ({
+  return presentationsData.map((presentation, index) => ({
     id: presentation.id,
     title: presentation.title,
     clientId: presentation.client_id,
     clientName: presentation.clients.name,
-    type: presentation.type,
+    type: presentation.type as Presentation['type'],
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
     ownerName: ownerNames[index],
-    status: presentation.status,
+    status: presentation.status as Presentation['status'],
     link: presentation.link,
-    description: presentation.description,
+    description: presentation.description ?? undefined,
     lastModified: presentation.last_modified,
     created_at: presentation.created_at,
     updated_at: presentation.updated_at
@@ -69,10 +91,7 @@ export async function getAllPresentations(): Promise<Presentation[]> {
 export async function getPresentationById(id: number): Promise<Presentation | null> {
   const { data, error } = await supabase
     .from('presentations')
-    .select(`
-      *,
-      clients!inner(name)
-    `)
+    .select('*, clients!inner(name)')
     .eq('id', id)
     .single()
 
@@ -81,33 +100,52 @@ export async function getPresentationById(id: number): Promise<Presentation | nu
     return null
   }
 
-  const ownerName = await getUserNameFromRoleId(data.owner_id)
+  if (!data) {
+    return null
+  }
+
+  // Type assertion to work around Supabase type inference issue
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const presentationData = data as any as {
+    owner_id: number | null
+    id: number
+    title: string
+    client_id: number
+    type: string
+    created_date: string
+    status: string
+    link: string
+    description?: string | null
+    last_modified: string
+    clients: { name: string }
+    created_at?: string
+    updated_at?: string
+  }
+
+  const ownerName = await getUserNameFromRoleId(presentationData.owner_id)
 
   return {
-    id: data.id,
-    title: data.title,
-    clientId: data.client_id,
-    clientName: data.clients.name,
-    type: data.type,
-    createdDate: data.created_date,
-    ownerId: data.owner_id,
+    id: presentationData.id,
+    title: presentationData.title,
+    clientId: presentationData.client_id,
+    clientName: presentationData.clients.name,
+    type: presentationData.type as Presentation['type'],
+    createdDate: presentationData.created_date,
+    ownerId: presentationData.owner_id,
     ownerName: ownerName,
-    status: data.status,
-    link: data.link,
-    description: data.description,
-    lastModified: data.last_modified,
-    created_at: data.created_at,
-    updated_at: data.updated_at
+    status: presentationData.status as Presentation['status'],
+    link: presentationData.link,
+    description: presentationData.description ?? undefined,
+    lastModified: presentationData.last_modified,
+    created_at: presentationData.created_at,
+    updated_at: presentationData.updated_at
   }
 }
 
 export async function getPresentationsByClient(clientId: number): Promise<Presentation[]> {
   const { data, error } = await supabase
     .from('presentations')
-    .select(`
-      *,
-      clients!inner(name),
-    `)
+    .select('*, clients!inner(name)')
     .eq('client_id', clientId)
     .order('created_date', { ascending: false })
 
@@ -116,22 +154,44 @@ export async function getPresentationsByClient(clientId: number): Promise<Presen
     return []
   }
 
+  if (!data || !Array.isArray(data)) {
+    return []
+  }
+
+  // Type assertion to work around Supabase type inference issue
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const presentationsData = data as any as Array<{
+    owner_id: number | null
+    id: number
+    title: string
+    client_id: number
+    type: string
+    created_date: string
+    status: string
+    link: string
+    description?: string | null
+    last_modified: string
+    clients: { name: string }
+    created_at?: string
+    updated_at?: string
+  }>
+  
   const ownerNames = await Promise.all(
-    data.map(p => getUserNameFromRoleId(p.owner_id))
+    presentationsData.map((p) => getUserNameFromRoleId(p.owner_id))
   )
 
-  return data.map((presentation, index) => ({
+  return presentationsData.map((presentation, index) => ({
     id: presentation.id,
     title: presentation.title,
     clientId: presentation.client_id,
     clientName: presentation.clients.name,
-    type: presentation.type,
+    type: presentation.type as Presentation['type'],
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
     ownerName: ownerNames[index],
-    status: presentation.status,
+    status: presentation.status as Presentation['status'],
     link: presentation.link,
-    description: presentation.description,
+    description: presentation.description ?? undefined,
     lastModified: presentation.last_modified,
     created_at: presentation.created_at,
     updated_at: presentation.updated_at
@@ -141,10 +201,7 @@ export async function getPresentationsByClient(clientId: number): Promise<Presen
 export async function getPresentationsByType(type: Presentation['type']): Promise<Presentation[]> {
   const { data, error } = await supabase
     .from('presentations')
-    .select(`
-      *,
-      clients!inner(name),
-    `)
+    .select('*, clients!inner(name)')
     .eq('type', type)
     .order('created_date', { ascending: false })
 
@@ -153,22 +210,44 @@ export async function getPresentationsByType(type: Presentation['type']): Promis
     return []
   }
 
+  if (!data || !Array.isArray(data)) {
+    return []
+  }
+
+  // Type assertion to work around Supabase type inference issue
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const presentationsData = data as any as Array<{
+    owner_id: number | null
+    id: number
+    title: string
+    client_id: number
+    type: string
+    created_date: string
+    status: string
+    link: string
+    description?: string | null
+    last_modified: string
+    clients: { name: string }
+    created_at?: string
+    updated_at?: string
+  }>
+
   const ownerNames = await Promise.all(
-    data.map(p => getUserNameFromRoleId(p.owner_id))
+    presentationsData.map((p) => getUserNameFromRoleId(p.owner_id))
   )
 
-  return data.map((presentation, index) => ({
+  return presentationsData.map((presentation, index) => ({
     id: presentation.id,
     title: presentation.title,
     clientId: presentation.client_id,
     clientName: presentation.clients.name,
-    type: presentation.type,
+    type: presentation.type as Presentation['type'],
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
     ownerName: ownerNames[index],
-    status: presentation.status,
+    status: presentation.status as Presentation['status'],
     link: presentation.link,
-    description: presentation.description,
+    description: presentation.description ?? undefined,
     lastModified: presentation.last_modified,
     created_at: presentation.created_at,
     updated_at: presentation.updated_at
@@ -178,10 +257,7 @@ export async function getPresentationsByType(type: Presentation['type']): Promis
 export async function getPresentationsByStatus(status: Presentation['status']): Promise<Presentation[]> {
   const { data, error } = await supabase
     .from('presentations')
-    .select(`
-      *,
-      clients!inner(name),
-    `)
+    .select('*, clients!inner(name)')
     .eq('status', status)
     .order('created_date', { ascending: false })
 
@@ -190,22 +266,44 @@ export async function getPresentationsByStatus(status: Presentation['status']): 
     return []
   }
 
+  if (!data || !Array.isArray(data)) {
+    return []
+  }
+
+  // Type assertion to work around Supabase type inference issue
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const presentationsData = data as any as Array<{
+    owner_id: number | null
+    id: number
+    title: string
+    client_id: number
+    type: string
+    created_date: string
+    status: string
+    link: string
+    description?: string | null
+    last_modified: string
+    clients: { name: string }
+    created_at?: string
+    updated_at?: string
+  }>
+
   const ownerNames = await Promise.all(
-    data.map(p => getUserNameFromRoleId(p.owner_id))
+    presentationsData.map((p) => getUserNameFromRoleId(p.owner_id))
   )
 
-  return data.map((presentation, index) => ({
+  return presentationsData.map((presentation, index) => ({
     id: presentation.id,
     title: presentation.title,
     clientId: presentation.client_id,
     clientName: presentation.clients.name,
-    type: presentation.type,
+    type: presentation.type as Presentation['type'],
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
     ownerName: ownerNames[index],
-    status: presentation.status,
+    status: presentation.status as Presentation['status'],
     link: presentation.link,
-    description: presentation.description,
+    description: presentation.description ?? undefined,
     lastModified: presentation.last_modified,
     created_at: presentation.created_at,
     updated_at: presentation.updated_at
@@ -215,10 +313,7 @@ export async function getPresentationsByStatus(status: Presentation['status']): 
 export async function getPresentationsByOwner(ownerId: number): Promise<Presentation[]> {
   const { data, error } = await supabase
     .from('presentations')
-    .select(`
-      *,
-      clients!inner(name),
-    `)
+    .select('*, clients!inner(name)')
     .eq('owner_id', ownerId)
     .order('created_date', { ascending: false })
 
@@ -227,22 +322,44 @@ export async function getPresentationsByOwner(ownerId: number): Promise<Presenta
     return []
   }
 
+  if (!data || !Array.isArray(data)) {
+    return []
+  }
+
+  // Type assertion to work around Supabase type inference issue
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const presentationsData = data as any as Array<{
+    owner_id: number | null
+    id: number
+    title: string
+    client_id: number
+    type: string
+    created_date: string
+    status: string
+    link: string
+    description?: string | null
+    last_modified: string
+    clients: { name: string }
+    created_at?: string
+    updated_at?: string
+  }>
+
   const ownerNames = await Promise.all(
-    data.map(p => getUserNameFromRoleId(p.owner_id))
+    presentationsData.map((p) => getUserNameFromRoleId(p.owner_id))
   )
 
-  return data.map((presentation, index) => ({
+  return presentationsData.map((presentation, index) => ({
     id: presentation.id,
     title: presentation.title,
     clientId: presentation.client_id,
     clientName: presentation.clients.name,
-    type: presentation.type,
+    type: presentation.type as Presentation['type'],
     createdDate: presentation.created_date,
     ownerId: presentation.owner_id,
     ownerName: ownerNames[index],
-    status: presentation.status,
+    status: presentation.status as Presentation['status'],
     link: presentation.link,
-    description: presentation.description,
+    description: presentation.description ?? undefined,
     lastModified: presentation.last_modified,
     created_at: presentation.created_at,
     updated_at: presentation.updated_at
@@ -263,10 +380,7 @@ export async function createPresentation(presentationData: {
   const { data, error } = await supabase
     .from('presentations')
     .insert([presentationData])
-    .select(`
-      *,
-      clients!inner(name),
-    `)
+    .select('*, clients!inner(name)')
     .single()
 
   if (error) {
@@ -274,21 +388,43 @@ export async function createPresentation(presentationData: {
     throw new Error('Failed to create presentation')
   }
 
+  if (!data) {
+    throw new Error('Failed to create presentation')
+  }
+
+  // Type assertion to work around Supabase type inference issue
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const presentationDataResult = data as any as {
+    owner_id: number | null
+    id: number
+    title: string
+    client_id: number
+    type: string
+    created_date: string
+    status: string
+    link: string
+    description?: string | null
+    last_modified: string
+    clients: { name: string }
+    created_at?: string
+    updated_at?: string
+  }
+
   return {
-    id: data.id,
-    title: data.title,
-    clientId: data.client_id,
-    clientName: data.clients.name,
-    type: data.type,
-    createdDate: data.created_date,
-    ownerId: data.owner_id,
-    ownerName: await getUserNameFromRoleId(data.owner_id),
-    status: data.status,
-    link: data.link,
-    description: data.description,
-    lastModified: data.last_modified,
-    created_at: data.created_at,
-    updated_at: data.updated_at
+    id: presentationDataResult.id,
+    title: presentationDataResult.title,
+    clientId: presentationDataResult.client_id,
+    clientName: presentationDataResult.clients.name,
+    type: presentationDataResult.type as Presentation['type'],
+    createdDate: presentationDataResult.created_date,
+    ownerId: presentationDataResult.owner_id,
+    ownerName: await getUserNameFromRoleId(presentationDataResult.owner_id),
+    status: presentationDataResult.status as Presentation['status'],
+    link: presentationDataResult.link,
+    description: presentationDataResult.description ?? undefined,
+    lastModified: presentationDataResult.last_modified,
+    created_at: presentationDataResult.created_at,
+    updated_at: presentationDataResult.updated_at
   }
 }
 
@@ -306,10 +442,7 @@ export async function updatePresentation(id: number, presentationData: {
     .from('presentations')
     .update(presentationData)
     .eq('id', id)
-    .select(`
-      *,
-      clients!inner(name),
-    `)
+    .select('*, clients!inner(name)')
     .single()
 
   if (error) {
@@ -317,21 +450,43 @@ export async function updatePresentation(id: number, presentationData: {
     throw new Error('Failed to update presentation')
   }
 
+  if (!data) {
+    throw new Error('Failed to update presentation')
+  }
+
+  // Type assertion to work around Supabase type inference issue
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const presentationDataResult = data as any as {
+    owner_id: number | null
+    id: number
+    title: string
+    client_id: number
+    type: string
+    created_date: string
+    status: string
+    link: string
+    description?: string | null
+    last_modified: string
+    clients: { name: string }
+    created_at?: string
+    updated_at?: string
+  }
+
   return {
-    id: data.id,
-    title: data.title,
-    clientId: data.client_id,
-    clientName: data.clients.name,
-    type: data.type,
-    createdDate: data.created_date,
-    ownerId: data.owner_id,
-    ownerName: await getUserNameFromRoleId(data.owner_id),
-    status: data.status,
-    link: data.link,
-    description: data.description,
-    lastModified: data.last_modified,
-    created_at: data.created_at,
-    updated_at: data.updated_at
+    id: presentationDataResult.id,
+    title: presentationDataResult.title,
+    clientId: presentationDataResult.client_id,
+    clientName: presentationDataResult.clients.name,
+    type: presentationDataResult.type as Presentation['type'],
+    createdDate: presentationDataResult.created_date,
+    ownerId: presentationDataResult.owner_id,
+    ownerName: await getUserNameFromRoleId(presentationDataResult.owner_id),
+    status: presentationDataResult.status as Presentation['status'],
+    link: presentationDataResult.link,
+    description: presentationDataResult.description ?? undefined,
+    lastModified: presentationDataResult.last_modified,
+    created_at: presentationDataResult.created_at,
+    updated_at: presentationDataResult.updated_at
   }
 }
 

@@ -3,39 +3,7 @@
 import { IconCheck } from "@tabler/icons-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-
-interface Project {
-  id: number
-  name: string
-  clientId: number
-  clientName: string
-  status: string
-  dueDate: string
-  progress?: number
-  description: string
-  startDate: string
-  budget: number
-  priority: string
-  teamMembers: Array<{
-    id: number
-    name: string
-    role: string
-    avatar?: string
-  }>
-  tasks: Array<{
-    id: number
-    title: string
-    status: string
-    assignee?: string
-    deliverable?: string
-  }>
-  deliverables: string[]
-  timeline: Array<{
-    milestone: string
-    date: string
-    status: string
-  }>
-}
+import { Project } from "@/lib/types"
 
 interface ProjectOverviewProps {
   project: Project

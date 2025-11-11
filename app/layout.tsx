@@ -16,13 +16,6 @@ const orbitron = Orbitron({
 export const metadata: Metadata = {
   title: "Sempre Studios - Creative Agency Platform",
   description: "Access your creative agency dashboard and manage your projects with ease.",
-  icons: {
-    icon: [
-      { url: "/se-logo.png", type: "image/png" },
-    ],
-    shortcut: "/se-logo.png",
-    apple: "/se-logo.png",
-  },
 };
 
 export default function RootLayout({

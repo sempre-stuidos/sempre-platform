@@ -316,20 +316,15 @@ export function TeamDataTable({
     }
   }
 
-  const handleUpdateTeamMember = async (teamMemberData: Partial<TeamMember>) => {
-    if (!editingTeamMember) return
-    
+  const handleUpdateTeamMember = async () => {
+    // The modal already handles the update, we just need to refresh the data
     try {
-      const updatedTeamMember = await updateTeamMember(editingTeamMember.id, teamMemberData)
-      if (updatedTeamMember) {
-        setData(prev => prev.map(member => 
-          member.id === editingTeamMember.id ? updatedTeamMember : member
-        ))
-        toast.success("Team member updated successfully")
-      }
+      const { getAllTeamMembers } = await import('@/lib/team')
+      const updatedData = await getAllTeamMembers()
+      setData(updatedData)
     } catch (error: unknown) {
-      console.error('Error updating team member:', error)
-      toast.error(error instanceof Error ? error.message : "Failed to update team member")
+      // Don't show error toast for refresh failures
+      console.error('Error refreshing team members:', error)
     }
   }
 
@@ -671,13 +666,13 @@ export function TeamDataTable({
               {/* Basic Info */}
               <div className="flex items-start gap-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={selectedMember.avatar} alt={selectedMember.name} />
+                  <AvatarImage src={selectedMember.avatar ?? undefined} alt={selectedMember.name ?? undefined} />
                   <AvatarFallback className="text-lg">
-                    {selectedMember.name.split(' ').map(n => n[0]).join('')}
+                    {(selectedMember.name || 'Unknown').split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-bold">{selectedMember.name}</h3>
+                  <h3 className="text-2xl font-bold">{selectedMember.name || 'Unknown'}</h3>
                   <p className="text-lg text-muted-foreground">{selectedMember.role}</p>
                   <Badge variant="outline">{selectedMember.status}</Badge>
                   <div className="space-y-1 text-sm">
@@ -775,13 +770,13 @@ function TeamMemberCellViewer({
       onClick={() => onViewProfile(item)}
     >
       <Avatar className="h-8 w-8">
-        <AvatarImage src={item.avatar} alt={item.name} />
+        <AvatarImage src={item.avatar ?? undefined} alt={item.name ?? undefined} />
         <AvatarFallback className="text-xs">
-          {item.name.split(' ').map(n => n[0]).join('')}
+          {(item.name || 'Unknown').split(' ').map(n => n[0]).join('')}
         </AvatarFallback>
       </Avatar>
       <div className="flex flex-col">
-        <span className="text-sm font-medium">{item.name}</span>
+        <span className="text-sm font-medium">{item.name || 'Unknown'}</span>
         <span className="text-xs text-muted-foreground">{item.email}</span>
       </div>
     </div>

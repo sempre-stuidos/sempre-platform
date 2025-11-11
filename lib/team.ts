@@ -84,7 +84,7 @@ export async function getAllTeamMembers(): Promise<TeamMember[]> {
     );
 
     // Transform auth.users + user_roles to TeamMember format
-    return usersWithRoles
+    const members = usersWithRoles
       .map((user) => {
         const userRole = roleMap.get(user.id);
         if (!userRole) {
@@ -115,7 +115,9 @@ export async function getAllTeamMembers(): Promise<TeamMember[]> {
           updated_at: userRole.updated_at || user.updated_at || user.created_at,
         };
       })
-      .filter((member): member is TeamMember => member !== null);
+      .filter((member) => member !== null) as TeamMember[];
+    
+    return members;
   } catch (error) {
     console.error('Error in getAllTeamMembers:', error);
     return [];
@@ -351,7 +353,7 @@ export async function getTeamMembersByRole(role: string): Promise<TeamMember[]> 
           updated_at: userRole.updated_at || user.updated_at || user.created_at,
         };
       })
-      .filter((member): member is TeamMember => member !== null);
+      .filter((member) => member !== null) as TeamMember[];
   } catch (error) {
     console.error('Error in getTeamMembersByRole:', error);
     return [];
