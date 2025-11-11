@@ -1,42 +1,70 @@
 -- Update tasks table to use simplified structure with project_id and assignee_id
 -- Remove individual project and assignee fields, keep only IDs
+-- NOTE: This migration is now a no-op since the initial schema already includes assignee_id
+-- Keeping it for historical purposes and to handle any edge cases
 
--- Add assignee_id column
-ALTER TABLE tasks 
-ADD COLUMN assignee_id BIGINT;
+-- Add assignee_id column if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'tasks' AND column_name = 'assignee_id'
+    ) THEN
+        ALTER TABLE tasks ADD COLUMN assignee_id BIGINT;
+    END IF;
+END $$;
 
--- Add foreign key constraint for assignee_id
+-- Add foreign key constraint for assignee_id if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'tasks_assignee_id_fkey'
+    ) THEN
 ALTER TABLE tasks 
 ADD CONSTRAINT tasks_assignee_id_fkey 
 FOREIGN KEY (assignee_id) REFERENCES team_members(id) ON DELETE SET NULL;
+    END IF;
+END $$;
 
--- Create index for assignee_id
-CREATE INDEX idx_tasks_assignee_id ON tasks(assignee_id);
+-- Create index for assignee_id if it doesn't exist
+CREATE INDEX IF NOT EXISTS idx_tasks_assignee_id ON tasks(assignee_id);
 
--- Update existing tasks to populate assignee_id based on assignee_name
--- This is a temporary migration - in production you'd want to map names to IDs properly
-UPDATE tasks 
-SET assignee_id = (
-  SELECT tm.id 
-  FROM team_members tm 
-  WHERE tm.name = tasks.assignee_name 
-  LIMIT 1
-)
-WHERE assignee_name IS NOT NULL;
+-- Drop columns only if they exist (for backward compatibility with old schemas)
+DO $$ 
+BEGIN
+    -- Drop assignee_name if it exists
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'tasks' AND column_name = 'assignee_name'
+    ) THEN
+        ALTER TABLE tasks DROP COLUMN assignee_name;
+    END IF;
 
--- Make assignee_id NOT NULL (after populating it)
-ALTER TABLE tasks 
-ALTER COLUMN assignee_id SET NOT NULL;
+    -- Drop assignee_role if it exists
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'tasks' AND column_name = 'assignee_role'
+    ) THEN
+        ALTER TABLE tasks DROP COLUMN assignee_role;
+    END IF;
 
--- Drop the individual assignee fields
-ALTER TABLE tasks 
-DROP COLUMN assignee_name,
-DROP COLUMN assignee_role,
-DROP COLUMN assignee_avatar;
+    -- Drop assignee_avatar if it exists
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'tasks' AND column_name = 'assignee_avatar'
+    ) THEN
+        ALTER TABLE tasks DROP COLUMN assignee_avatar;
+    END IF;
 
--- Drop the project_name field (we'll get it from projects table)
-ALTER TABLE tasks 
-DROP COLUMN project_name;
+    -- Drop project_name if it exists
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'tasks' AND column_name = 'project_name'
+    ) THEN
+        ALTER TABLE tasks DROP COLUMN project_name;
+    END IF;
+END $$;
 
--- Drop the old assignee_name index since we removed the column
+-- Drop the old assignee_name index if it exists
 DROP INDEX IF EXISTS idx_tasks_assignee_name;

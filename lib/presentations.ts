@@ -358,12 +358,16 @@ export async function getTeamMembersWithCurrentUser(currentUserId?: string): Pro
 export function getPresentationStats(presentations: Presentation[]) {
   const total = presentations.length
   const byStatus = presentations.reduce((acc, p) => {
-    acc[p.status] = (acc[p.status] || 0) + 1
+    if (p.status) {
+      acc[p.status] = (acc[p.status] || 0) + 1
+    }
     return acc
   }, {} as Record<string, number>)
   
   const byType = presentations.reduce((acc, p) => {
-    acc[p.type] = (acc[p.type] || 0) + 1
+    if (p.type) {
+      acc[p.type] = (acc[p.type] || 0) + 1
+    }
     return acc
   }, {} as Record<string, number>)
 

@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { supabase, checkSupabaseConfig } from "@/lib/supabase"
+import { supabase, checkSupabaseConfig, getBaseUrl } from "@/lib/supabase"
 import { toast } from "sonner"
 
 export function RegisterForm({
@@ -23,10 +23,11 @@ export function RegisterForm({
     setIsLoading(true)
     try {
       checkSupabaseConfig()
+      const baseUrl = getBaseUrl()
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${baseUrl}/dashboard`
         }
       })
       if (error) throw error

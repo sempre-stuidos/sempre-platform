@@ -43,11 +43,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS set_conversations_updated_at ON conversations;
 CREATE TRIGGER set_conversations_updated_at
     BEFORE UPDATE ON conversations
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS set_conversation_states_updated_at ON conversation_states;
 CREATE TRIGGER set_conversation_states_updated_at
     BEFORE UPDATE ON conversation_states
     FOR EACH ROW
@@ -59,28 +61,33 @@ ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE conversation_states ENABLE ROW LEVEL SECURITY;
 
 -- RLS policies: users may only interact with their own conversations
+DROP POLICY IF EXISTS conversations_select_policy ON conversations;
 CREATE POLICY conversations_select_policy
     ON conversations
     FOR SELECT
     USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS conversations_insert_policy ON conversations;
 CREATE POLICY conversations_insert_policy
     ON conversations
     FOR INSERT
     WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS conversations_update_policy ON conversations;
 CREATE POLICY conversations_update_policy
     ON conversations
     FOR UPDATE
     USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS conversations_delete_policy ON conversations;
 CREATE POLICY conversations_delete_policy
     ON conversations
     FOR DELETE
     USING (user_id = auth.uid());
 
 -- Messages policies: scope access via parent conversation ownership
+DROP POLICY IF EXISTS messages_select_policy ON messages;
 CREATE POLICY messages_select_policy
     ON messages
     FOR SELECT
@@ -93,6 +100,7 @@ CREATE POLICY messages_select_policy
         )
     );
 
+DROP POLICY IF EXISTS messages_insert_policy ON messages;
 CREATE POLICY messages_insert_policy
     ON messages
     FOR INSERT
@@ -105,6 +113,7 @@ CREATE POLICY messages_insert_policy
         )
     );
 
+DROP POLICY IF EXISTS messages_update_policy ON messages;
 CREATE POLICY messages_update_policy
     ON messages
     FOR UPDATE
@@ -125,6 +134,7 @@ CREATE POLICY messages_update_policy
         )
     );
 
+DROP POLICY IF EXISTS messages_delete_policy ON messages;
 CREATE POLICY messages_delete_policy
     ON messages
     FOR DELETE
@@ -138,6 +148,7 @@ CREATE POLICY messages_delete_policy
     );
 
 -- Conversation state policies follow the same pattern
+DROP POLICY IF EXISTS conversation_states_select_policy ON conversation_states;
 CREATE POLICY conversation_states_select_policy
     ON conversation_states
     FOR SELECT
@@ -150,6 +161,7 @@ CREATE POLICY conversation_states_select_policy
         )
     );
 
+DROP POLICY IF EXISTS conversation_states_insert_policy ON conversation_states;
 CREATE POLICY conversation_states_insert_policy
     ON conversation_states
     FOR INSERT
@@ -162,6 +174,7 @@ CREATE POLICY conversation_states_insert_policy
         )
     );
 
+DROP POLICY IF EXISTS conversation_states_update_policy ON conversation_states;
 CREATE POLICY conversation_states_update_policy
     ON conversation_states
     FOR UPDATE
@@ -182,6 +195,7 @@ CREATE POLICY conversation_states_update_policy
         )
     );
 
+DROP POLICY IF EXISTS conversation_states_delete_policy ON conversation_states;
 CREATE POLICY conversation_states_delete_policy
     ON conversation_states
     FOR DELETE

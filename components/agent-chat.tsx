@@ -337,7 +337,12 @@ export function AgentChat({
             if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
               event.preventDefault()
               if (!isStreaming && input.trim().length > 0) {
-                handleSubmit(event as any)
+                // Trigger form submission by finding the form and calling submit
+                const form = event.currentTarget.closest('form')
+                if (form) {
+                  const formEvent = new Event('submit', { bubbles: true, cancelable: true })
+                  form.dispatchEvent(formEvent)
+                }
               }
             }
           }}

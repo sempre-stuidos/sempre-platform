@@ -13,7 +13,7 @@ import {
 export const dynamic = 'force-dynamic'
 
 async function getSupabaseServerClient() {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,7 +25,7 @@ async function getSupabaseServerClient() {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(cookie => {
-            cookieStore.set(cookie)
+            cookieStore.set(cookie.name, cookie.value, cookie.options)
           })
         }
       }
@@ -47,7 +47,7 @@ export default async function AgentPage() {
     .from('conversations')
     .select('id')
     .eq('user_id', user.id)
-    .order('last_message_at', { ascending: false, nullsLast: true })
+    .order('last_message_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()

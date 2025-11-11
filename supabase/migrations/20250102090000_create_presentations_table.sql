@@ -1,4 +1,13 @@
--- Create presentations table
+-- Create presentations table if it doesn't exist
+-- NOTE: This migration is now a no-op since the initial schema already includes presentations table
+-- Keeping it for historical purposes and to handle any edge cases
+
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'presentations'
+    ) THEN
 CREATE TABLE presentations (
     id BIGSERIAL PRIMARY KEY,
     title TEXT NOT NULL,
@@ -39,3 +48,5 @@ CREATE POLICY "Enable read access for all users" ON presentations FOR SELECT USI
 CREATE POLICY "Enable insert for authenticated users only" ON presentations FOR INSERT WITH CHECK (true);
 CREATE POLICY "Enable update for authenticated users only" ON presentations FOR UPDATE USING (true);
 CREATE POLICY "Enable delete for authenticated users only" ON presentations FOR DELETE USING (true);
+    END IF;
+END $$;

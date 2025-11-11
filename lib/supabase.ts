@@ -4,6 +4,19 @@ import { createBrowserClient } from '@supabase/ssr'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 
+// Get the base URL for redirects
+// Always uses window.location.origin on client-side (most reliable)
+// Uses env var on server-side for SSR
+export const getBaseUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    // Client-side: always use the actual origin the user is on
+    // This works for both development and production automatically
+    return window.location.origin
+  }
+  // Server-side: use env var or default to localhost
+  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+}
+
 // Check if Supabase is properly configured
 const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 

@@ -88,8 +88,8 @@ export function AddPresentationModal({
       const presentationData = {
         title: formData.title,
         client_id: parseInt(formData.clientId),
-        type: formData.type || null,
-        status: formData.status || null,
+        type: (formData.type as 'Proposal' | 'Onboarding' | 'Progress Update' | 'Report' | 'Case Study') || null,
+        status: (formData.status as 'Draft' | 'Sent' | 'Approved' | 'Archived') || null,
         link: formData.link,
         description: formData.description || null,
         owner_id: formData.ownerId ? parseInt(formData.ownerId) : null,
