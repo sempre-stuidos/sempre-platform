@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { linkUserToRole } from '@/lib/invitations'
 import { linkTeamMemberToAuthUser } from '@/lib/team'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -11,6 +12,10 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const cookieStore = await cookies()
+    
+    // Store cookies that are set during session exchange
+    const sessionCookies: Array<{ name: string; value: string; options?: any }> = []
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -22,6 +27,8 @@ export async function GET(request: NextRequest) {
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set(name, value, options)
+              // Store cookies to apply to redirect response later
+              sessionCookies.push({ name, value, options })
             })
           },
         },
@@ -42,6 +49,65 @@ export async function GET(request: NextRequest) {
 
       if (email) {
         try {
+          // Check if this email already exists in auth.users (excluding the current user)
+          // This ensures only registered users can sign in with Google
+          const { data: usersData } = await supabaseAdmin.auth.admin.listUsers()
+          
+          // Find users with the same email (excluding the current user)
+          const existingUsers = usersData?.users?.filter(u => 
+            u.email?.toLowerCase() === email && u.id !== user.id
+          ) || []
+
+          // Check if user was just created (created_at is very recent, within last minute)
+          const userCreatedAt = new Date(user.created_at)
+          const now = new Date()
+          const timeDiff = now.getTime() - userCreatedAt.getTime()
+          const isNewUser = timeDiff < 60000 // Less than 1 minute old
+
+          // If this is a new user (just created by Google OAuth)
+          if (isNewUser) {
+            // Check if email exists in user_roles (invited users)
+            const { data: invitedRole } = await supabaseAdmin
+              .from('user_roles')
+              .select('id')
+              .eq('invited_email', email)
+              .maybeSingle()
+
+            // If email exists in auth.users (registered via email/password), allow sign-in (account linking)
+            // OR if email is in user_roles (invited), allow sign-in
+            if (existingUsers.length === 0 && !invitedRole) {
+              // Email is not registered and not invited - reject sign-in
+              // Delete the newly created user
+              await supabaseAdmin.auth.admin.deleteUser(user.id)
+              
+              // Sign out the user
+              await supabase.auth.signOut()
+              
+              // Clear any cookies
+              const errorResponse = NextResponse.redirect(
+                new URL(`/login?error=${encodeURIComponent('Your email is not registered. Please contact an administrator to receive an invitation.')}`, request.url)
+              )
+              // Clear auth cookies
+              cookieStore.getAll().forEach((cookie) => {
+                if (cookie.name.startsWith('sb-')) {
+                  errorResponse.cookies.delete(cookie.name)
+                }
+              })
+              return errorResponse
+            }
+            
+            // If there's an existing user with this email, we should link accounts
+            // For now, we'll allow the Google OAuth user to sign in
+            // In the future, you might want to merge accounts or use the existing user's account
+            if (existingUsers.length > 0) {
+              // User exists - this is account linking scenario
+              // The Google OAuth user will be a separate account, but with the same email
+              // You might want to handle this differently (e.g., merge accounts)
+              console.log(`Account linking: Google OAuth user ${user.id} has same email as existing user(s)`)
+            }
+          }
+
+          // If we get here, the user is allowed to sign in
           // Check if user has a pending invitation and link them to role
           const roleResult = await linkUserToRole(user.id, email)
 
@@ -64,15 +130,42 @@ export async function GET(request: NextRequest) {
             )
           }
         } catch (error) {
-          console.error('Error linking user to role/team member:', error)
-          // Continue with redirect even if linking fails
-          // The user can still sign in, and we can handle this later
+          console.error('Error in OAuth callback:', error)
+          // If there's an error, still allow the user to sign in
+          // They might be an existing user trying to link their Google account
         }
       }
     }
 
-    // Redirect to the intended page or dashboard
-    return NextResponse.redirect(new URL(next, request.url))
+    // Create the redirect response now that we know the user is allowed
+    const redirectTo = new URL(next, request.url)
+    const redirectResponse = NextResponse.redirect(redirectTo)
+    
+    // Apply all session cookies to the redirect response
+    sessionCookies.forEach(({ name, value, options }) => {
+      redirectResponse.cookies.set(name, value, {
+        ...options,
+        httpOnly: options?.httpOnly ?? true,
+        secure: options?.secure ?? (process.env.NODE_ENV === 'production'),
+        sameSite: options?.sameSite ?? 'lax',
+        path: options?.path ?? '/',
+      })
+    })
+    
+    // Also copy any remaining cookies from cookieStore
+    cookieStore.getAll().forEach((cookie) => {
+      if (cookie.name.startsWith('sb-') && !sessionCookies.find(c => c.name === cookie.name)) {
+        redirectResponse.cookies.set(cookie.name, cookie.value, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+        })
+      }
+    })
+    
+    // Return the redirect response with cookies
+    return redirectResponse
   }
 
   // If no code, redirect to login
