@@ -1,6 +1,6 @@
 import { supabaseAdmin, getBaseUrl, supabase } from './supabase';
 
-export type UserRole = 'Admin' | 'Manager' | 'Member' | 'Developer' | 'Designer';
+export type UserRole = 'Admin' | 'Manager' | 'Member' | 'Developer' | 'Designer' | 'Client';
 
 /**
  * Send a team member invitation via email

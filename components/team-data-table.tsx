@@ -92,6 +92,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { TeamMember } from "@/lib/types"
 import { updateTeamMember, deleteTeamMember } from "@/lib/team"
 import { AddTeamMemberModal } from "@/components/add-team-member-modal"
+import { AddExistingUserModal } from "@/components/add-existing-user-modal"
 
 // Bulk Actions Floating Bar Component
 function BulkActionsBar({ 
@@ -298,6 +299,7 @@ export function TeamDataTable({
   
   // CRUD modal states
   const [isAddTeamMemberModalOpen, setIsAddTeamMemberModalOpen] = React.useState(false)
+  const [isAddExistingUserModalOpen, setIsAddExistingUserModalOpen] = React.useState(false)
   const [editingTeamMember, setEditingTeamMember] = React.useState<TeamMember | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
   const [teamMemberToDelete, setTeamMemberToDelete] = React.useState<TeamMember | null>(null)
@@ -424,7 +426,11 @@ export function TeamDataTable({
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <Button onClick={() => setIsAddTeamMemberModalOpen(true)}>
+            <Button onClick={() => setIsAddTeamMemberModalOpen(true)} variant="outline">
+              <IconPlus className="mr-2 h-4 w-4" />
+              Invite Team Member
+            </Button>
+            <Button onClick={() => setIsAddExistingUserModalOpen(true)}>
               <IconPlus className="mr-2 h-4 w-4" />
               Add Team Member
             </Button>
@@ -622,6 +628,15 @@ export function TeamDataTable({
         onAddTeamMember={editingTeamMember ? handleUpdateTeamMember : handleAddTeamMember}
         initialData={editingTeamMember}
         isEdit={!!editingTeamMember}
+      />
+
+      {/* Add Existing User Modal */}
+      <AddExistingUserModal
+        isOpen={isAddExistingUserModalOpen}
+        onClose={() => {
+          setIsAddExistingUserModalOpen(false)
+        }}
+        onAddUser={handleAddTeamMember}
       />
 
       {/* Delete Confirmation Dialog */}

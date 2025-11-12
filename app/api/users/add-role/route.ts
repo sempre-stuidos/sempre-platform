@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { sendTeamMemberInvitation, type UserRole } from '@/lib/invitations'
+import { supabaseAdmin } from '@/lib/supabase'
+import { type UserRole } from '@/lib/invitations'
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,11 +35,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { email, role } = body
+    const { userId, role } = body
 
-    if (!email || !role) {
+    if (!userId || !role) {
       return NextResponse.json(
-        { success: false, error: 'Email and role are required' },
+        { success: false, error: 'User ID and role are required' },
         { status: 400 }
       )
     }
@@ -52,19 +53,58 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Send invitation
-    const result = await sendTeamMemberInvitation(email, role)
-
-    if (result.success) {
-      return NextResponse.json({ success: true })
-    } else {
+    // Get user details to get email
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId)
+    
+    if (userError || !userData?.user) {
       return NextResponse.json(
-        { success: false, error: result.error },
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    const email = userData.user.email?.toLowerCase()
+    if (!email) {
+      return NextResponse.json(
+        { success: false, error: 'User email not found' },
         { status: 400 }
       )
     }
+
+    // Check if user already has a role
+    const { data: existingRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (existingRole) {
+      return NextResponse.json(
+        { success: false, error: 'User already has a role assigned' },
+        { status: 400 }
+      )
+    }
+
+    // Insert user role
+    const { error: insertError } = await supabaseAdmin
+      .from('user_roles')
+      .insert({
+        user_id: userId,
+        role,
+        invited_email: email,
+      })
+
+    if (insertError) {
+      console.error('Error adding user role:', insertError)
+      return NextResponse.json(
+        { success: false, error: 'Failed to add user role' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error in invitation API route:', error)
+    console.error('Error in add user role API route:', error)
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }

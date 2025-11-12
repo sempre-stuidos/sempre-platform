@@ -26,7 +26,7 @@ interface AddTeamMemberModalProps {
   isEdit?: boolean
 }
 
-const AVAILABLE_ROLES: UserRole[] = ['Admin', 'Manager', 'Member', 'Developer', 'Designer']
+const AVAILABLE_ROLES: UserRole[] = ['Admin', 'Manager', 'Member', 'Developer', 'Designer', 'Client']
 
 export function AddTeamMemberModal({
   isOpen,
@@ -148,7 +148,7 @@ export function AddTeamMemberModal({
                   })
                 }
               }}
-              className={errors.email ? "border-red-500" : ""}
+              className={`w-full ${errors.email ? "border-red-500" : ""}`}
               placeholder="Enter email address"
               disabled={isEdit}
             />
@@ -172,7 +172,7 @@ export function AddTeamMemberModal({
                 }
               }}
             >
-              <SelectTrigger className={errors.role ? "border-red-500" : ""}>
+              <SelectTrigger className={`w-full ${errors.role ? "border-red-500" : ""}`}>
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent>
