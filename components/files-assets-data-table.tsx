@@ -149,7 +149,9 @@ const getFileIcon = (format: string) => {
   }
 }
 
-const columns: ColumnDef<FilesAssets>[] = [
+const createColumns = (
+  onDelete: (file: FilesAssets) => void
+): ColumnDef<FilesAssets>[] => [
   {
     id: "drag",
     header: () => null,
@@ -298,17 +300,8 @@ const columns: ColumnDef<FilesAssets>[] = [
         }
       }
 
-      const handleDelete = async () => {
-        if (confirm(`Are you sure you want to delete "${fileAsset.name}"?`)) {
-          const success = await deleteFilesAssets(fileAsset.id)
-          if (success) {
-            setData(data.filter(file => file.id !== fileAsset.id))
-            toast.success("File deleted successfully")
-            onDataChange?.()
-          } else {
-            toast.error("Failed to delete file")
-          }
-        }
+      const handleDelete = () => {
+        onDelete(fileAsset)
       }
 
       return (
@@ -407,6 +400,24 @@ export function FilesAssetsDataTable({
     [data]
   )
 
+  const handleDeleteFile = React.useCallback(async (file: FilesAssets) => {
+    if (confirm(`Are you sure you want to delete "${file.name}"?`)) {
+      const success = await deleteFilesAssets(file.id)
+      if (success) {
+        setData((prevData) => prevData.filter(f => f.id !== file.id))
+        toast.success("File deleted successfully")
+        onDataChange?.()
+      } else {
+        toast.error("Failed to delete file")
+      }
+    }
+  }, [onDataChange])
+
+  const columns = React.useMemo(
+    () => createColumns(handleDeleteFile),
+    [handleDeleteFile]
+  )
+
   const table = useReactTable({
     data,
     columns,
@@ -454,7 +465,7 @@ export function FilesAssetsDataTable({
       const successCount = results.filter(Boolean).length
       if (successCount > 0) {
         const deletedIds = selectedFiles.slice(0, successCount).map(f => f.id)
-        setData(data.filter(file => !deletedIds.includes(file.id)))
+        setData((prevData) => prevData.filter(file => !deletedIds.includes(file.id)))
         toast.success(`${successCount} file(s) deleted successfully`)
         table.resetRowSelection()
         onDataChange?.()

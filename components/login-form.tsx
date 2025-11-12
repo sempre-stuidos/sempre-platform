@@ -30,6 +30,16 @@ export function LoginForm({
     const normalizedRedirect = rawRedirect === '/' ? '/dashboard' : rawRedirect
     setRedirectTo(normalizedRedirect)
 
+    // Check for error messages from OAuth callback
+    const error = searchParams.get('error')
+    if (error) {
+      toast.error(decodeURIComponent(error))
+      // Clean up the URL by removing the error param
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('error')
+      window.history.replaceState({}, '', newUrl.toString())
+    }
+
     // Check if user is already authenticated (but don't redirect - let middleware handle it)
     const checkAuth = async () => {
       try {
@@ -70,18 +80,30 @@ export function LoginForm({
       checkSupabaseConfig()
       const baseUrl = getBaseUrl()
       const normalizedRedirect = redirectTo === '/' ? '/dashboard' : redirectTo
+      
+      // Build callback URL - Supabase will append the code parameter
+      // The redirect URL must be registered in Supabase dashboard
+      const callbackUrl = `${baseUrl}/auth/callback`
+      
+      // Store the final destination in a way that persists through OAuth flow
+      // We'll use query params that Supabase will preserve
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${baseUrl}${normalizedRedirect}`
+          redirectTo: callbackUrl,
+          queryParams: {
+            // Pass the final destination as a query param that will be preserved
+            next: normalizedRedirect
+          }
         }
       })
       if (error) throw error
     } catch (error: unknown) {
+      console.error('Google sign-in error:', error)
       toast.error(error instanceof Error ? error.message : "Failed to sign in with Google")
-    } finally {
       setIsLoading(false)
     }
+    // Note: Don't set loading to false here - user is being redirected
   }
 
   const handleGoToDashboard = () => {
