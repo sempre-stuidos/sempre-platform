@@ -71,33 +71,90 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user already has a role
-    const { data: existingRole } = await supabaseAdmin
+    // Check if user already has a role by user_id
+    const { data: existingRoleByUserId } = await supabaseAdmin
       .from('user_roles')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle()
 
-    if (existingRole) {
+    if (existingRoleByUserId) {
       return NextResponse.json(
         { success: false, error: 'User already has a role assigned' },
         { status: 400 }
       )
     }
 
+    // Check if email already exists in user_roles (unique constraint)
+    const { data: existingRoleByEmail } = await supabaseAdmin
+      .from('user_roles')
+      .select('*')
+      .eq('invited_email', email)
+      .maybeSingle()
+
+    if (existingRoleByEmail) {
+      // If it's a pending invitation (user_id is null), update it
+      if (existingRoleByEmail.user_id === null) {
+        const { error: updateError } = await supabaseAdmin
+          .from('user_roles')
+          .update({ 
+            user_id: userId,
+            role,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingRoleByEmail.id)
+
+        if (updateError) {
+          console.error('Error updating pending invitation:', updateError)
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: `Failed to update existing invitation: ${updateError.message || 'Unknown error'}` 
+            },
+            { status: 500 }
+          )
+        }
+
+        return NextResponse.json({ success: true })
+      } else {
+        // Email exists and is already assigned to another user
+        return NextResponse.json(
+          { success: false, error: 'This email is already associated with another user role' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Insert user role
-    const { error: insertError } = await supabaseAdmin
+    const { error: insertError, data: insertData } = await supabaseAdmin
       .from('user_roles')
       .insert({
         user_id: userId,
         role,
         invited_email: email,
       })
+      .select()
 
     if (insertError) {
       console.error('Error adding user role:', insertError)
+      console.error('Error details:', JSON.stringify(insertError, null, 2))
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to add user role'
+      if (insertError.code === '23505') {
+        errorMessage = 'This user or email already has a role assigned'
+      } else if (insertError.code === '23503') {
+        errorMessage = 'Invalid user ID - user does not exist'
+      } else if (insertError.message) {
+        errorMessage = insertError.message
+      }
+      
       return NextResponse.json(
-        { success: false, error: 'Failed to add user role' },
+        { 
+          success: false, 
+          error: errorMessage,
+          details: process.env.NODE_ENV === 'development' ? insertError : undefined
+        },
         { status: 500 }
       )
     }
