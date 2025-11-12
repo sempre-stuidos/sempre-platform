@@ -22,6 +22,7 @@ import {
   IconEdit,
   IconClipboardText,
   IconExternalLink,
+  IconBrandNotion,
 } from "@tabler/icons-react"
 import {
   ColumnDef,
@@ -172,6 +173,8 @@ const createColumns = (onEditNote?: (note: NotesKnowledge) => void, onDeleteNote
             return <IconUsers className="size-4 text-cyan-600" />
           case "Documentation":
             return <IconFileText className="size-4 text-indigo-600" />
+          case "notion":
+            return <IconBrandNotion className="size-4 text-black dark:text-white" />
           default:
             return <IconNote className="size-4 text-gray-600" />
         }
@@ -311,17 +314,19 @@ export function NotesKnowledgeDataTable({
 
   const handleAddNote = async (noteData: Partial<NotesKnowledge>) => {
     try {
+      console.log('handleAddNote called with:', noteData)
       const newNote = await createNotesKnowledge(noteData as Omit<NotesKnowledge, 'id' | 'created_at' | 'updated_at'>)
       if (newNote) {
         setData(prev => [...prev, newNote])
         toast.success('Note created successfully')
         setIsAddNoteModalOpen(false)
       } else {
-        toast.error('Failed to create note')
+        toast.error('Failed to create note. Check console for details.')
       }
     } catch (error) {
       console.error('Error creating note:', error)
-      toast.error('Failed to create note')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create note'
+      toast.error(`Failed to create note: ${errorMessage}`)
     }
   }
 
@@ -806,6 +811,8 @@ function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit
                   return <IconUsers className="size-4 text-cyan-600" />
                 case "Documentation":
                   return <IconFileText className="size-4 text-indigo-600" />
+                case "notion":
+                  return <IconBrandNotion className="size-4 text-black dark:text-white" />
                 default:
                   return <IconNote className="size-4 text-gray-600" />
               }
@@ -849,6 +856,17 @@ function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit
               variant="link" 
               className="text-foreground w-fit px-0 text-left h-auto p-0 font-semibold hover:text-sky-600"
               onClick={handleItemClick}
+            >
+              <div className="flex items-center gap-2">
+                {item.title}
+                <IconExternalLink className="h-3 w-3 opacity-60" />
+              </div>
+            </Button>
+          ) : item.type === "notion" && item.notion_url ? (
+            <Button 
+              variant="link" 
+              className="text-foreground w-fit px-0 text-left h-auto p-0 font-semibold hover:text-blue-600"
+              onClick={handleNotionClick}
             >
               <div className="flex items-center gap-2">
                 {item.title}
@@ -933,6 +951,22 @@ function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit
                     <p className="mt-2 text-sm whitespace-pre-wrap">{item.content}</p>
                   </div>
                 )}
+                {item.type === "notion" && item.notion_url && (
+                  <div className="pt-4 border-t">
+                    <span className="font-medium text-muted-foreground">Notion URL:</span>
+                    <div className="mt-2">
+                      <a 
+                        href={item.notion_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:underline flex items-center gap-2"
+                      >
+                        {item.notion_url}
+                        <IconExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  </div>
+                )}
                 <div className="pt-4 border-t">
                   <p className="text-sm text-muted-foreground">
                     Click the edit button in the dropdown menu to modify this note.
@@ -989,12 +1023,33 @@ function TableCellViewer({ item }: { item: NotesKnowledge }) {
     }
   }
 
+  const handleNotionClick = () => {
+    if (item.type === "notion" && item.notion_url) {
+      window.open(item.notion_url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
   if (item.type === "Proposal") {
     return (
       <Button 
         variant="link" 
         className="text-foreground w-fit px-0 text-left hover:text-sky-600"
         onClick={handleItemClick}
+      >
+        <div className="flex items-center gap-2">
+          {item.title}
+          <IconExternalLink className="h-3 w-3 opacity-60" />
+        </div>
+      </Button>
+    )
+  }
+
+  if (item.type === "notion" && item.notion_url) {
+    return (
+      <Button 
+        variant="link" 
+        className="text-foreground w-fit px-0 text-left hover:text-blue-600"
+        onClick={handleNotionClick}
       >
         <div className="flex items-center gap-2">
           {item.title}
@@ -1032,6 +1087,8 @@ function TableCellViewer({ item }: { item: NotesKnowledge }) {
                   return <IconUsers className="size-5 text-cyan-600" />
                 case "Documentation":
                   return <IconFileText className="size-5 text-indigo-600" />
+                case "notion":
+                  return <IconBrandNotion className="size-5 text-black dark:text-white" />
                 default:
                   return <IconNote className="size-5 text-gray-600" />
               }
@@ -1080,6 +1137,22 @@ function TableCellViewer({ item }: { item: NotesKnowledge }) {
             <div className="pt-4 border-t">
               <span className="font-medium text-muted-foreground">Content:</span>
               <p className="mt-2 text-sm whitespace-pre-wrap">{item.content}</p>
+            </div>
+          )}
+          {item.type === "notion" && item.notion_url && (
+            <div className="pt-4 border-t">
+              <span className="font-medium text-muted-foreground">Notion URL:</span>
+              <div className="mt-2">
+                <a 
+                  href={item.notion_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline flex items-center gap-2"
+                >
+                  {item.notion_url}
+                  <IconExternalLink className="h-3 w-3" />
+                </a>
+              </div>
             </div>
           )}
           <div className="pt-4 border-t">

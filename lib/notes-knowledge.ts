@@ -3,18 +3,25 @@ import { NotesKnowledge } from './types';
 
 // Transform database record to match frontend interface
 function transformNotesKnowledgeRecord(record: Record<string, unknown>): NotesKnowledge {
+  // Handle both old schema (client/project as text) and new schema (client_id/project_id as foreign keys)
+  const clientId = record.client_id !== undefined ? (record.client_id as number | null) : null;
+  const projectId = record.project_id !== undefined ? (record.project_id as number | null) : null;
+  const clientName = record.client_name as string | undefined || (record.client as string | undefined);
+  const projectName = record.project_name as string | undefined || (record.project as string | undefined);
+  
   return {
     id: record.id as number,
     title: record.title as string,
     type: record.type as NotesKnowledge['type'],
     status: record.status as NotesKnowledge['status'],
-    clientId: record.client_id as number | null,
-    clientName: record.client_name as string | undefined,
-    projectId: record.project_id as number | null,
-    projectName: record.project_name as string | undefined,
+    clientId,
+    clientName,
+    projectId,
+    projectName,
     date: record.date as string,
     author: record.author as string,
     content: (record.content as string) || '',
+    notion_url: (record.notion_url as string) || undefined,
     created_at: record.created_at as string,
     updated_at: record.updated_at as string,
   };
@@ -22,16 +29,31 @@ function transformNotesKnowledgeRecord(record: Record<string, unknown>): NotesKn
 
 // Transform frontend interface to database record format
 function transformNotesKnowledgeToRecord(notesKnowledge: Partial<NotesKnowledge>) {
-  return {
+  const record: Record<string, unknown> = {
     title: notesKnowledge.title,
     type: notesKnowledge.type,
     status: notesKnowledge.status,
-    client_id: notesKnowledge.clientId || null,
-    project_id: notesKnowledge.projectId || null,
     date: notesKnowledge.date,
     author: notesKnowledge.author,
     content: notesKnowledge.content || null,
   };
+  
+  // Include client_id/project_id if they have values
+  // These columns are nullable, so we can include null values
+  // The migration 20250124000000_alter_notes_knowledge_relationships.sql adds these columns
+  if (notesKnowledge.clientId !== undefined) {
+    record.client_id = notesKnowledge.clientId;
+  }
+  if (notesKnowledge.projectId !== undefined) {
+    record.project_id = notesKnowledge.projectId;
+  }
+  
+  // Include notion_url (nullable column, so null is fine)
+  if (notesKnowledge.notion_url !== undefined) {
+    record.notion_url = notesKnowledge.notion_url || null;
+  }
+  
+  return record;
 }
 
 export async function getAllNotesKnowledge(): Promise<NotesKnowledge[]> {
@@ -133,7 +155,20 @@ export async function getNotesKnowledgeById(id: number): Promise<NotesKnowledge 
 export async function createNotesKnowledge(notesKnowledge: Omit<NotesKnowledge, 'id' | 'created_at' | 'updated_at'>): Promise<NotesKnowledge | null> {
   try {
     const record = transformNotesKnowledgeToRecord(notesKnowledge);
-    console.log('Creating note with data:', record);
+    console.log('Creating note with data:', JSON.stringify(record, null, 2));
+    
+    // Validate required fields
+    if (!record.title || !record.type || !record.status || !record.date || !record.author) {
+      const missingFields = [];
+      if (!record.title) missingFields.push('title');
+      if (!record.type) missingFields.push('type');
+      if (!record.status) missingFields.push('status');
+      if (!record.date) missingFields.push('date');
+      if (!record.author) missingFields.push('author');
+      
+      console.error('Missing required fields:', missingFields);
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    }
     
     const { data: newNotesKnowledge, error } = await supabase
       .from('notes_knowledge')
@@ -149,6 +184,7 @@ export async function createNotesKnowledge(notesKnowledge: Omit<NotesKnowledge, 
         hint: error.hint,
         code: error.code
       });
+      console.error('Record that failed:', JSON.stringify(record, null, 2));
       throw error;
     }
 
@@ -159,6 +195,9 @@ export async function createNotesKnowledge(notesKnowledge: Omit<NotesKnowledge, 
     return transformNotesKnowledgeRecord(newNotesKnowledge);
   } catch (error) {
     console.error('Error in createNotesKnowledge:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+    }
     return null;
   }
 }

@@ -10,12 +10,13 @@ BEGIN
         WHERE table_name = 'notes_knowledge'
     ) THEN
         -- First, add the new foreign key columns if they don't exist
+        -- These are nullable to preserve existing data and allow notes without client/project
         IF NOT EXISTS (
             SELECT 1 FROM information_schema.columns 
             WHERE table_name = 'notes_knowledge' AND column_name = 'client_id'
         ) THEN
             ALTER TABLE notes_knowledge 
-            ADD COLUMN client_id BIGINT REFERENCES clients(id);
+            ADD COLUMN client_id BIGINT NULL REFERENCES clients(id);
         END IF;
         
         IF NOT EXISTS (
@@ -23,7 +24,7 @@ BEGIN
             WHERE table_name = 'notes_knowledge' AND column_name = 'project_id'
         ) THEN
             ALTER TABLE notes_knowledge 
-            ADD COLUMN project_id BIGINT REFERENCES projects(id);
+            ADD COLUMN project_id BIGINT NULL REFERENCES projects(id);
         END IF;
 
         -- Create indexes for the new foreign keys

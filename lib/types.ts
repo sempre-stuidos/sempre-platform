@@ -23,6 +23,12 @@ export interface DashboardStats {
   notesToday: number;
 }
 
+export interface ClientDashboardStats {
+  menuItemsCount: number;
+  galleryImagesCount: number;
+  sectionsCount: number;
+}
+
 export interface DashboardChartData {
   month: string;
   date: string;
@@ -131,7 +137,7 @@ export interface Deadline {
 export interface NotesKnowledge {
   id: number;
   title: string;
-  type: 'Proposal' | 'Meeting Notes' | 'Internal Playbook' | 'Research Notes' | 'Bug Report' | 'Feature Request' | 'Standup Notes' | 'Documentation';
+  type: 'Proposal' | 'Meeting Notes' | 'Internal Playbook' | 'Research Notes' | 'Bug Report' | 'Feature Request' | 'Standup Notes' | 'Documentation' | 'notion';
   status: 'Draft' | 'Published' | 'Archived' | 'Template' | 'Open' | 'Under Review';
   clientId: number | null;
   clientName?: string;
@@ -140,6 +146,7 @@ export interface NotesKnowledge {
   date: string;
   author: string;
   content?: string;
+  notion_url?: string;
   created_at?: string;
   updated_at?: string;
 }
