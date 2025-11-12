@@ -74,6 +74,7 @@ export default function Page() {
                 <FilesAssetsDataTable 
                   data={data} 
                   onUploadClick={() => setIsUploadModalOpen(true)}
+                  onDataChange={fetchData}
                 />
               )}
             </div>

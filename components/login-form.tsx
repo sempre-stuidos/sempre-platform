@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,26 +19,24 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [redirectTo, setRedirectTo] = useState("/dashboard")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
 
   useEffect(() => {
-    const redirect = searchParams.get('redirectTo') || '/dashboard'
-    setRedirectTo(redirect)
+    // Normalize redirectTo - convert '/' to '/dashboard'
+    const rawRedirect = searchParams.get('redirectTo') || '/dashboard'
+    const normalizedRedirect = rawRedirect === '/' ? '/dashboard' : rawRedirect
+    setRedirectTo(normalizedRedirect)
 
-    // Check if user is already authenticated
+    // Check if user is already authenticated (but don't redirect - let middleware handle it)
     const checkAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
           setIsAuthenticated(true)
-          // Automatically redirect after a brief moment
-          setTimeout(() => {
-            router.push(redirect)
-          }, 500)
+          // Don't redirect here - middleware will handle redirecting authenticated users from /login
         }
       } catch (error) {
         console.error('Error checking auth:', error)
@@ -49,12 +47,13 @@ export function LoginForm({
 
     checkAuth()
 
-    // Listen for auth state changes
+    // Listen for auth state changes - only update UI state
+    // OAuth callback and middleware handle all redirects to prevent conflicts
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         setIsAuthenticated(true)
-        const currentRedirect = searchParams.get('redirectTo') || '/dashboard'
-        router.push(currentRedirect)
+        // Don't redirect here - OAuth callback handles redirect after sign-in
+        // Middleware handles redirect for already-authenticated users
       } else {
         setIsAuthenticated(false)
       }
@@ -63,17 +62,18 @@ export function LoginForm({
     return () => {
       subscription.unsubscribe()
     }
-  }, [searchParams, router])
+  }, [searchParams])
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
     try {
       checkSupabaseConfig()
       const baseUrl = getBaseUrl()
+      const normalizedRedirect = redirectTo === '/' ? '/dashboard' : redirectTo
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${baseUrl}${redirectTo}`
+          redirectTo: `${baseUrl}${normalizedRedirect}`
         }
       })
       if (error) throw error
@@ -85,9 +85,9 @@ export function LoginForm({
   }
 
   const handleGoToDashboard = () => {
-    const destination = redirectTo || '/dashboard'
-    // Use window.location for more reliable navigation
-    window.location.href = destination
+    const destination = redirectTo === '/' ? '/dashboard' : (redirectTo || '/dashboard')
+    // Use replace to avoid adding to history and prevent back button issues
+    window.location.replace(destination)
   }
 
   if (checkingAuth) {

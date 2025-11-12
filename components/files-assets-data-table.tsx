@@ -73,6 +73,16 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -292,8 +302,9 @@ const columns: ColumnDef<FilesAssets>[] = [
         if (confirm(`Are you sure you want to delete "${fileAsset.name}"?`)) {
           const success = await deleteFilesAssets(fileAsset.id)
           if (success) {
+            setData(data.filter(file => file.id !== fileAsset.id))
             toast.success("File deleted successfully")
-            window.location.reload()
+            onDataChange?.()
           } else {
             toast.error("Failed to delete file")
           }
@@ -360,9 +371,11 @@ function DraggableRow({ row }: { row: Row<FilesAssets> }) {
 export function FilesAssetsDataTable({
   data: initialData,
   onUploadClick,
+  onDataChange,
 }: {
   data: FilesAssets[]
   onUploadClick?: () => void
+  onDataChange?: () => void
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
@@ -376,7 +389,13 @@ export function FilesAssetsDataTable({
     pageIndex: 0,
     pageSize: 10,
   })
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false)
   const sortableId = React.useId()
+
+  // Sync local data with prop when it changes
+  React.useEffect(() => {
+    setData(initialData)
+  }, [initialData])
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
     useSensor(TouchSensor, {}),
@@ -421,6 +440,34 @@ export function FilesAssetsDataTable({
         const newIndex = dataIds.indexOf(over.id)
         return arrayMove(data, oldIndex, newIndex)
       })
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    const selectedRows = table.getFilteredSelectedRowModel().rows
+    const selectedFiles = selectedRows.map(row => row.original)
+    
+    try {
+      const deletePromises = selectedFiles.map(file => deleteFilesAssets(file.id))
+      const results = await Promise.all(deletePromises)
+      
+      const successCount = results.filter(Boolean).length
+      if (successCount > 0) {
+        const deletedIds = selectedFiles.slice(0, successCount).map(f => f.id)
+        setData(data.filter(file => !deletedIds.includes(file.id)))
+        toast.success(`${successCount} file(s) deleted successfully`)
+        table.resetRowSelection()
+        onDataChange?.()
+      }
+      
+      if (successCount < selectedFiles.length) {
+        toast.error(`Failed to delete ${selectedFiles.length - successCount} file(s)`)
+      }
+    } catch (error) {
+      console.error("Error deleting files:", error)
+      toast.error("Failed to delete files")
+    } finally {
+      setBulkDeleteDialogOpen(false)
     }
   }
 
@@ -646,6 +693,54 @@ export function FilesAssetsDataTable({
       >
         <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
       </TabsContent>
+
+      {/* Bulk Actions Bar */}
+      {table.getFilteredSelectedRowModel().rows.length > 0 && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-background border rounded-lg shadow-lg px-4 py-3 flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              {table.getFilteredSelectedRowModel().rows.length} file(s) selected
+            </span>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setBulkDeleteDialogOpen(true)}
+            >
+              Delete Selected
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Multiple Files</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the following {table.getFilteredSelectedRowModel().rows.length} file(s)? This action cannot be undone.
+              
+              <div className="mt-3 max-h-32 overflow-y-auto">
+                <ul className="text-sm space-y-1">
+                  {table.getFilteredSelectedRowModel().rows.map((row) => (
+                    <li key={row.original.id} className="flex justify-between">
+                      <span>{row.original.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+            >
+              Delete {table.getFilteredSelectedRowModel().rows.length} File(s)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Tabs>
   )
 }

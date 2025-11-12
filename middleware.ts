@@ -48,8 +48,9 @@ export async function middleware(request: NextRequest) {
   if (user && isPublicRoute) {
     const redirectTo = request.nextUrl.searchParams.get('redirectTo')
     const redirectUrl = request.nextUrl.clone()
-    // Redirect to the intended page or dashboard
-    redirectUrl.pathname = redirectTo || '/dashboard'
+    // Normalize redirectTo - convert '/' or empty to '/dashboard'
+    const destination = (redirectTo && redirectTo !== '/') ? redirectTo : '/dashboard'
+    redirectUrl.pathname = destination
     redirectUrl.search = '' // Clear search params
     return NextResponse.redirect(redirectUrl)
   }
@@ -65,9 +66,9 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
-     * - API routes
+     * - API routes (including auth callback)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
 

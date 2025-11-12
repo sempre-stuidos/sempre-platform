@@ -307,6 +307,7 @@ export function NotesKnowledgeDataTable({
   const [editingNote, setEditingNote] = React.useState<NotesKnowledge | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
   const [noteToDelete, setNoteToDelete] = React.useState<NotesKnowledge | null>(null)
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false)
 
   const handleAddNote = async (noteData: Partial<NotesKnowledge>) => {
     try {
@@ -368,6 +369,33 @@ export function NotesKnowledgeDataTable({
   const handleEditNote = (note: NotesKnowledge) => {
     setEditingNote(note)
     setIsAddNoteModalOpen(true)
+  }
+
+  const handleBulkDelete = async () => {
+    const selectedRows = table.getFilteredSelectedRowModel().rows
+    const selectedNotes = selectedRows.map(row => row.original)
+    
+    try {
+      const deletePromises = selectedNotes.map(note => deleteNotesKnowledge(note.id))
+      const results = await Promise.all(deletePromises)
+      
+      const successCount = results.filter(Boolean).length
+      if (successCount > 0) {
+        const deletedIds = selectedNotes.slice(0, successCount).map(n => n.id)
+        setData(data.filter(note => !deletedIds.includes(note.id)))
+        toast.success(`${successCount} note(s) deleted successfully`)
+        table.resetRowSelection()
+      }
+      
+      if (successCount < selectedNotes.length) {
+        toast.error(`Failed to delete ${selectedNotes.length - successCount} note(s)`)
+      }
+    } catch (error) {
+      console.error("Error deleting notes:", error)
+      toast.error("Failed to delete notes")
+    } finally {
+      setBulkDeleteDialogOpen(false)
+    }
   }
 
   const columns = React.useMemo(() => createColumns(handleEditNote, openDeleteDialog), [])
@@ -680,6 +708,54 @@ export function NotesKnowledgeDataTable({
             className="bg-red-600 hover:bg-red-700"
           >
             Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Bulk Actions Bar */}
+    {table.getFilteredSelectedRowModel().rows.length > 0 && (
+      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+        <div className="bg-background border rounded-lg shadow-lg px-4 py-3 flex items-center gap-4">
+          <span className="text-sm text-muted-foreground">
+            {table.getFilteredSelectedRowModel().rows.length} note(s) selected
+          </span>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setBulkDeleteDialogOpen(true)}
+          >
+            Delete Selected
+          </Button>
+        </div>
+      </div>
+    )}
+
+    {/* Bulk Delete Dialog */}
+    <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Multiple Notes</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete the following {table.getFilteredSelectedRowModel().rows.length} note(s)? This action cannot be undone.
+            
+            <div className="mt-3 max-h-32 overflow-y-auto">
+              <ul className="text-sm space-y-1">
+                {table.getFilteredSelectedRowModel().rows.map((row) => (
+                  <li key={row.original.id} className="flex justify-between">
+                    <span>{row.original.title}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleBulkDelete}
+          >
+            Delete {table.getFilteredSelectedRowModel().rows.length} Note(s)
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
