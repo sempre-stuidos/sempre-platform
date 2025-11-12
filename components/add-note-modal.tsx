@@ -209,7 +209,7 @@ export function AddNoteModal({ isOpen, onClose, onAddNote, initialData, isEdit =
     
     if (validateForm()) {
       // For notion type, set default values for date and author if empty
-      const submitData: Partial<NewNote> = { ...formData }
+      const submitData: NewNote = { ...formData }
       if (formData.type === "notion") {
         if (!submitData.date) {
           submitData.date = new Date().toISOString().split('T')[0]

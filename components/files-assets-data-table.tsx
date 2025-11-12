@@ -21,7 +21,6 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import {
-  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
   IconChevronsLeft,
@@ -29,7 +28,6 @@ import {
   IconCircleCheckFilled,
   IconDotsVertical,
   IconGripVertical,
-  IconLayoutColumns,
   IconLoader,
   IconPlus,
   IconFile,
@@ -38,6 +36,7 @@ import {
   IconFileText,
   IconBrandFigma,
   IconArchive,
+  IconBrandGoogleDrive,
 } from "@tabler/icons-react"
 import {
   ColumnDef,
@@ -364,10 +363,12 @@ function DraggableRow({ row }: { row: Row<FilesAssets> }) {
 export function FilesAssetsDataTable({
   data: initialData,
   onUploadClick,
+  onGoogleDriveImportClick,
   onDataChange,
 }: {
   data: FilesAssets[]
   onUploadClick?: () => void
+  onGoogleDriveImportClick?: () => void
   onDataChange?: () => void
 }) {
   const [data, setData] = React.useState(() => initialData)
@@ -517,39 +518,12 @@ export function FilesAssetsDataTable({
           <TabsTrigger value="recent-uploads">Recent Uploads</TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <IconLayoutColumns />
-                <span className="hidden lg:inline">Customize Columns</span>
-                <span className="lg:hidden">Columns</span>
-                <IconChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {table
-                .getAllColumns()
-                .filter(
-                  (column) =>
-                    typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
-                )
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  )
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {onGoogleDriveImportClick && (
+            <Button variant="outline" size="sm" onClick={onGoogleDriveImportClick}>
+              <IconBrandGoogleDrive className="size-4" />
+              <span className="hidden lg:inline">Import from Drive</span>
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={onUploadClick}>
             <IconPlus />
             <span className="hidden lg:inline">Upload File</span>

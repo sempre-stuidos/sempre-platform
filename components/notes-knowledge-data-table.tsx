@@ -788,6 +788,12 @@ function CardViewItem({ item, onEdit, onDelete }: { item: NotesKnowledge; onEdit
     }
   }
 
+  const handleNotionClick = () => {
+    if (item.type === "notion" && item.notion_url) {
+      window.open(item.notion_url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">

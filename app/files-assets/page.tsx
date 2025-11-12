@@ -6,10 +6,12 @@ import { FilesAssetsDataTable } from "@/components/files-assets-data-table"
 import { FilesAssetsSectionCards } from "@/components/files-assets-section-cards"
 import { SiteHeader } from "@/components/site-header"
 import { UploadFileModal } from "@/components/upload-file-modal"
+import { GoogleDriveImportModal } from "@/components/google-drive-import-modal"
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
+import { toast } from "sonner"
 
 import { getAllFilesAssets, getFilesAssetsStats } from "@/lib/files-assets"
 import { FilesAssets } from "@/lib/types"
@@ -27,6 +29,7 @@ export default function Page() {
     storageLimit: 5,
   })
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [isGoogleDriveImportModalOpen, setIsGoogleDriveImportModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   // Fetch files-assets data and stats from database
@@ -43,10 +46,24 @@ export default function Page() {
 
   useEffect(() => {
     fetchData()
+    
+    // Check if user just connected Google Drive and should open import modal
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('google_drive_connected') === 'true' && urlParams.get('open_import') === 'true') {
+      toast.success('Google Drive connected successfully!')
+      setIsGoogleDriveImportModalOpen(true)
+      // Clean up URL
+      window.history.replaceState({}, '', '/files-assets')
+    }
   }, [])
 
   const handleUploadSuccess = () => {
     // Refresh data after successful upload
+    fetchData()
+  }
+
+  const handleGoogleDriveImportSuccess = () => {
+    // Refresh data after successful import
     fetchData()
   }
 
@@ -74,6 +91,7 @@ export default function Page() {
                 <FilesAssetsDataTable 
                   data={data} 
                   onUploadClick={() => setIsUploadModalOpen(true)}
+                  onGoogleDriveImportClick={() => setIsGoogleDriveImportModalOpen(true)}
                   onDataChange={fetchData}
                 />
               )}
@@ -86,6 +104,12 @@ export default function Page() {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onUploadSuccess={handleUploadSuccess}
+      />
+      
+      <GoogleDriveImportModal
+        isOpen={isGoogleDriveImportModalOpen}
+        onClose={() => setIsGoogleDriveImportModalOpen(false)}
+        onImportSuccess={handleGoogleDriveImportSuccess}
       />
     </SidebarProvider>
   )

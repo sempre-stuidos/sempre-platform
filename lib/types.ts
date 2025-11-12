@@ -196,6 +196,9 @@ export interface FilesAssets {
   uploaded: string;
   status: 'Active' | 'Review' | 'Draft' | 'Processing' | 'Archive';
   file_url?: string;
+  google_drive_file_id?: string;
+  google_drive_web_view_link?: string;
+  imported_from_google_drive?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -215,4 +218,38 @@ export interface Presentation {
   lastModified?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface GalleryImage {
+  id: number;
+  clientId: number;
+  imageUrl: string;
+  title?: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MenuItem {
+  id: number;
+  clientId: number;
+  name: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  imageUrl?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PageSection {
+  id: number;
+  clientId: number;
+  sectionName: string;
+  title?: string;
+  content?: string;
+  imageUrl?: string;
+  order?: number;
+  created_at: string;
+  updated_at: string;
 }

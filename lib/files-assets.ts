@@ -14,6 +14,9 @@ function transformFilesAssetsRecord(record: Record<string, unknown>): FilesAsset
     uploaded: record.uploaded as string,
     status: record.status as "Active" | "Review" | "Draft" | "Processing" | "Archive",
     file_url: record.file_url as string | undefined,
+    google_drive_file_id: record.google_drive_file_id as string | undefined,
+    google_drive_web_view_link: record.google_drive_web_view_link as string | undefined,
+    imported_from_google_drive: record.imported_from_google_drive as boolean | undefined,
     created_at: record.created_at as string,
     updated_at: record.updated_at as string,
   };
@@ -30,7 +33,10 @@ function transformFilesAssetsToRecord(filesAssets: Partial<FilesAssets>) {
     format: filesAssets.format,
     uploaded: filesAssets.uploaded,
     status: filesAssets.status,
-    file_url: filesAssets.file_url,
+    file_url: filesAssets.file_url || null,
+    google_drive_file_id: filesAssets.google_drive_file_id || null,
+    google_drive_web_view_link: filesAssets.google_drive_web_view_link || null,
+    imported_from_google_drive: filesAssets.imported_from_google_drive || false,
   };
 }
 
