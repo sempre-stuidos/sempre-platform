@@ -38,6 +38,9 @@ export interface SiteAnalyticsData {
 
 interface ChartSiteAnalyticsProps {
   data: SiteAnalyticsData[];
+  title?: string;
+  description?: string;
+  descriptionShort?: string;
 }
 
 const chartConfig = {
@@ -51,7 +54,12 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ChartSiteAnalytics({ data: chartData }: ChartSiteAnalyticsProps) {
+export function ChartSiteAnalytics({
+  data: chartData,
+  title = "Site Analytics",
+  description = "Website visits and bookings for the last 3 months",
+  descriptionShort = "Last 3 months",
+}: ChartSiteAnalyticsProps) {
   const isMobile = useIsMobile()
   const [timeRange, setTimeRange] = React.useState("90d")
 
@@ -78,12 +86,12 @@ export function ChartSiteAnalytics({ data: chartData }: ChartSiteAnalyticsProps)
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>Site Analytics</CardTitle>
+        <CardTitle>{title}</CardTitle>
         <CardDescription>
           <span className="hidden @[540px]/card:block">
-            Website visits and bookings for the last 3 months
+            {description}
           </span>
-          <span className="@[540px]/card:hidden">Last 3 months</span>
+          <span className="@[540px]/card:hidden">{descriptionShort}</span>
         </CardDescription>
         <CardAction>
           <ToggleGroup

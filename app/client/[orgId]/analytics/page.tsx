@@ -1,19 +1,20 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getOrganizationById, getUserRoleInOrg } from '@/lib/organizations';
 import { redirect } from 'next/navigation';
-import { ReservationsAnalyticsDashboard } from '@/components/reservations-analytics';
 
-interface ReservationsPageProps {
+import { ReservationsAnalyticsDashboard } from '@/components/reservations-analytics';
+import { getOrganizationById, getUserRoleInOrg } from '@/lib/organizations';
+
+interface AnalyticsPageProps {
   params: Promise<{
     orgId: string;
   }>;
 }
 
-export default async function ReservationsPage({ params }: ReservationsPageProps) {
+export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
   const { orgId } = await params;
   const cookieStore = await cookies();
-  
+
   const supabaseServer = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,19 +32,19 @@ export default async function ReservationsPage({ params }: ReservationsPageProps
     }
   );
 
-  const { data: { user } } = await supabaseServer.auth.getUser();
+  const {
+    data: { user },
+  } = await supabaseServer.auth.getUser();
 
   if (!user) {
     redirect('/client/login');
   }
 
-  // Verify organization membership
   const role = await getUserRoleInOrg(user.id, orgId, supabaseServer);
   if (!role) {
     redirect('/client/select-org');
   }
 
-  // Get organization details
   const organization = await getOrganizationById(orgId, supabaseServer);
   if (!organization) {
     redirect('/client/select-org');
@@ -57,4 +58,5 @@ export default async function ReservationsPage({ params }: ReservationsPageProps
     </div>
   );
 }
+
 
