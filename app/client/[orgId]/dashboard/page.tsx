@@ -5,9 +5,8 @@ import { getOrganizationByClientId } from '@/lib/organizations';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction, CardFooter } from '@/components/ui/card';
 import { IconMenu2, IconPhoto, IconFileText, IconTrendingUp } from '@tabler/icons-react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ChartSiteAnalytics, SiteAnalyticsData } from '@/components/chart-site-analytics';
 
 interface DashboardPageProps {
   params: Promise<{
@@ -70,6 +69,38 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
     galleryImagesCount = galleryResult.count || 0;
     sectionsCount = sectionsResult.count || 0;
   }
+
+  // Generate dummy analytics data for site visits and bookings
+  const generateAnalyticsData = (): SiteAnalyticsData[] => {
+    const data: SiteAnalyticsData[] = [];
+    const today = new Date();
+    
+    // Generate data for the last 90 days
+    for (let i = 89; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      
+      // Generate realistic-looking dummy data with some variation
+      const baseVisits = 150;
+      const baseBookings = 25;
+      const dayOfWeek = date.getDay();
+      const weekendMultiplier = (dayOfWeek === 0 || dayOfWeek === 6) ? 1.3 : 1;
+      const randomVariation = 0.7 + Math.random() * 0.6; // 0.7 to 1.3
+      
+      const visits = Math.round(baseVisits * weekendMultiplier * randomVariation);
+      const bookings = Math.round(baseBookings * weekendMultiplier * randomVariation * (0.15 + Math.random() * 0.1));
+      
+      data.push({
+        date: date.toISOString(),
+        visits,
+        bookings,
+      });
+    }
+    
+    return data;
+  };
+
+  const analyticsData = generateAnalyticsData();
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
@@ -146,37 +177,7 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
         </div>
 
         <div className="px-4 lg:px-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Manage your restaurant content</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <Link href={`/client/${orgId}/restaurant/menu`} className="group">
-                  <Button variant="outline" className="w-full h-auto flex-col items-start p-4 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors">
-                    <IconMenu2 className="mb-2 h-6 w-6" />
-                    <span className="font-semibold">Manage Menu</span>
-                    <span className="text-xs text-muted-foreground group-hover:text-primary-foreground/80">Add or edit menu items</span>
-                  </Button>
-                </Link>
-                <Link href={`/client/${orgId}/restaurant/gallery`} className="group">
-                  <Button variant="outline" className="w-full h-auto flex-col items-start p-4 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors">
-                    <IconPhoto className="mb-2 h-6 w-6" />
-                    <span className="font-semibold">Manage Gallery</span>
-                    <span className="text-xs text-muted-foreground group-hover:text-primary-foreground/80">Upload gallery images</span>
-                  </Button>
-                </Link>
-                <Link href={`/client/${orgId}/restaurant/sections`} className="group">
-                  <Button variant="outline" className="w-full h-auto flex-col items-start p-4 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors">
-                    <IconFileText className="mb-2 h-6 w-6" />
-                    <span className="font-semibold">Manage Sections</span>
-                    <span className="text-xs text-muted-foreground group-hover:text-primary-foreground/80">Edit page sections</span>
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+          <ChartSiteAnalytics data={analyticsData} />
         </div>
       </div>
     </div>

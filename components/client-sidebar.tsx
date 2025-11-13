@@ -16,6 +16,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -31,35 +32,32 @@ const defaultUser = {
   avatar: "",
 }
 
-const getClientNavItems = (orgId: string) => [
-  {
-    title: "Dashboard",
-    url: `/client/${orgId}/dashboard`,
-    icon: IconDashboard,
-  },
-  {
-    title: "Restaurant",
-    url: `/client/${orgId}/restaurant`,
-    icon: IconMenu2,
-    children: [
-      {
-        title: "Menu",
-        url: `/client/${orgId}/restaurant/menu`,
-        icon: IconMenu2,
-      },
-      {
-        title: "Gallery",
-        url: `/client/${orgId}/restaurant/gallery`,
-        icon: IconPhoto,
-      },
-      {
-        title: "Page Sections",
-        url: `/client/${orgId}/restaurant/sections`,
-        icon: IconFileText,
-      },
-    ],
-  },
-]
+const getClientNavItems = (orgId: string) => ({
+  main: [
+    {
+      title: "Dashboard",
+      url: `/client/${orgId}/dashboard`,
+      icon: IconDashboard,
+    },
+  ],
+  restaurant: [
+    {
+      title: "Menu",
+      url: `/client/${orgId}/restaurant/menu`,
+      icon: IconMenu2,
+    },
+    {
+      title: "Gallery",
+      url: `/client/${orgId}/restaurant/gallery`,
+      icon: IconPhoto,
+    },
+    {
+      title: "Page Sections",
+      url: `/client/${orgId}/restaurant/sections`,
+      icon: IconFileText,
+    },
+  ],
+})
 
 export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const params = useParams()
@@ -116,7 +114,7 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
     }
   }, [])
 
-  const navItems = orgId ? getClientNavItems(orgId) : []
+  const navItems = orgId ? getClientNavItems(orgId) : { main: [], restaurant: [] }
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -143,15 +141,8 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
-                // For items with children, check if any child is active
-                // For items without children, check exact match or starts with
-                const hasActiveChild = item.children?.some(child => 
-                  pathname === child.url || pathname?.startsWith(child.url + '/')
-                )
-                const isActive = item.children 
-                  ? hasActiveChild 
-                  : (pathname === item.url || pathname?.startsWith(item.url + '/'))
+              {navItems.main.map((item) => {
+                const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
                 
                 return (
                   <SidebarMenuItem key={item.title}>
@@ -166,29 +157,32 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
                         <span>{item.title}</span>
                       </a>
                     </SidebarMenuButton>
-                    {item.children && (
-                      <SidebarMenu>
-                        {item.children.map((child) => {
-                          const isChildActive = pathname === child.url || pathname?.startsWith(child.url + '/')
-                          
-                          return (
-                            <SidebarMenuItem key={child.title}>
-                              <SidebarMenuButton 
-                                asChild 
-                                tooltip={child.title}
-                                className="hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
-                                data-active={isChildActive}
-                              >
-                                <a href={child.url}>
-                                  {child.icon && <child.icon />}
-                                  <span>{child.title}</span>
-                                </a>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                          )
-                        })}
-                      </SidebarMenu>
-                    )}
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Restaurant</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.restaurant.map((item) => {
+                const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
+                
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      tooltip={item.title}
+                      className="hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
+                      data-active={isActive}
+                    >
+                      <a href={item.url}>
+                        {item.icon && <item.icon />}
+                        <span>{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 )
               })}
