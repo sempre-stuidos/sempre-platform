@@ -119,6 +119,132 @@ export default async function ReservationsPage({ params }: ReservationsPageProps
         updated_at: new Date().toISOString(),
       });
     }
+
+    // Add 7 reservations for November 14, 2025 (Friday)
+    const nov14 = new Date('2025-11-14');
+    const nov14Reservations = [
+      {
+        id: 16,
+        customer_name: 'Alexandra Chen',
+        customer_email: 'alexandra.chen@email.com',
+        customer_phone: '555-0116',
+        reservation_date: nov14.toISOString().split('T')[0],
+        reservation_time: '18:00:00',
+        party_size: 4,
+        status: 'approved' as const,
+        special_requests: 'Anniversary dinner',
+        approved_by: 'Restaurant Staff',
+        approved_at: new Date().toISOString(),
+        client_id: null,
+        org_id: orgId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: 17,
+        customer_name: 'Benjamin Rodriguez',
+        customer_email: 'benjamin.r@email.com',
+        customer_phone: '555-0117',
+        reservation_date: nov14.toISOString().split('T')[0],
+        reservation_time: '19:30:00',
+        party_size: 2,
+        status: 'pending' as const,
+        special_requests: null,
+        approved_by: null,
+        approved_at: null,
+        client_id: null,
+        org_id: orgId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: 18,
+        customer_name: 'Sophie Williams',
+        customer_email: 'sophie.w@email.com',
+        customer_phone: '555-0118',
+        reservation_date: nov14.toISOString().split('T')[0],
+        reservation_time: '20:00:00',
+        party_size: 6,
+        status: 'approved' as const,
+        special_requests: 'Birthday celebration',
+        approved_by: 'Restaurant Staff',
+        approved_at: new Date().toISOString(),
+        client_id: null,
+        org_id: orgId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: 19,
+        customer_name: 'Marcus Thompson',
+        customer_email: 'marcus.t@email.com',
+        customer_phone: '555-0119',
+        reservation_date: nov14.toISOString().split('T')[0],
+        reservation_time: '17:30:00',
+        party_size: 3,
+        status: 'approved' as const,
+        special_requests: 'Window seat preferred',
+        approved_by: 'Restaurant Staff',
+        approved_at: new Date().toISOString(),
+        client_id: null,
+        org_id: orgId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: 20,
+        customer_name: 'Olivia Parker',
+        customer_email: 'olivia.p@email.com',
+        customer_phone: '555-0120',
+        reservation_date: nov14.toISOString().split('T')[0],
+        reservation_time: '18:30:00',
+        party_size: 5,
+        status: 'pending' as const,
+        special_requests: null,
+        approved_by: null,
+        approved_at: null,
+        client_id: null,
+        org_id: orgId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: 21,
+        customer_name: 'Ethan Mitchell',
+        customer_email: 'ethan.m@email.com',
+        customer_phone: '555-0121',
+        reservation_date: nov14.toISOString().split('T')[0],
+        reservation_time: '19:00:00',
+        party_size: 2,
+        status: 'approved' as const,
+        special_requests: 'Quiet table',
+        approved_by: 'Restaurant Staff',
+        approved_at: new Date().toISOString(),
+        client_id: null,
+        org_id: orgId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: 22,
+        customer_name: 'Isabella Foster',
+        customer_email: 'isabella.f@email.com',
+        customer_phone: '555-0122',
+        reservation_date: nov14.toISOString().split('T')[0],
+        reservation_time: '21:00:00',
+        party_size: 4,
+        status: 'approved' as const,
+        special_requests: 'Late dinner',
+        approved_by: 'Restaurant Staff',
+        approved_at: new Date().toISOString(),
+        client_id: null,
+        org_id: orgId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
+
+    dummyReservations.push(...nov14Reservations);
     return dummyReservations;
   };
 
@@ -147,7 +273,6 @@ export default async function ReservationsPage({ params }: ReservationsPageProps
         <ReservationsList
           upcomingReservations={upcomingReservations || []}
           pastReservations={pastReservations || []}
-          orgId={orgId}
         />
       </div>
     </div>

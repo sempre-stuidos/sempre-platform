@@ -41,6 +41,8 @@ const getClientNavItems = (orgId: string) => ({
       url: `/client/${orgId}/dashboard`,
       icon: IconDashboard,
     },
+  ],
+  restaurant: [
     {
       title: "Analytics",
       url: `/client/${orgId}/analytics`,
@@ -52,7 +54,7 @@ const getClientNavItems = (orgId: string) => ({
       icon: IconCalendar,
     },
   ],
-  restaurant: [
+  site: [
     {
       title: "Menu",
       url: `/client/${orgId}/restaurant/menu`,
@@ -126,7 +128,7 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
     }
   }, [])
 
-  const navItems = orgId ? getClientNavItems(orgId) : { main: [], restaurant: [] }
+  const navItems = orgId ? getClientNavItems(orgId) : { main: [], restaurant: [], site: [] }
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -180,6 +182,32 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.restaurant.map((item) => {
+                const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
+                
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      tooltip={item.title}
+                      className="hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
+                      data-active={isActive}
+                    >
+                      <a href={item.url}>
+                        {item.icon && <item.icon />}
+                        <span>{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Site</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.site.map((item) => {
                 const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
                 
                 return (
