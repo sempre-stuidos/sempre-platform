@@ -8,7 +8,7 @@ import {
   IconFileText,
   IconBuilding,
 } from "@tabler/icons-react"
-import { useParams } from "next/navigation"
+import { useParams, usePathname } from "next/navigation"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -63,6 +63,7 @@ const getClientNavItems = (orgId: string) => [
 
 export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const params = useParams()
+  const pathname = usePathname()
   const orgId = params.orgId as string
   const { organization, isLoading: orgLoading } = useOrganizationContext()
   const [user, setUser] = React.useState(defaultUser)
@@ -142,30 +143,55 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <a href={item.url}>
-                      {item.icon && <item.icon />}
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                  {item.children && (
-                    <SidebarMenu>
-                      {item.children.map((child) => (
-                        <SidebarMenuItem key={child.title}>
-                          <SidebarMenuButton asChild tooltip={child.title}>
-                            <a href={child.url}>
-                              {child.icon && <child.icon />}
-                              <span>{child.title}</span>
-                            </a>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarMenu>
-                  )}
-                </SidebarMenuItem>
-              ))}
+              {navItems.map((item) => {
+                // For items with children, check if any child is active
+                // For items without children, check exact match or starts with
+                const hasActiveChild = item.children?.some(child => 
+                  pathname === child.url || pathname?.startsWith(child.url + '/')
+                )
+                const isActive = item.children 
+                  ? hasActiveChild 
+                  : (pathname === item.url || pathname?.startsWith(item.url + '/'))
+                
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      tooltip={item.title}
+                      className="hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
+                      data-active={isActive}
+                    >
+                      <a href={item.url}>
+                        {item.icon && <item.icon />}
+                        <span>{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                    {item.children && (
+                      <SidebarMenu>
+                        {item.children.map((child) => {
+                          const isChildActive = pathname === child.url || pathname?.startsWith(child.url + '/')
+                          
+                          return (
+                            <SidebarMenuItem key={child.title}>
+                              <SidebarMenuButton 
+                                asChild 
+                                tooltip={child.title}
+                                className="hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
+                                data-active={isChildActive}
+                              >
+                                <a href={child.url}>
+                                  {child.icon && <child.icon />}
+                                  <span>{child.title}</span>
+                                </a>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          )
+                        })}
+                      </SidebarMenu>
+                    )}
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
