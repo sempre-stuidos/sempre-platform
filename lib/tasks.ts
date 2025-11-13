@@ -101,12 +101,12 @@ export async function getAllTasks(): Promise<Task[]> {
 
     // Fetch assignee info for all tasks in parallel
     const assigneeInfos = await Promise.all(
-      data.map(record => getAssigneeInfoFromRoleId(record.assignee_id as number | null))
+      data.map((record: Record<string, unknown>) => getAssigneeInfoFromRoleId(record.assignee_id as number | null))
     );
 
-    return data.map((record, index) => ({
+    return data.map((record: Record<string, unknown>, index: number) => ({
       ...transformTaskRecord(record),
-      projectName: record.projects?.name,
+      projectName: (record.projects as { name?: string } | undefined)?.name,
       assigneeName: assigneeInfos[index].name ?? undefined,
       assigneeRole: assigneeInfos[index].role ?? undefined,
       assigneeAvatar: assigneeInfos[index].avatar ?? undefined,
@@ -279,12 +279,12 @@ export async function getTasksByAssignee(assigneeId: number): Promise<Task[]> {
 
     // Fetch assignee info for all tasks in parallel
     const assigneeInfos = await Promise.all(
-      data.map(record => getAssigneeInfoFromRoleId(record.assignee_id as number | null))
+      data.map((record: Record<string, unknown>) => getAssigneeInfoFromRoleId(record.assignee_id as number | null))
     );
 
-    return data.map((record, index) => ({
+    return data.map((record: Record<string, unknown>, index: number) => ({
       ...transformTaskRecord(record),
-      projectName: record.projects?.name,
+      projectName: (record.projects as { name?: string } | undefined)?.name,
       assigneeName: assigneeInfos[index].name ?? undefined,
       assigneeRole: assigneeInfos[index].role ?? undefined,
       assigneeAvatar: assigneeInfos[index].avatar ?? undefined,

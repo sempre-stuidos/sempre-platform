@@ -1,6 +1,17 @@
 import { supabase, supabaseAdmin } from './supabase';
 import { DashboardStats, DashboardChartData } from './types';
 
+type TaskProject = { name?: string } | null;
+type TaskRecord = {
+  id: number;
+  title: string;
+  status: string;
+  priority: string;
+  due_date: string | null;
+  assignee_id: number | null;
+  projects?: TaskProject;
+};
+
 // Helper function to get assignee name from user_roles.id
 async function getAssigneeNameFromRoleId(roleId: number | null): Promise<string> {
   if (!roleId) {
@@ -195,7 +206,8 @@ export async function getDashboardChartData(): Promise<DashboardChartData[]> {
     }
 
     // Count projects by date and status
-    projectsData?.forEach(project => {
+    const projectSummaries = (projectsData ?? []) as Array<{ created_at: string; status: string }>;
+    projectSummaries.forEach(project => {
       const dateStr = project.created_at.split('T')[0];
       const existing = dateMap.get(dateStr);
       if (existing) {
@@ -210,7 +222,8 @@ export async function getDashboardChartData(): Promise<DashboardChartData[]> {
     });
 
     // Count tasks by date and status
-    tasksData?.forEach(task => {
+    const taskSummaries = (tasksData ?? []) as Array<{ created_at: string; status: string }>;
+    taskSummaries.forEach(task => {
       const dateStr = task.created_at.split('T')[0];
       const existing = dateMap.get(dateStr);
       if (existing) {
@@ -295,11 +308,12 @@ export async function getRecentTasks(limit: number = 10) {
     }
 
     // Fetch assignee names for all tasks in parallel
+    const taskRecords = (tasks ?? []) as TaskRecord[];
     const assigneeNames = await Promise.all(
-      (tasks || []).map(task => getAssigneeNameFromRoleId(task.assignee_id as number | null))
+      taskRecords.map(task => getAssigneeNameFromRoleId(task.assignee_id ?? null))
     );
 
-    return tasks?.map((task, index) => ({
+    return taskRecords.map((task, index) => ({
       id: task.id,
       title: task.title,
       type: 'Task',
@@ -307,8 +321,8 @@ export async function getRecentTasks(limit: number = 10) {
       priority: task.priority,
       dueDate: task.due_date || 'No due date',
       assignee: assigneeNames[index],
-      projectName: task.projects ? (task.projects as unknown as { name: string }).name : 'No Project',
-    })) || [];
+      projectName: task.projects?.name ?? 'No Project',
+    }));
   } catch (error) {
     console.error('Error in getRecentTasks:', error);
     return [];
@@ -341,11 +355,12 @@ export async function getHighPriorityTasks(limit: number = 50) {
     }
 
     // Fetch assignee names for all tasks in parallel
+    const taskRecords = (tasks ?? []) as TaskRecord[];
     const assigneeNames = await Promise.all(
-      (tasks || []).map(task => getAssigneeNameFromRoleId(task.assignee_id as number | null))
+      taskRecords.map(task => getAssigneeNameFromRoleId(task.assignee_id ?? null))
     );
 
-    return tasks?.map((task, index) => ({
+    return taskRecords.map((task, index) => ({
       id: task.id,
       title: task.title,
       type: 'Task',
@@ -353,8 +368,8 @@ export async function getHighPriorityTasks(limit: number = 50) {
       priority: task.priority,
       dueDate: task.due_date || 'No due date',
       assignee: assigneeNames[index],
-      projectName: task.projects ? (task.projects as unknown as { name: string }).name : 'No Project',
-    })) || [];
+      projectName: task.projects?.name ?? 'No Project',
+    }));
   } catch (error) {
     console.error('Error in getHighPriorityTasks:', error);
     return [];
@@ -392,11 +407,12 @@ export async function getTasksDueThisWeek(limit: number = 50) {
     }
 
     // Fetch assignee names for all tasks in parallel
+    const taskRecords = (tasks ?? []) as TaskRecord[];
     const assigneeNames = await Promise.all(
-      (tasks || []).map(task => getAssigneeNameFromRoleId(task.assignee_id as number | null))
+      taskRecords.map(task => getAssigneeNameFromRoleId(task.assignee_id ?? null))
     );
 
-    return tasks?.map((task, index) => ({
+    return taskRecords.map((task, index) => ({
       id: task.id,
       title: task.title,
       type: 'Task',
@@ -404,8 +420,8 @@ export async function getTasksDueThisWeek(limit: number = 50) {
       priority: task.priority,
       dueDate: task.due_date || 'No due date',
       assignee: assigneeNames[index],
-      projectName: task.projects ? (task.projects as unknown as { name: string }).name : 'No Project',
-    })) || [];
+      projectName: task.projects?.name ?? 'No Project',
+    }));
   } catch (error) {
     console.error('Error in getTasksDueThisWeek:', error);
     return [];
@@ -437,11 +453,12 @@ export async function getCompletedTasks(limit: number = 50) {
     }
 
     // Fetch assignee names for all tasks in parallel
+    const taskRecords = (tasks ?? []) as TaskRecord[];
     const assigneeNames = await Promise.all(
-      (tasks || []).map(task => getAssigneeNameFromRoleId(task.assignee_id as number | null))
+      taskRecords.map(task => getAssigneeNameFromRoleId(task.assignee_id ?? null))
     );
 
-    return tasks?.map((task, index) => ({
+    return taskRecords.map((task, index) => ({
       id: task.id,
       title: task.title,
       type: 'Task',
@@ -449,8 +466,8 @@ export async function getCompletedTasks(limit: number = 50) {
       priority: task.priority,
       dueDate: task.due_date || 'No due date',
       assignee: assigneeNames[index],
-      projectName: task.projects ? (task.projects as unknown as { name: string }).name : 'No Project',
-    })) || [];
+      projectName: task.projects?.name ?? 'No Project',
+    }));
   } catch (error) {
     console.error('Error in getCompletedTasks:', error);
     return [];
@@ -546,9 +563,10 @@ export async function getProjectCompletionStats() {
       };
     }
 
-    const totalProjects = projects?.length || 0;
-    const completedProjects = projects?.filter(p => p.status === 'Completed').length || 0;
-    const inProgressProjects = projects?.filter(p => p.status === 'In Progress').length || 0;
+    const projectRecords = (projects ?? []) as Array<{ status: string }>;
+    const totalProjects = projectRecords.length;
+    const completedProjects = projectRecords.filter(project => project.status === 'Completed').length;
+    const inProgressProjects = projectRecords.filter(project => project.status === 'In Progress').length;
     const completionRate = totalProjects > 0 
       ? Math.round((completedProjects / totalProjects) * 100)
       : 0;

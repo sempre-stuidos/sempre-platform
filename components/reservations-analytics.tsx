@@ -121,10 +121,18 @@ export function ReservationsAnalyticsDashboard({
                   cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
                   content={
                     <ChartTooltipContent
-                      formatter={(value: number) => [
-                        `${(value * 100).toFixed(0)}%`,
-                        bookingChartConfig.conversion.label,
-                      ]}
+                      formatter={(value) => {
+                        const numericValue =
+                          typeof value === "number"
+                            ? value
+                            : Array.isArray(value)
+                              ? Number(value[0] ?? 0)
+                              : Number(value ?? 0);
+                        return [
+                          `${(numericValue * 100).toFixed(0)}%`,
+                          bookingChartConfig.conversion.label,
+                        ];
+                      }}
                     />
                   }
                 />
@@ -168,10 +176,18 @@ export function ReservationsAnalyticsDashboard({
                   cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
                   content={
                     <ChartTooltipContent
-                      formatter={(value: number) => [
-                        value.toLocaleString(),
-                        deviceChartConfig.visitors.label,
-                      ]}
+                      formatter={(value) => {
+                        const numericValue =
+                          typeof value === "number"
+                            ? value
+                            : Array.isArray(value)
+                              ? Number(value[0] ?? 0)
+                              : Number(value ?? 0);
+                        return [
+                          numericValue.toLocaleString(),
+                          deviceChartConfig.visitors.label,
+                        ];
+                      }}
                     />
                   }
                 />

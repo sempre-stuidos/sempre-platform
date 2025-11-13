@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { User } from "@supabase/supabase-js"
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 
 interface CurrentUser {
@@ -33,7 +33,7 @@ export function useCurrentUser() {
           })
         }
       } catch (error) {
-        console.log('No authenticated user or Supabase not configured')
+        console.log('No authenticated user or Supabase not configured', error)
       } finally {
         setIsLoading(false)
       }
@@ -43,7 +43,7 @@ export function useCurrentUser() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: AuthChangeEvent, session: Session | null) => {
         if (event === 'SIGNED_IN' && session?.user) {
           const fullName = session.user.user_metadata?.first_name && session.user.user_metadata?.last_name 
             ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name}`

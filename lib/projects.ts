@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Project, TeamMember, ProjectTask, TimelineMilestone } from './types';
+import { Project } from './types';
 
 // Transform database record to match frontend interface
 function transformProjectRecord(record: Record<string, unknown>, teamMembers: Record<string, unknown>[], tasks: Record<string, unknown>[], deliverables: Record<string, unknown>[], timeline: Record<string, unknown>[]): Project {
@@ -76,7 +76,8 @@ export async function getAllProjects(): Promise<Project[]> {
     }
 
     // Fetch all related data in parallel
-    const projectIds = projects.map(p => p.id);
+    const projectRecords = projects as Array<Record<string, unknown>>;
+    const projectIds = projectRecords.map(p => p.id);
     
     const [
       { data: teamMembers },
@@ -119,15 +120,17 @@ export async function getAllProjects(): Promise<Project[]> {
       return acc;
     }, {});
 
-    return projects.map(project => 
-      transformProjectRecord(
+    return projectRecords.map(project => {
+      const projectId = project.id as string | number;
+      const projectKey = String(projectId);
+      return transformProjectRecord(
         project,
-        teamMembersByProject[project.id] || [],
-        tasksByProject[project.id] || [],
-        deliverablesByProject[project.id] || [],
-        timelineByProject[project.id] || []
-      )
-    );
+        teamMembersByProject[projectKey] || [],
+        tasksByProject[projectKey] || [],
+        deliverablesByProject[projectKey] || [],
+        timelineByProject[projectKey] || []
+      );
+    });
   } catch (error) {
     console.error('Error in getAllProjects:', error);
     return [];
@@ -262,7 +265,7 @@ export async function createProject(project: Partial<Project>): Promise<Project 
 export async function updateProject(id: number, updates: Partial<Project>): Promise<Project | null> {
   try {
     // Update project
-    const { data: updatedProject, error: projectError } = await supabase
+    const { error: projectError } = await supabase
       .from('projects')
       .update(transformProjectToRecord(updates))
       .eq('id', id)
@@ -321,7 +324,8 @@ export async function getProjectsByStatus(status: 'Completed' | 'In Progress' | 
 
     // For filtered results, we can return simplified data without all relations
     // or fetch full data if needed
-    return projects.map(project => 
+    const projectRecords = projects as Array<Record<string, unknown>>;
+    return projectRecords.map(project => 
       transformProjectRecord(project, [], [], [], [])
     );
   } catch (error) {
@@ -347,7 +351,8 @@ export async function getProjectsByPriority(priority: 'High' | 'Medium' | 'Low')
       return [];
     }
 
-    return projects.map(project => 
+    const projectRecords = projects as Array<Record<string, unknown>>;
+    return projectRecords.map(project => 
       transformProjectRecord(project, [], [], [], [])
     );
   } catch (error) {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js"
 import { useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -59,7 +60,8 @@ export function LoginForm({
 
     // Listen for auth state changes - only update UI state
     // OAuth callback and middleware handle all redirects to prevent conflicts
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      void event;
       if (session) {
         setIsAuthenticated(true)
         // Don't redirect here - OAuth callback handles redirect after sign-in

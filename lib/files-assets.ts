@@ -416,30 +416,32 @@ export async function getFilesAssetsStats() {
       };
     }
 
+    const fileRecords = filesAssets as Array<{ uploaded: string; project?: string | null; size: string }>;
+
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     // Calculate various statistics
-    const totalFiles = filesAssets.length;
+    const totalFiles = fileRecords.length;
     
-    const filesThisWeek = filesAssets.filter(file => {
+    const filesThisWeek = fileRecords.filter(file => {
       const uploadDate = new Date(file.uploaded);
       return uploadDate >= weekAgo;
     }).length;
 
-    const uploadsToday = filesAssets.filter(file => {
+    const uploadsToday = fileRecords.filter(file => {
       const uploadDate = new Date(file.uploaded);
       return uploadDate >= today;
     }).length;
 
     // Get unique projects
-    const uniqueProjects = new Set(filesAssets.map(file => file.project));
+    const uniqueProjects = new Set(fileRecords.map(file => file.project));
     const totalProjects = uniqueProjects.size;
 
     // Calculate storage used (parse size strings like "2.4 MB")
-    const storageUsedBytes = filesAssets.reduce((total, file) => {
-      const sizeStr = file.size as string;
+    const storageUsedBytes = fileRecords.reduce((total, file) => {
+      const sizeStr = file.size;
       const match = sizeStr.match(/^([\d.]+)\s*([A-Z]+)$/i);
       
       if (!match) return total;

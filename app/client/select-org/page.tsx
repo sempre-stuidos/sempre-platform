@@ -26,7 +26,6 @@ export default function SelectOrgPage() {
   const router = useRouter()
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchOrganizations = async () => {
@@ -62,7 +61,6 @@ export default function SelectOrgPage() {
   }, [router])
 
   const handleSelectOrg = (orgId: string) => {
-    setSelectedOrgId(orgId)
     router.push(`/client/${orgId}/dashboard`)
   }
 
@@ -85,7 +83,7 @@ export default function SelectOrgPage() {
           <CardHeader>
             <CardTitle className="text-white">No Organizations</CardTitle>
             <CardDescription className="text-white/60">
-              You don't have access to any organizations yet.
+              You don&apos;t have access to any organizations yet.
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -17,7 +17,7 @@ interface Organization {
   id: string
   name: string
   type: "agency" | "client"
-  description?: string
+  description?: string | null
 }
 
 interface OrganizationSelectorProps {

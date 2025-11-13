@@ -1,48 +1,5 @@
-import { supabase, supabaseAdmin } from './supabase';
+import { supabaseAdmin } from './supabase';
 import { TeamMember } from './types';
-
-// Transform database record to match frontend interface
-function transformTeamMemberRecord(record: Record<string, unknown>, skills: Record<string, unknown>[], deadlines: Record<string, unknown>[]): TeamMember {
-  return {
-    id: record.id as number,
-    name: record.name as string | null,
-    role: record.role as string,
-    status: record.status as "Active" | "Contractor" | "Past Collaborator",
-    email: record.email as string,
-    timezone: record.timezone as string | null,
-    avatar: record.avatar as string,
-    currentProjects: record.current_projects as number,
-    activeTasks: record.active_tasks as number,
-    workload: record.workload as number,
-    skills: skills.map(s => s.skill as string),
-    upcomingDeadlines: deadlines.map(d => ({
-      project: d.project as string,
-      deadline: d.deadline as string,
-      type: d.type as string
-    })),
-    auth_user_id: record.auth_user_id as string | null | undefined,
-    invited_email: record.invited_email as string | null | undefined,
-    created_at: record.created_at as string,
-    updated_at: record.updated_at as string,
-  };
-}
-
-// Transform frontend interface to database record format
-function transformTeamMemberToRecord(teamMember: Partial<TeamMember>) {
-  return {
-    name: teamMember.name,
-    role: teamMember.role,
-    status: teamMember.status,
-    email: teamMember.email,
-    timezone: teamMember.timezone,
-    avatar: teamMember.avatar,
-    current_projects: teamMember.currentProjects,
-    active_tasks: teamMember.activeTasks,
-    workload: teamMember.workload,
-    auth_user_id: teamMember.auth_user_id,
-    invited_email: teamMember.invited_email,
-  };
-}
 
 export async function getAllTeamMembers(): Promise<TeamMember[]> {
   try {
@@ -179,8 +136,9 @@ export async function getTeamMemberById(id: number): Promise<TeamMember | null> 
 // Note: createTeamMember is no longer needed
 // Team members are created through the invitation system (user_roles table)
 // Users are added to the team by creating a user_roles record via sendTeamMemberInvitation
-export async function createTeamMember(teamMember: Omit<TeamMember, 'id' | 'created_at' | 'updated_at'>): Promise<TeamMember | null> {
+export async function createTeamMember(_teamMember: Omit<TeamMember, 'id' | 'created_at' | 'updated_at'>): Promise<TeamMember | null> {
   // This function is deprecated - use invitation system instead
+  void _teamMember;
   console.warn('createTeamMember is deprecated. Use sendTeamMemberInvitation from lib/invitations instead.');
   return null;
 }

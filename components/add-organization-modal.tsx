@@ -22,10 +22,17 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 
+export type CreatedOrganization = {
+  id: string
+  name: string
+  type: "agency" | "client"
+  description?: string | null
+}
+
 interface AddOrganizationModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess?: (organization: any) => void
+  onSuccess?: (organization: CreatedOrganization) => void
 }
 
 export function AddOrganizationModal({ open, onOpenChange, onSuccess }: AddOrganizationModalProps) {
@@ -61,7 +68,7 @@ export function AddOrganizationModal({ open, onOpenChange, onSuccess }: AddOrgan
         throw new Error(error.error || "Failed to create organization")
       }
 
-      const { organization } = await response.json()
+      const { organization } = (await response.json()) as { organization: CreatedOrganization }
       toast.success("Organization created successfully")
       setName("")
       setType("client")

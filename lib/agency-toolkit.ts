@@ -70,7 +70,8 @@ export async function getAllAgencyToolkit(): Promise<AgencyToolkit[]> {
     }
 
     // Fetch all related data in parallel
-    const toolkitIds = agencyToolkit.map(at => at.id);
+    const toolkitRecords = agencyToolkit as Array<Record<string, unknown>>;
+    const toolkitIds = toolkitRecords.map(toolkit => toolkit.id as number);
     
     const [
       { data: invoices },
@@ -95,13 +96,15 @@ export async function getAllAgencyToolkit(): Promise<AgencyToolkit[]> {
       return acc;
     }, {});
 
-    return agencyToolkit.map(toolkit => 
-      transformAgencyToolkitRecord(
+    return toolkitRecords.map(toolkit => {
+      const toolkitId = toolkit.id as number;
+      const toolkitKey = String(toolkitId);
+      return transformAgencyToolkitRecord(
         toolkit,
-        invoicesByToolkit[toolkit.id] || [],
-        costHistoryByToolkit[toolkit.id] || []
-      )
-    );
+        invoicesByToolkit[toolkitKey] || [],
+        costHistoryByToolkit[toolkitKey] || []
+      );
+    });
   } catch (error) {
     console.error('Error in getAllAgencyToolkit:', error);
     return [];
@@ -293,7 +296,8 @@ export async function getAgencyToolkitByStatus(status: 'Active' | 'Trial' | 'Can
 
     // For filtered results, we can return simplified data without all relations
     // or fetch full data if needed
-    return agencyToolkit.map(toolkit => 
+    const toolkitRecords = agencyToolkit as Array<Record<string, unknown>>;
+    return toolkitRecords.map(toolkit =>
       transformAgencyToolkitRecord(toolkit, [], [])
     );
   } catch (error) {
@@ -319,7 +323,8 @@ export async function getAgencyToolkitByCategory(category: AgencyToolkit['catego
       return [];
     }
 
-    return agencyToolkit.map(toolkit => 
+    const toolkitRecords = agencyToolkit as Array<Record<string, unknown>>;
+    return toolkitRecords.map(toolkit =>
       transformAgencyToolkitRecord(toolkit, [], [])
     );
   } catch (error) {

@@ -25,7 +25,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { supabase } from "@/lib/supabase"
-import { User } from "@supabase/supabase-js"
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js"
 import { useOrganizationContext } from "@/hooks/use-organization-context"
 
 const defaultUser = {
@@ -79,13 +79,11 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
   const orgId = params.orgId as string
   const { organization, isLoading: orgLoading } = useOrganizationContext()
   const [user, setUser] = React.useState(defaultUser)
-  const [currentUser, setCurrentUser] = React.useState<User | null>(null)
 
   React.useEffect(() => {
     const getInitialUser = async () => {
       try {
         const { data: { user: authUser } } = await supabase.auth.getUser()
-        setCurrentUser(authUser)
 
         if (authUser) {
           const fullName = authUser.user_metadata?.first_name && authUser.user_metadata?.last_name
@@ -105,9 +103,9 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
 
     getInitialUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      void event;
       if (session?.user) {
-        setCurrentUser(session.user)
         const fullName = session.user.user_metadata?.first_name && session.user.user_metadata?.last_name
           ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name}`
           : session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User'
@@ -118,7 +116,6 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
           avatar: session.user.user_metadata?.avatar_url || '',
         })
       } else {
-        setCurrentUser(null)
         setUser(defaultUser)
       }
     })

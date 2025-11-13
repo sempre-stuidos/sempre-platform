@@ -73,18 +73,34 @@ export async function getAllNotesKnowledge(): Promise<NotesKnowledge[]> {
     }
 
     // Get client and project names separately
-    const clientIds = [...new Set(notesKnowledge.map(n => n.client_id).filter(Boolean))];
-    const projectIds = [...new Set(notesKnowledge.map(n => n.project_id).filter(Boolean))];
+    const noteRecords = notesKnowledge as Array<{ client_id: number | null; project_id: number | null } & Record<string, unknown>>;
+    const clientIds = [
+      ...new Set(
+        noteRecords
+          .map(record => record.client_id)
+          .filter((id): id is number => typeof id === 'number')
+      ),
+    ];
+    const projectIds = [
+      ...new Set(
+        noteRecords
+          .map(record => record.project_id)
+          .filter((id): id is number => typeof id === 'number')
+      ),
+    ];
 
     const [clientsData, projectsData] = await Promise.all([
       clientIds.length > 0 ? supabase.from('clients').select('id, name').in('id', clientIds) : { data: [] },
       projectIds.length > 0 ? supabase.from('projects').select('id, name').in('id', projectIds) : { data: [] }
     ]);
 
-    const clientsMap = new Map((clientsData.data || []).map(c => [c.id, c.name]));
-    const projectsMap = new Map((projectsData.data || []).map(p => [p.id, p.name]));
+    const clientRecords = (clientsData.data ?? []) as Array<{ id: number; name: string }>;
+    const projectRecords = (projectsData.data ?? []) as Array<{ id: number; name: string }>;
 
-    return notesKnowledge.map(record => {
+    const clientsMap = new Map(clientRecords.map(client => [client.id, client.name]));
+    const projectsMap = new Map(projectRecords.map(project => [project.id, project.name]));
+
+    return noteRecords.map(record => {
       const transformed = transformNotesKnowledgeRecord(record);
       // Add the joined names
       if (record.client_id && clientsMap.has(record.client_id)) {
@@ -264,18 +280,33 @@ export async function getNotesKnowledgeByType(type: NotesKnowledge['type']): Pro
     }
 
     // Get client and project names separately
-    const clientIds = [...new Set(notesKnowledge.map(n => n.client_id).filter(Boolean))];
-    const projectIds = [...new Set(notesKnowledge.map(n => n.project_id).filter(Boolean))];
+    const noteRecords = notesKnowledge as Array<{ client_id: number | null; project_id: number | null } & Record<string, unknown>>;
+    const clientIds = [
+      ...new Set(
+        noteRecords
+          .map(record => record.client_id)
+          .filter((id): id is number => typeof id === 'number')
+      ),
+    ];
+    const projectIds = [
+      ...new Set(
+        noteRecords
+          .map(record => record.project_id)
+          .filter((id): id is number => typeof id === 'number')
+      ),
+    ];
 
     const [clientsData, projectsData] = await Promise.all([
       clientIds.length > 0 ? supabase.from('clients').select('id, name').in('id', clientIds) : { data: [] },
       projectIds.length > 0 ? supabase.from('projects').select('id, name').in('id', projectIds) : { data: [] }
     ]);
 
-    const clientsMap = new Map((clientsData.data || []).map(c => [c.id, c.name]));
-    const projectsMap = new Map((projectsData.data || []).map(p => [p.id, p.name]));
+    const clientRecords = (clientsData.data ?? []) as Array<{ id: number; name: string }>;
+    const projectRecords = (projectsData.data ?? []) as Array<{ id: number; name: string }>;
+    const clientsMap = new Map(clientRecords.map(client => [client.id, client.name]));
+    const projectsMap = new Map(projectRecords.map(project => [project.id, project.name]));
 
-    return notesKnowledge.map(record => {
+    return noteRecords.map(record => {
       const transformed = transformNotesKnowledgeRecord(record);
       // Add the joined names
       if (record.client_id && clientsMap.has(record.client_id)) {
@@ -310,18 +341,33 @@ export async function getNotesKnowledgeByStatus(status: NotesKnowledge['status']
     }
 
     // Get client and project names separately
-    const clientIds = [...new Set(notesKnowledge.map(n => n.client_id).filter(Boolean))];
-    const projectIds = [...new Set(notesKnowledge.map(n => n.project_id).filter(Boolean))];
+    const noteRecords = notesKnowledge as Array<{ client_id: number | null; project_id: number | null } & Record<string, unknown>>;
+    const clientIds = [
+      ...new Set(
+        noteRecords
+          .map(record => record.client_id)
+          .filter((id): id is number => typeof id === 'number')
+      ),
+    ];
+    const projectIds = [
+      ...new Set(
+        noteRecords
+          .map(record => record.project_id)
+          .filter((id): id is number => typeof id === 'number')
+      ),
+    ];
 
     const [clientsData, projectsData] = await Promise.all([
       clientIds.length > 0 ? supabase.from('clients').select('id, name').in('id', clientIds) : { data: [] },
       projectIds.length > 0 ? supabase.from('projects').select('id, name').in('id', projectIds) : { data: [] }
     ]);
 
-    const clientsMap = new Map((clientsData.data || []).map(c => [c.id, c.name]));
-    const projectsMap = new Map((projectsData.data || []).map(p => [p.id, p.name]));
+    const clientRecords = (clientsData.data ?? []) as Array<{ id: number; name: string }>;
+    const projectRecords = (projectsData.data ?? []) as Array<{ id: number; name: string }>;
+    const clientsMap = new Map(clientRecords.map(client => [client.id, client.name]));
+    const projectsMap = new Map(projectRecords.map(project => [project.id, project.name]));
 
-    return notesKnowledge.map(record => {
+    return noteRecords.map(record => {
       const transformed = transformNotesKnowledgeRecord(record);
       // Add the joined names
       if (record.client_id && clientsMap.has(record.client_id)) {
@@ -356,18 +402,33 @@ export async function getNotesKnowledgeByClient(clientId: number): Promise<Notes
     }
 
     // Get client and project names separately
-    const clientIds = [...new Set(notesKnowledge.map(n => n.client_id).filter(Boolean))];
-    const projectIds = [...new Set(notesKnowledge.map(n => n.project_id).filter(Boolean))];
+    const noteRecords = notesKnowledge as Array<{ client_id: number | null; project_id: number | null } & Record<string, unknown>>;
+    const clientIds = [
+      ...new Set(
+        noteRecords
+          .map(record => record.client_id)
+          .filter((id): id is number => typeof id === 'number')
+      ),
+    ];
+    const projectIds = [
+      ...new Set(
+        noteRecords
+          .map(record => record.project_id)
+          .filter((id): id is number => typeof id === 'number')
+      ),
+    ];
 
     const [clientsData, projectsData] = await Promise.all([
       clientIds.length > 0 ? supabase.from('clients').select('id, name').in('id', clientIds) : { data: [] },
       projectIds.length > 0 ? supabase.from('projects').select('id, name').in('id', projectIds) : { data: [] }
     ]);
 
-    const clientsMap = new Map((clientsData.data || []).map(c => [c.id, c.name]));
-    const projectsMap = new Map((projectsData.data || []).map(p => [p.id, p.name]));
+    const clientRecords = (clientsData.data ?? []) as Array<{ id: number; name: string }>;
+    const projectRecords = (projectsData.data ?? []) as Array<{ id: number; name: string }>;
+    const clientsMap = new Map(clientRecords.map(client => [client.id, client.name]));
+    const projectsMap = new Map(projectRecords.map(project => [project.id, project.name]));
 
-    return notesKnowledge.map(record => {
+    return noteRecords.map(record => {
       const transformed = transformNotesKnowledgeRecord(record);
       // Add the joined names
       if (record.client_id && clientsMap.has(record.client_id)) {
@@ -402,18 +463,33 @@ export async function getNotesKnowledgeByAuthor(author: string): Promise<NotesKn
     }
 
     // Get client and project names separately
-    const clientIds = [...new Set(notesKnowledge.map(n => n.client_id).filter(Boolean))];
-    const projectIds = [...new Set(notesKnowledge.map(n => n.project_id).filter(Boolean))];
+    const noteRecords = notesKnowledge as Array<{ client_id: number | null; project_id: number | null } & Record<string, unknown>>;
+    const clientIds = [
+      ...new Set(
+        noteRecords
+          .map(record => record.client_id)
+          .filter((id): id is number => typeof id === 'number')
+      ),
+    ];
+    const projectIds = [
+      ...new Set(
+        noteRecords
+          .map(record => record.project_id)
+          .filter((id): id is number => typeof id === 'number')
+      ),
+    ];
 
     const [clientsData, projectsData] = await Promise.all([
       clientIds.length > 0 ? supabase.from('clients').select('id, name').in('id', clientIds) : { data: [] },
       projectIds.length > 0 ? supabase.from('projects').select('id, name').in('id', projectIds) : { data: [] }
     ]);
 
-    const clientsMap = new Map((clientsData.data || []).map(c => [c.id, c.name]));
-    const projectsMap = new Map((projectsData.data || []).map(p => [p.id, p.name]));
+    const clientRecords = (clientsData.data ?? []) as Array<{ id: number; name: string }>;
+    const projectRecords = (projectsData.data ?? []) as Array<{ id: number; name: string }>;
+    const clientsMap = new Map(clientRecords.map(client => [client.id, client.name]));
+    const projectsMap = new Map(projectRecords.map(project => [project.id, project.name]));
 
-    return notesKnowledge.map(record => {
+    return noteRecords.map(record => {
       const transformed = transformNotesKnowledgeRecord(record);
       // Add the joined names
       if (record.client_id && clientsMap.has(record.client_id)) {

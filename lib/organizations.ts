@@ -1,6 +1,18 @@
 import { supabase, supabaseAdmin } from './supabase';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Profile } from './profiles';
 
+type SupabaseQueryClient = {
+  from: typeof supabase.from;
+};
+
+type MembershipRecord = {
+  id: number;
+  org_id: string;
+  user_id: string;
+  role: Membership['role'];
+  created_at: string;
+  updated_at: string;
+};
 
 export interface Organization {
   id: string;
@@ -30,7 +42,7 @@ export interface OrganizationWithMembership extends Organization {
  * Uses supabaseAdmin to bypass RLS and get all organizations
  */
 export async function getAllOrganizations(
-  supabaseClient?: SupabaseClient<any>
+  supabaseClient?: SupabaseQueryClient
 ): Promise<Organization[]> {
   try {
     const client = supabaseClient || supabaseAdmin;
@@ -57,7 +69,7 @@ export async function getAllOrganizations(
  */
 export async function getUserOrganizations(
   userId: string,
-  supabaseClient?: SupabaseClient<any>
+  supabaseClient?: SupabaseQueryClient
 ): Promise<OrganizationWithMembership[]> {
   try {
     const client = supabaseClient || supabase;
@@ -79,7 +91,8 @@ export async function getUserOrganizations(
     }
 
     // Get all organization IDs
-    const orgIds = memberships.map(m => m.org_id);
+    const membershipRecords = memberships as MembershipRecord[];
+    const orgIds = membershipRecords.map(membership => membership.org_id);
 
     // Fetch organizations
     const { data: organizations, error: orgsError } = await client
@@ -93,10 +106,11 @@ export async function getUserOrganizations(
     }
 
     if (!organizations) return [];
+    const organizationRecords = organizations as Organization[];
 
     // Combine the data
-    return organizations.map((org) => {
-      const membership = memberships.find(m => m.org_id === org.id);
+    return organizationRecords.map((org) => {
+      const membership = membershipRecords.find(record => record.org_id === org.id);
       return {
         ...org,
         role: membership?.role as 'owner' | 'admin' | 'staff' | 'client' | undefined,
@@ -121,8 +135,8 @@ export async function getUserOrganizations(
  */
 export async function getOrganizationMembers(
   orgId: string,
-  supabaseClient?: SupabaseClient<any>
-): Promise<Array<Membership & { profile?: any; email?: string }>> {
+  supabaseClient?: SupabaseQueryClient
+): Promise<Array<Membership & { profile?: Profile; email?: string }>> {
   try {
     const client = supabaseClient || supabase;
     // Check if we're using admin client (by comparing to supabaseAdmin)
@@ -148,11 +162,12 @@ export async function getOrganizationMembers(
     console.log('Found memberships:', memberships.length, 'for org:', orgId);
 
     // Get user IDs
-    const userIds = memberships.map(m => m.user_id);
+    const membershipRecords = memberships as MembershipRecord[];
+    const userIds = membershipRecords.map(record => record.user_id);
 
     // Fetch profiles - use supabaseAdmin if we're using admin client (to bypass RLS)
     const profileClient = isUsingAdmin ? supabaseAdmin : client;
-    const { data: profiles, error: profilesError } = await profileClient
+    const { data: profilesData, error: profilesError } = await profileClient
       .from('profiles')
       .select('*')
       .in('id', userIds);
@@ -163,7 +178,7 @@ export async function getOrganizationMembers(
     }
 
     // Fetch user emails from auth (if using admin client)
-    let userEmails: Record<string, string> = {};
+    const userEmails: Record<string, string> = {};
     if (isUsingAdmin) {
       // Try to get emails from auth using admin client
       try {
@@ -181,8 +196,10 @@ export async function getOrganizationMembers(
     }
 
     // Combine the data
-    return memberships.map((membership) => {
-      const profile = profiles?.find(p => p.id === membership.user_id);
+    const profileList = Array.isArray(profilesData) ? (profilesData as Profile[]) : [];
+
+    return membershipRecords.map((membership) => {
+      const profile = profileList.find((p) => p.id === membership.user_id);
       return {
         ...membership,
         profile: profile || undefined,
@@ -201,7 +218,7 @@ export async function getOrganizationMembers(
 export async function getUserRoleInOrg(
   userId: string, 
   orgId: string,
-  supabaseClient?: SupabaseClient<any>
+  supabaseClient?: SupabaseQueryClient
 ): Promise<'owner' | 'admin' | 'staff' | 'client' | null> {
   try {
     const client = supabaseClient || supabase;
@@ -400,7 +417,7 @@ export async function updateUserRoleInOrg(
  */
 export async function getOrganizationById(
   orgId: string,
-  supabaseClient?: SupabaseClient<any>
+  supabaseClient?: SupabaseQueryClient
 ): Promise<Organization | null> {
   try {
     const client = supabaseClient || supabase;

@@ -30,11 +30,10 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { supabase } from "@/lib/supabase"
-import { User } from "@supabase/supabase-js"
+import { User, type AuthChangeEvent, type Session } from "@supabase/supabase-js"
 import { getUserRole } from "@/lib/invitations"
 import { getUserOrganizations } from "@/lib/organizations"
 import { usePathname } from "next/navigation"
@@ -121,6 +120,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [currentUser, setCurrentUser] = React.useState<User | null>(null)
   const [orgName, setOrgName] = React.useState<string | null>(null)
   const pathname = usePathname()
+  const initialPathnameRef = React.useRef(pathname)
   
   React.useEffect(() => {
     // Get initial user
@@ -144,7 +144,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           const userRole = await getUserRole(authUser.id)
           if (userRole === 'Client') {
             // Try to extract orgId from URL path if on client route
-            const clientRouteMatch = pathname?.match(/^\/client\/([^/]+)/)
+            const clientRouteMatch = initialPathnameRef.current?.match(/^\/client\/([^/]+)/)
             const orgIdFromPath = clientRouteMatch?.[1]
 
             const organizations = await getUserOrganizations(authUser.id)
@@ -162,7 +162,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           setOrgName(null)
         }
       } catch (error) {
-        console.log('No authenticated user or Supabase not configured')
+        console.log('No authenticated user or Supabase not configured', error)
         setOrgName(null)
       }
     }
@@ -171,7 +171,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: AuthChangeEvent, session: Session | null) => {
         if (event === 'SIGNED_IN' && session?.user) {
           setCurrentUser(session.user)
           const fullName = session.user.user_metadata?.first_name && session.user.user_metadata?.last_name 
@@ -188,7 +188,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           const userRole = await getUserRole(session.user.id)
           if (userRole === 'Client') {
             // Try to extract orgId from URL path if on client route
-            const clientRouteMatch = pathname?.match(/^\/client\/([^/]+)/)
+            const currentPath =
+              typeof window !== 'undefined' ? window.location.pathname : initialPathnameRef.current
+            const clientRouteMatch = currentPath?.match(/^\/client\/([^/]+)/)
             const orgIdFromPath = clientRouteMatch?.[1]
 
             const organizations = await getUserOrganizations(session.user.id)

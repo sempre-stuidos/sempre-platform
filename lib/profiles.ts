@@ -37,10 +37,10 @@ export async function getUserProfile(userId: string): Promise<Profile | null> {
 export async function getOrCreateUserProfile(userId: string): Promise<Profile | null> {
   try {
     // Try to get existing profile
-    let profile = await getUserProfile(userId);
+    const existingProfile = await getUserProfile(userId);
 
-    if (profile) {
-      return profile;
+    if (existingProfile) {
+      return existingProfile;
     }
 
     // Create new profile if it doesn't exist

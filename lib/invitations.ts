@@ -1,5 +1,9 @@
 import { supabaseAdmin, getBaseUrl, supabase } from './supabase';
 
+type SupabaseQueryClient = {
+  from: typeof supabase.from;
+};
+
 export type UserRole = 'Admin' | 'Manager' | 'Member' | 'Developer' | 'Designer' | 'Client';
 
 /**
@@ -181,7 +185,7 @@ export async function linkUserToRole(
  */
 export async function getUserRole(
   userId: string,
-  supabaseClient?: any
+  supabaseClient?: SupabaseQueryClient
 ): Promise<UserRole | null> {
   try {
     // Use provided client, or supabaseAdmin for server-side, or supabase for client-side

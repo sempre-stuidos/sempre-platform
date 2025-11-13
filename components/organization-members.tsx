@@ -122,7 +122,7 @@ export function OrganizationMembers({ orgId, canManage, isAdmin = false }: Organ
         <CardHeader>
           <CardTitle>No Members</CardTitle>
           <CardDescription>
-            This organization doesn't have any members yet.
+            This organization doesn&apos;t have any members yet.
           </CardDescription>
         </CardHeader>
       </Card>

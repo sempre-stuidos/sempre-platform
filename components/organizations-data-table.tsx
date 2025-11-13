@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -18,7 +18,7 @@ import { IconPlus, IconBuilding, IconEdit, IconTrash } from "@tabler/icons-react
 import { AddOrganizationModal } from "@/components/add-organization-modal"
 import { EditOrganizationModal } from "@/components/edit-organization-modal"
 import { toast } from "sonner"
-import { OrganizationWithMembership } from "@/lib/organizations"
+import { OrganizationWithMembership, type Organization } from "@/lib/organizations"
 
 interface OrganizationsDataTableProps {
   data: OrganizationWithMembership[]
@@ -37,16 +37,18 @@ export function OrganizationsDataTable({ data: initialData, isAdmin = false }: O
     setOrganizations(initialData)
   }, [initialData])
 
-  const handleCreateSuccess = (organization: any) => {
+  const handleCreateSuccess = () => {
     // Refresh the page to get updated data
     window.location.reload()
   }
 
-  const handleEditSuccess = (organization: any) => {
+  const handleEditSuccess = (organization: Organization) => {
     // Update the organization in the list
-    setOrganizations(organizations.map(org => 
-      org.id === organization.id ? { ...org, ...organization } : org
-    ))
+    setOrganizations((current) =>
+      current.map((org) =>
+        org.id === organization.id ? { ...org, ...organization } : org
+      )
+    )
     setShowEditModal(false)
     setSelectedOrganization(null)
   }
