@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { IconPlus } from '@tabler/icons-react';
 import Link from 'next/link';
-import { GalleryImagesTable } from '@/components/gallery-images-table';
+import { GalleryWrapper } from '@/components/gallery-wrapper';
+import { GalleryViewToggle } from '@/components/gallery-view-toggle';
 
 interface GalleryPageProps {
   params: Promise<{
@@ -52,7 +53,7 @@ export default async function GalleryPage({ params }: GalleryPageProps) {
     }
   }
 
-  const galleryImages = clientId ? await getGalleryImages(clientId) : [];
+  const galleryImages = clientId ? await getGalleryImages(clientId, supabase) : [];
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
@@ -60,23 +61,26 @@ export default async function GalleryPage({ params }: GalleryPageProps) {
         <div className="px-4 lg:px-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Gallery</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage your restaurant gallery images
+            <p className="text-muted-foreground mt-2 max-w-2xl">
+              Manage your restaurant gallery images.
             </p>
           </div>
           {clientId && (
-            <Link href={`/client/${orgId}/restaurant/gallery/new`}>
-              <Button>
-                <IconPlus className="mr-2 h-4 w-4" />
-                Add Image
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <GalleryViewToggle />
+              <Link href={`/client/${orgId}/restaurant/gallery/new`}>
+                <Button>
+                  <IconPlus className="mr-2 h-4 w-4" />
+                  Add Image
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
 
         <div className="px-4 lg:px-6">
           {clientId ? (
-            <GalleryImagesTable orgId={orgId} clientId={clientId} initialImages={galleryImages} />
+            <GalleryWrapper orgId={orgId} clientId={clientId} initialImages={galleryImages} />
           ) : (
             <Card>
               <CardHeader>

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { GalleryImage } from './types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Transform database record to match GalleryImage interface
 function transformGalleryImageRecord(record: Record<string, unknown>): GalleryImage {
@@ -32,9 +33,13 @@ function transformGalleryImageToRecord(galleryImage: Partial<GalleryImage>): Rec
 /**
  * Get all gallery images for a client
  */
-export async function getGalleryImages(clientId: number): Promise<GalleryImage[]> {
+export async function getGalleryImages(
+  clientId: number,
+  supabaseClient?: SupabaseClient
+): Promise<GalleryImage[]> {
   try {
-    const { data, error } = await supabase
+    const client = supabaseClient || supabase;
+    const { data, error } = await client
       .from('gallery_images')
       .select('*')
       .eq('client_id', clientId)
@@ -55,9 +60,13 @@ export async function getGalleryImages(clientId: number): Promise<GalleryImage[]
 /**
  * Get gallery image by ID
  */
-export async function getGalleryImageById(id: number): Promise<GalleryImage | null> {
+export async function getGalleryImageById(
+  id: number,
+  supabaseClient?: SupabaseClient
+): Promise<GalleryImage | null> {
   try {
-    const { data, error } = await supabase
+    const client = supabaseClient || supabase;
+    const { data, error } = await client
       .from('gallery_images')
       .select('*')
       .eq('id', id)
@@ -80,10 +89,12 @@ export async function getGalleryImageById(id: number): Promise<GalleryImage | nu
  */
 export async function createGalleryImage(
   clientId: number,
-  galleryImage: Omit<GalleryImage, 'id' | 'clientId' | 'created_at' | 'updated_at'>
+  galleryImage: Omit<GalleryImage, 'id' | 'clientId' | 'created_at' | 'updated_at'>,
+  supabaseClient?: SupabaseClient
 ): Promise<GalleryImage | null> {
   try {
-    const { data, error } = await supabase
+    const client = supabaseClient || supabase;
+    const { data, error } = await client
       .from('gallery_images')
       .insert([transformGalleryImageToRecord({ ...galleryImage, clientId })])
       .select()
@@ -106,10 +117,12 @@ export async function createGalleryImage(
  */
 export async function updateGalleryImage(
   id: number,
-  updates: Partial<Omit<GalleryImage, 'id' | 'clientId' | 'created_at' | 'updated_at'>>
+  updates: Partial<Omit<GalleryImage, 'id' | 'clientId' | 'created_at' | 'updated_at'>>,
+  supabaseClient?: SupabaseClient
 ): Promise<GalleryImage | null> {
   try {
-    const { data, error } = await supabase
+    const client = supabaseClient || supabase;
+    const { data, error } = await client
       .from('gallery_images')
       .update(transformGalleryImageToRecord(updates))
       .eq('id', id)
@@ -131,9 +144,13 @@ export async function updateGalleryImage(
 /**
  * Delete a gallery image
  */
-export async function deleteGalleryImage(id: number): Promise<boolean> {
+export async function deleteGalleryImage(
+  id: number,
+  supabaseClient?: SupabaseClient
+): Promise<boolean> {
   try {
-    const { error } = await supabase
+    const client = supabaseClient || supabase;
+    const { error } = await client
       .from('gallery_images')
       .delete()
       .eq('id', id);
