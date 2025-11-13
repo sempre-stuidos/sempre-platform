@@ -1,5 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase'
+import { getUserOrganizations } from '@/lib/organizations'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -70,6 +72,40 @@ export async function middleware(request: NextRequest) {
       redirectUrl.pathname = '/client/select-org'
       redirectUrl.search = ''
       return NextResponse.redirect(redirectUrl)
+    }
+    
+    // For regular login/register, check if user is a Client and redirect accordingly
+    try {
+      // Check user role using supabaseAdmin to bypass RLS
+      const { data: userRole } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single()
+
+      if (userRole?.role === 'Client') {
+        // Get user's organizations
+        const organizations = await getUserOrganizations(user.id, supabase)
+        
+        if (organizations && organizations.length > 0) {
+          // Redirect to first organization's client dashboard
+          // If multiple orgs, user can select from client/select-org
+          if (organizations.length === 1) {
+            redirectUrl.pathname = `/client/${organizations[0].id}/dashboard`
+          } else {
+            // Multiple organizations - redirect to select-org
+            redirectUrl.pathname = '/client/select-org'
+          }
+        } else {
+          // Client role but no organizations - redirect to select-org
+          redirectUrl.pathname = '/client/select-org'
+        }
+        redirectUrl.search = '' // Clear search params
+        return NextResponse.redirect(redirectUrl)
+      }
+    } catch (error) {
+      console.error('Error checking user role in middleware:', error)
+      // Continue with regular redirect if error
     }
     
     // For regular login, redirect to dashboard or original destination

@@ -8,6 +8,7 @@ import {
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getOrganizationById, getUserRoleInOrg } from '@/lib/organizations';
+import { getUserRole } from '@/lib/invitations';
 import { redirect } from 'next/navigation';
 
 interface OrganizationPageProps {
@@ -47,14 +48,24 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
   console.log('Organization page - User ID:', user.id);
   console.log('Organization page - Org ID:', orgId);
 
-  // Verify user has access to this organization
+  // Check if user is Admin (use supabaseAdmin for server-side)
+  const { supabaseAdmin } = await import('@/lib/supabase');
+  const userRole = await getUserRole(user.id, supabaseAdmin);
+  const isAdmin = userRole === 'Admin';
+
+  // Verify user has access to this organization (or is Admin)
   const role = await getUserRoleInOrg(user.id, orgId, supabase);
-  console.log('Organization page - User role:', role);
+  console.log('Organization page - User role in org:', role);
+  console.log('Organization page - Is Admin:', isAdmin);
   
-  if (!role) {
-    console.log('Organization page - No role found, redirecting to /organizations');
+  // Allow access if user is a member OR is Admin
+  if (!role && !isAdmin) {
+    console.log('Organization page - No role found and not Admin, redirecting to /organizations');
     redirect('/organizations');
   }
+  
+  // Use 'admin' role for Admins if they're not already a member
+  const effectiveRole = role || (isAdmin ? 'admin' : null);
 
   // Get organization details
   const organization = await getOrganizationById(orgId, supabase);
@@ -114,7 +125,8 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
               <OrganizationDetails 
                 orgId={orgId} 
                 organization={organization} 
-                userRole={role}
+                userRole={effectiveRole || 'staff'}
+                isAdmin={isAdmin}
                 stats={stats}
               />
             </div>

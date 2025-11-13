@@ -35,6 +35,9 @@ import {
 } from "@/components/ui/sidebar"
 import { supabase } from "@/lib/supabase"
 import { User } from "@supabase/supabase-js"
+import { getUserRole } from "@/lib/invitations"
+import { getUserOrganizations } from "@/lib/organizations"
+import { usePathname } from "next/navigation"
 
 const defaultUser = {
   name: "User",
@@ -116,6 +119,8 @@ const staticData = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = React.useState(defaultUser)
   const [currentUser, setCurrentUser] = React.useState<User | null>(null)
+  const [orgName, setOrgName] = React.useState<string | null>(null)
+  const pathname = usePathname()
   
   React.useEffect(() => {
     // Get initial user
@@ -134,9 +139,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             email: authUser.email || 'user@example.com',
             avatar: authUser.user_metadata?.avatar_url || '',
           })
+
+          // Check if user is a Client and get organization name
+          const userRole = await getUserRole(authUser.id)
+          if (userRole === 'Client') {
+            // Try to extract orgId from URL path if on client route
+            const clientRouteMatch = pathname?.match(/^\/client\/([^/]+)/)
+            const orgIdFromPath = clientRouteMatch?.[1]
+
+            const organizations = await getUserOrganizations(authUser.id)
+            if (organizations && organizations.length > 0) {
+              // Use orgId from path if available, otherwise use first organization
+              const selectedOrg = orgIdFromPath 
+                ? organizations.find(org => org.id === orgIdFromPath) || organizations[0]
+                : organizations[0]
+              setOrgName(selectedOrg.name)
+            }
+          } else {
+            setOrgName(null)
+          }
+        } else {
+          setOrgName(null)
         }
       } catch (error) {
         console.log('No authenticated user or Supabase not configured')
+        setOrgName(null)
       }
     }
 
@@ -156,15 +183,64 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             email: session.user.email || 'user@example.com',
             avatar: session.user.user_metadata?.avatar_url || '',
           })
+
+          // Check if user is a Client and get organization name
+          const userRole = await getUserRole(session.user.id)
+          if (userRole === 'Client') {
+            // Try to extract orgId from URL path if on client route
+            const clientRouteMatch = pathname?.match(/^\/client\/([^/]+)/)
+            const orgIdFromPath = clientRouteMatch?.[1]
+
+            const organizations = await getUserOrganizations(session.user.id)
+            if (organizations && organizations.length > 0) {
+              // Use orgId from path if available, otherwise use first organization
+              const selectedOrg = orgIdFromPath 
+                ? organizations.find(org => org.id === orgIdFromPath) || organizations[0]
+                : organizations[0]
+              setOrgName(selectedOrg.name)
+            }
+          } else {
+            setOrgName(null)
+          }
         } else if (event === 'SIGNED_OUT') {
           setCurrentUser(null)
           setUser(defaultUser)
+          setOrgName(null)
         }
       }
     )
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Update org name when pathname changes (for client routes)
+  React.useEffect(() => {
+    const updateOrgNameFromPath = async () => {
+      if (!currentUser) return
+
+      try {
+        const userRole = await getUserRole(currentUser.id)
+        if (userRole === 'Client') {
+          // Try to extract orgId from URL path if on client route
+          const clientRouteMatch = pathname?.match(/^\/client\/([^/]+)/)
+          const orgIdFromPath = clientRouteMatch?.[1]
+
+          if (orgIdFromPath) {
+            const organizations = await getUserOrganizations(currentUser.id)
+            if (organizations && organizations.length > 0) {
+              const selectedOrg = organizations.find(org => org.id === orgIdFromPath) || organizations[0]
+              setOrgName(selectedOrg.name)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error updating org name from path:', error)
+      }
+    }
+
+    updateOrgNameFromPath()
+  }, [pathname, currentUser])
+
   const [theme, setTheme] = React.useState<'light' | 'dark'>('dark')
 
   const toggleTheme = () => {
@@ -219,7 +295,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   height={20} 
                   className="!size-5"
                 />
-                <span className="text-base font-semibold">Sempre Studios</span>
+                <span className="text-base font-semibold">{orgName || 'Sempre Studios'}</span>
               </div>
               <Button
                 variant="ghost"

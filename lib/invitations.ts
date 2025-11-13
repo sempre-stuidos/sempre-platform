@@ -177,10 +177,17 @@ export async function linkUserToRole(
 
 /**
  * Get user's role by user ID
+ * Can accept an optional Supabase client for server-side calls
  */
-export async function getUserRole(userId: string): Promise<UserRole | null> {
+export async function getUserRole(
+  userId: string,
+  supabaseClient?: any
+): Promise<UserRole | null> {
   try {
-    const { data, error } = await supabase
+    // Use provided client, or supabaseAdmin for server-side, or supabase for client-side
+    const client = supabaseClient || (typeof window === 'undefined' ? supabaseAdmin : supabase);
+    
+    const { data, error } = await client
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)

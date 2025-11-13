@@ -25,6 +25,33 @@ export interface OrganizationWithMembership extends Organization {
 }
 
 /**
+ * Get all organizations in the system
+ * Uses supabaseAdmin to bypass RLS and get all organizations
+ */
+export async function getAllOrganizations(
+  supabaseClient?: SupabaseClient<any>
+): Promise<Organization[]> {
+  try {
+    const client = supabaseClient || supabaseAdmin;
+    
+    const { data: organizations, error } = await client
+      .from('organizations')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all organizations:', error);
+      throw error;
+    }
+
+    return organizations || [];
+  } catch (error) {
+    console.error('Error in getAllOrganizations:', error);
+    return [];
+  }
+}
+
+/**
  * Get all organizations a user belongs to
  */
 export async function getUserOrganizations(

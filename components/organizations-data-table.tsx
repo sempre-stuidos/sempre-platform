@@ -21,9 +21,10 @@ import { OrganizationWithMembership } from "@/lib/organizations"
 
 interface OrganizationsDataTableProps {
   data: OrganizationWithMembership[]
+  isAdmin?: boolean
 }
 
-export function OrganizationsDataTable({ data: initialData }: OrganizationsDataTableProps) {
+export function OrganizationsDataTable({ data: initialData, isAdmin = false }: OrganizationsDataTableProps) {
   const router = useRouter()
   const [organizations, setOrganizations] = useState(initialData)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -70,10 +71,12 @@ export function OrganizationsDataTable({ data: initialData }: OrganizationsDataT
             Manage organizations and their members
           </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)}>
-          <IconPlus className="mr-2 h-4 w-4" />
-          Create Organization
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => setShowCreateModal(true)}>
+            <IconPlus className="mr-2 h-4 w-4" />
+            Create Organization
+          </Button>
+        )}
       </div>
 
       <div className="px-4 lg:px-6">
@@ -86,10 +89,12 @@ export function OrganizationsDataTable({ data: initialData }: OrganizationsDataT
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => setShowCreateModal(true)}>
-                <IconPlus className="mr-2 h-4 w-4" />
-                Create Organization
-              </Button>
+              {isAdmin && (
+                <Button onClick={() => setShowCreateModal(true)}>
+                  <IconPlus className="mr-2 h-4 w-4" />
+                  Create Organization
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -100,7 +105,6 @@ export function OrganizationsDataTable({ data: initialData }: OrganizationsDataT
                   <TableHead>Name</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead>Your Role</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -123,28 +127,36 @@ export function OrganizationsDataTable({ data: initialData }: OrganizationsDataT
                     <TableCell className="max-w-md truncate">
                       {org.description || '-'}
                     </TableCell>
-                    <TableCell>
-                      <Badge>{org.role || '-'}</Badge>
-                    </TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => router.push(`/organizations/${org.id}`)}
-                        >
-                          <IconEdit className="h-4 w-4" />
-                        </Button>
-                        {org.role === 'owner' && (
+                        {isAdmin && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => router.push(`/organizations/${org.id}`)}
+                            >
+                              <IconEdit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(org.id);
+                              }}
+                            >
+                              <IconTrash className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </>
+                        )}
+                        {!isAdmin && org.role && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(org.id);
-                            }}
+                            onClick={() => router.push(`/organizations/${org.id}`)}
                           >
-                            <IconTrash className="h-4 w-4 text-destructive" />
+                            <IconEdit className="h-4 w-4" />
                           </Button>
                         )}
                       </div>

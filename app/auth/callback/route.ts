@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { linkUserToRole } from '@/lib/invitations'
 import { linkTeamMemberToAuthUser } from '@/lib/team'
 import { supabaseAdmin } from '@/lib/supabase'
+import { getUserOrganizations } from '@/lib/organizations'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -156,9 +157,42 @@ export async function GET(request: NextRequest) {
     // They might be an existing user trying to link their Google account
   }
 
+  // Check if user has Client role and redirect to client dashboard if applicable
+  let redirectPath = next
+  try {
+    // Check user role using supabaseAdmin to bypass RLS
+    const { data: userRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+
+    if (userRole?.role === 'Client') {
+      // Get user's organizations
+      const organizations = await getUserOrganizations(user.id, supabase)
+      
+      if (organizations && organizations.length > 0) {
+        // Redirect to first organization's client dashboard
+        // If multiple orgs, user can select from client/select-org
+        if (organizations.length === 1) {
+          redirectPath = `/client/${organizations[0].id}/dashboard`
+        } else {
+          // Multiple organizations - redirect to select-org
+          redirectPath = '/client/select-org'
+        }
+      } else {
+        // Client role but no organizations - still redirect to select-org
+        redirectPath = '/client/select-org'
+      }
+    }
+  } catch (error) {
+    console.error('Error checking user role for redirect:', error)
+    // Continue with original redirect path if error
+  }
+
   // Create the redirect response now that we know the user is allowed
   // The cookies are already set in the cookieStore, so we just need to redirect
-  const redirectTo = new URL(next, request.url)
+  const redirectTo = new URL(redirectPath, request.url)
   const redirectResponse = NextResponse.redirect(redirectTo)
   
   // Copy all Supabase auth cookies to the redirect response

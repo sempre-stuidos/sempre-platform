@@ -7,12 +7,9 @@ import {
   IconMenu2,
   IconFileText,
   IconBuilding,
-  IconLogout,
 } from "@tabler/icons-react"
-import { useParams, useRouter } from "next/navigation"
-import { NavMain } from "@/components/nav-main"
+import { useParams } from "next/navigation"
 import { NavUser } from "@/components/nav-user"
-import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
@@ -48,14 +45,17 @@ const getClientNavItems = (orgId: string) => [
       {
         title: "Menu",
         url: `/client/${orgId}/restaurant/menu`,
+        icon: IconMenu2,
       },
       {
         title: "Gallery",
         url: `/client/${orgId}/restaurant/gallery`,
+        icon: IconPhoto,
       },
       {
         title: "Page Sections",
         url: `/client/${orgId}/restaurant/sections`,
+        icon: IconFileText,
       },
     ],
   },
@@ -63,7 +63,6 @@ const getClientNavItems = (orgId: string) => [
 
 export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const params = useParams()
-  const router = useRouter()
   const orgId = params.orgId as string
   const { organization, isLoading: orgLoading } = useOrganizationContext()
   const [user, setUser] = React.useState(defaultUser)
@@ -116,11 +115,6 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
     }
   }, [])
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/client/login')
-  }
-
   const navItems = orgId ? getClientNavItems(orgId) : []
 
   return (
@@ -162,6 +156,7 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
                         <SidebarMenuItem key={child.title}>
                           <SidebarMenuButton asChild tooltip={child.title}>
                             <a href={child.url}>
+                              {child.icon && <child.icon />}
                               <span>{child.title}</span>
                             </a>
                           </SidebarMenuButton>
@@ -179,18 +174,6 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
         <SidebarMenu>
           <SidebarMenuItem>
             <NavUser user={user} />
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={handleSignOut}
-              >
-                <IconLogout className="mr-2 h-4 w-4" />
-                Sign Out
-              </Button>
-            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

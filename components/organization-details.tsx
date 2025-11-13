@@ -23,12 +23,13 @@ interface OrganizationDetailsProps {
   orgId: string
   organization: Organization
   userRole: 'owner' | 'admin' | 'staff' | 'client'
+  isAdmin?: boolean
   stats: OrganizationStats
 }
 
-export function OrganizationDetails({ orgId, organization, userRole, stats }: OrganizationDetailsProps) {
+export function OrganizationDetails({ orgId, organization, userRole, isAdmin = false, stats }: OrganizationDetailsProps) {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
-  const canManage = userRole === 'owner' || userRole === 'admin'
+  const canManage = userRole === 'owner' || userRole === 'admin' || isAdmin
 
   return (
     <div className="space-y-6">
