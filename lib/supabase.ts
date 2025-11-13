@@ -22,9 +22,25 @@ const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env
 
 // Use createBrowserClient for client-side code (works with middleware)
 // This properly handles cookies for SSR authentication
-export const supabase = typeof window !== 'undefined' 
-  ? createBrowserClient(supabaseUrl, supabaseAnonKey)
-  : createClient(supabaseUrl, supabaseAnonKey)
+// Use global window object to ensure true singleton across module reloads
+declare global {
+  interface Window {
+    __supabaseClient?: ReturnType<typeof createBrowserClient>;
+  }
+}
+
+export const supabase = (() => {
+  if (typeof window !== 'undefined') {
+    // Client-side: use window object for true singleton
+    if (!window.__supabaseClient) {
+      window.__supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey);
+    }
+    return window.__supabaseClient;
+  } else {
+    // Server-side: create new instance per request (SSR context)
+    return createClient(supabaseUrl, supabaseAnonKey);
+  }
+})()
 
 // For server-side operations that require elevated permissions
 export const supabaseAdmin = createClient(

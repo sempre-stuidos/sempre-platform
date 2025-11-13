@@ -15,6 +15,7 @@ import {
   IconSearch,
   IconSun,
   IconUsers,
+  IconBuilding,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -43,6 +44,11 @@ const defaultUser = {
 
 const staticData = {
   navMain: [
+    {
+      title: "Organizations",
+      url: "/organizations",
+      icon: IconBuilding,
+    },
     {
       title: "Dashboard",
       url: "/dashboard",

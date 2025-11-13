@@ -3,6 +3,7 @@ import { ClientProfile } from "@/components/client-profile"
 import { ClientServices } from "@/components/client-services"
 import { ClientNotes } from "@/components/client-notes"
 import { ClientAttachments } from "@/components/client-attachments"
+import { ClientOrganization } from "@/components/client-organization"
 import { SiteHeader } from "@/components/site-header"
 import {
   SidebarInset,
@@ -100,8 +101,9 @@ export default async function ClientDetailsPage({ params }: ClientDetailsPagePro
               {/* Tabs */}
               <div className="px-4 lg:px-6">
                 <Tabs defaultValue="profile" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="profile">Profile</TabsTrigger>
+                    <TabsTrigger value="organization">Organization</TabsTrigger>
                     <TabsTrigger value="services">Services</TabsTrigger>
                     <TabsTrigger value="notes">Notes</TabsTrigger>
                     <TabsTrigger value="attachments">Attachments</TabsTrigger>
@@ -109,6 +111,10 @@ export default async function ClientDetailsPage({ params }: ClientDetailsPagePro
                   
                   <TabsContent value="profile" className="mt-6">
                     <ClientProfile client={client} />
+                  </TabsContent>
+                  
+                  <TabsContent value="organization" className="mt-6">
+                    <ClientOrganization clientId={clientId} />
                   </TabsContent>
                   
                   <TabsContent value="services" className="mt-6">

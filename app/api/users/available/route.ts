@@ -33,6 +33,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Get orgId from query params if provided
+    const { searchParams } = new URL(request.url)
+    const orgId = searchParams.get('orgId')
+
     // Get all users from auth.users
     const { data: usersData, error: usersError } = await supabaseAdmin.auth.admin.listUsers()
     
@@ -44,28 +48,22 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get all existing user_roles to filter out users who already have roles
-    const { data: existingRoles, error: rolesError } = await supabaseAdmin
-      .from('user_roles')
-      .select('user_id')
-      .not('user_id', 'is', null)
+    // If orgId provided, filter out users already in that organization
+    let excludedUserIds = new Set<string>()
+    if (orgId) {
+      const { data: existingMembers, error: membersError } = await supabaseAdmin
+        .from('memberships')
+        .select('user_id')
+        .eq('org_id', orgId)
 
-    if (rolesError) {
-      console.error('Error fetching user roles:', rolesError)
-      return NextResponse.json(
-        { success: false, error: 'Failed to fetch user roles' },
-        { status: 500 }
-      )
+      if (!membersError && existingMembers) {
+        excludedUserIds = new Set(existingMembers.map(m => m.user_id).filter(Boolean))
+      }
     }
 
-    // Create a set of user IDs that already have roles
-    const usersWithRoles = new Set(
-      existingRoles?.map(role => role.user_id).filter(Boolean) || []
-    )
-
-    // Filter out users who already have roles and format the response
+    // Filter out users who are already members (if orgId provided) and format the response
     const availableUsers = (usersData?.users || [])
-      .filter(user => !usersWithRoles.has(user.id))
+      .filter(user => !excludedUserIds.has(user.id))
       .map(user => {
         const metadata = user.user_metadata || {}
         return {

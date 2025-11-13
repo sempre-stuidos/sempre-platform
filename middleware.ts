@@ -33,25 +33,65 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register']
+  const publicRoutes = ['/login', '/register', '/client/login']
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+
+  // Client routes
+  const isClientRoute = pathname.startsWith('/client')
+  const isClientLoginRoute = pathname.startsWith('/client/login')
+  const isClientSelectOrgRoute = pathname.startsWith('/client/select-org')
+  const isClientOrgRoute = pathname.match(/^\/client\/[^/]+\//)
 
   // If user is not logged in and trying to access a protected route
   if (!user && !isPublicRoute) {
     const redirectUrl = request.nextUrl.clone()
+    
+    // Redirect client routes to client login
+    if (isClientRoute && !isClientLoginRoute) {
+      redirectUrl.pathname = '/client/login'
+      redirectUrl.searchParams.set('redirectTo', pathname)
+      return NextResponse.redirect(redirectUrl)
+    }
+    
+    // Redirect agency routes to regular login
     redirectUrl.pathname = '/login'
     redirectUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
-  // If user is logged in and trying to access login/register, redirect to dashboard or original destination
+  // If user is logged in and trying to access login/register, redirect appropriately
   if (user && isPublicRoute) {
     const redirectTo = request.nextUrl.searchParams.get('redirectTo')
     const redirectUrl = request.nextUrl.clone()
-    // Normalize redirectTo - convert '/' or empty to '/dashboard'
+    
+    // For client login, redirect to select-org or dashboard
+    if (pathname.startsWith('/client/login')) {
+      // Check if user has organizations (simplified - actual check happens in callback)
+      redirectUrl.pathname = '/client/select-org'
+      redirectUrl.search = ''
+      return NextResponse.redirect(redirectUrl)
+    }
+    
+    // For regular login, redirect to dashboard or original destination
     const destination = (redirectTo && redirectTo !== '/') ? redirectTo : '/dashboard'
     redirectUrl.pathname = destination
     redirectUrl.search = '' // Clear search params
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  // For client organization routes, verify membership is done in the layout
+  // Middleware just ensures user is authenticated
+  if (isClientOrgRoute && !user) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/client/login'
+    redirectUrl.searchParams.set('redirectTo', pathname)
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  // For client select-org route, ensure user is authenticated
+  if (isClientSelectOrgRoute && !user) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/client/login'
     return NextResponse.redirect(redirectUrl)
   }
 
