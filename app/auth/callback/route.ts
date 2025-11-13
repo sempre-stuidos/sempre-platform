@@ -161,15 +161,31 @@ export async function GET(request: NextRequest) {
   let redirectPath = next
   try {
     // Check user role using supabaseAdmin to bypass RLS
-    const { data: userRole } = await supabaseAdmin
+    // Use maybeSingle() to handle cases where user might not have a role yet
+    const { data: userRole, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (userRole?.role === 'Client') {
+    // If no role found, also check by email (in case user_id wasn't set yet)
+    let finalRole = userRole?.role
+    if (!finalRole) {
+      const { data: roleByEmail } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('invited_email', email)
+        .maybeSingle()
+      finalRole = roleByEmail?.role
+    }
+
+    console.log('Auth callback - User role check:', { userId: user.id, email, role: finalRole, roleError })
+
+    if (finalRole === 'Client') {
       // Get user's organizations
       const organizations = await getUserOrganizations(user.id, supabase)
+      
+      console.log('Auth callback - Client user organizations:', organizations.length)
       
       if (organizations && organizations.length > 0) {
         // Redirect to first organization's client dashboard
@@ -184,6 +200,8 @@ export async function GET(request: NextRequest) {
         // Client role but no organizations - still redirect to select-org
         redirectPath = '/client/select-org'
       }
+      
+      console.log('Auth callback - Redirecting Client to:', redirectPath)
     }
   } catch (error) {
     console.error('Error checking user role for redirect:', error)

@@ -16,6 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { IconPlus, IconBuilding, IconEdit, IconTrash } from "@tabler/icons-react"
 import { AddOrganizationModal } from "@/components/add-organization-modal"
+import { EditOrganizationModal } from "@/components/edit-organization-modal"
 import { toast } from "sonner"
 import { OrganizationWithMembership } from "@/lib/organizations"
 
@@ -28,6 +29,8 @@ export function OrganizationsDataTable({ data: initialData, isAdmin = false }: O
   const router = useRouter()
   const [organizations, setOrganizations] = useState(initialData)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedOrganization, setSelectedOrganization] = useState<OrganizationWithMembership | null>(null)
 
   // Update state when initialData changes (e.g., after page refresh)
   React.useEffect(() => {
@@ -37,6 +40,22 @@ export function OrganizationsDataTable({ data: initialData, isAdmin = false }: O
   const handleCreateSuccess = (organization: any) => {
     // Refresh the page to get updated data
     window.location.reload()
+  }
+
+  const handleEditSuccess = (organization: any) => {
+    // Update the organization in the list
+    setOrganizations(organizations.map(org => 
+      org.id === organization.id ? { ...org, ...organization } : org
+    ))
+    setShowEditModal(false)
+    setSelectedOrganization(null)
+  }
+
+  const handleEditClick = (org: OrganizationWithMembership, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setSelectedOrganization(org)
+    setShowEditModal(true)
   }
 
   const handleDelete = async (orgId: string) => {
@@ -134,7 +153,7 @@ export function OrganizationsDataTable({ data: initialData, isAdmin = false }: O
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => router.push(`/organizations/${org.id}`)}
+                              onClick={(e) => handleEditClick(org, e)}
                             >
                               <IconEdit className="h-4 w-4" />
                             </Button>
@@ -154,7 +173,7 @@ export function OrganizationsDataTable({ data: initialData, isAdmin = false }: O
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => router.push(`/organizations/${org.id}`)}
+                            onClick={(e) => handleEditClick(org, e)}
                           >
                             <IconEdit className="h-4 w-4" />
                           </Button>
@@ -173,6 +192,12 @@ export function OrganizationsDataTable({ data: initialData, isAdmin = false }: O
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
         onSuccess={handleCreateSuccess}
+      />
+      <EditOrganizationModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        organization={selectedOrganization}
+        onSuccess={handleEditSuccess}
       />
     </div>
   )

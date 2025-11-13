@@ -52,6 +52,9 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
   const { supabaseAdmin } = await import('@/lib/supabase');
   const userRole = await getUserRole(user.id, supabaseAdmin);
   const isAdmin = userRole === 'Admin';
+  
+  console.log('Organization page - User role from user_roles:', userRole);
+  console.log('Organization page - Is Admin:', isAdmin);
 
   // Verify user has access to this organization (or is Admin)
   const role = await getUserRoleInOrg(user.id, orgId, supabase);
@@ -68,7 +71,8 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
   const effectiveRole = role || (isAdmin ? 'admin' : null);
 
   // Get organization details
-  const organization = await getOrganizationById(orgId, supabase);
+  // Use supabaseAdmin for Admins to bypass RLS, regular supabase for members
+  const organization = await getOrganizationById(orgId, isAdmin ? supabaseAdmin : supabase);
   console.log('Organization page - Organization:', organization ? organization.name : 'not found');
   
   if (!organization) {
@@ -77,7 +81,8 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
   }
 
   // Get organization stats
-  const membersResult = await supabase
+  // Use supabaseAdmin for Admins to bypass RLS when fetching members
+  const membersResult = await (isAdmin ? supabaseAdmin : supabase)
     .from('memberships')
     .select('id, created_at', { count: 'exact' })
     .eq('org_id', orgId);
