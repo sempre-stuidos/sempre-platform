@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { ClientSidebar } from '@/components/client-sidebar';
-import { SiteHeader } from '@/components/site-header';
+import { ClientSiteHeader } from '@/components/client-site-header';
 import {
   SidebarInset,
   SidebarProvider,
@@ -71,7 +71,7 @@ export default async function ClientLayout({ children, params }: ClientLayoutPro
     >
       <ClientSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader />
+        <ClientSiteHeader />
         <div className="flex flex-1 flex-col">
           {children}
         </div>

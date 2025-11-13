@@ -47,8 +47,8 @@ const getClientNavItems = (orgId: string) => ({
       icon: IconChartBar,
     },
     {
-      title: "Bookings",
-      url: `/client/${orgId}/bookings`,
+      title: "Reservations",
+      url: `/client/${orgId}/reservations`,
       icon: IconCalendar,
     },
   ],

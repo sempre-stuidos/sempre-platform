@@ -1,0 +1,156 @@
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getOrganizationById, getUserRoleInOrg } from '@/lib/organizations';
+import { redirect } from 'next/navigation';
+import { ReservationsList } from '@/components/reservations-list';
+
+interface ReservationsPageProps {
+  params: Promise<{
+    orgId: string;
+  }>;
+}
+
+export default async function ReservationsPage({ params }: ReservationsPageProps) {
+  const { orgId } = await params;
+  const cookieStore = await cookies();
+  
+  const supabaseServer = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
+  const { data: { user } } = await supabaseServer.auth.getUser();
+
+  if (!user) {
+    redirect('/client/login');
+  }
+
+  // Verify organization membership
+  const role = await getUserRoleInOrg(user.id, orgId, supabaseServer);
+  if (!role) {
+    redirect('/client/select-org');
+  }
+
+  // Get organization details
+  const organization = await getOrganizationById(orgId, supabaseServer);
+  if (!organization) {
+    redirect('/client/select-org');
+  }
+
+  // Fetch reservations for this organization
+  const { data: reservations, error } = await supabaseServer
+    .from('reservations')
+    .select('*')
+    .eq('org_id', orgId)
+    .order('reservation_date', { ascending: true })
+    .order('reservation_time', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching reservations:', error);
+  }
+
+  // Generate dummy data if no reservations exist
+  const generateDummyReservations = () => {
+    const today = new Date();
+    const dummyReservations = [];
+    const customerNames = [
+      'John Smith', 'Sarah Johnson', 'Michael Brown', 'Emily Davis', 
+      'David Wilson', 'Jessica Martinez', 'Christopher Anderson', 'Amanda Taylor',
+      'Matthew Thomas', 'Lauren Jackson', 'Daniel White', 'Rachel Harris',
+      'James Martin', 'Nicole Thompson', 'Robert Garcia'
+    ];
+    const customerEmails = [
+      'john.smith@email.com', 'sarah.j@email.com', 'michael.b@email.com', 'emily.d@email.com',
+      'david.w@email.com', 'jessica.m@email.com', 'chris.a@email.com', 'amanda.t@email.com',
+      'matthew.t@email.com', 'lauren.j@email.com', 'daniel.w@email.com', 'rachel.h@email.com',
+      'james.m@email.com', 'nicole.t@email.com', 'robert.g@email.com'
+    ];
+    const customerPhones = [
+      '555-0101', '555-0102', '555-0103', '555-0104', '555-0105',
+      '555-0106', '555-0107', '555-0108', '555-0109', '555-0110',
+      '555-0111', '555-0112', '555-0113', '555-0114', '555-0115'
+    ];
+    const times = ['18:00:00', '18:30:00', '19:00:00', '19:30:00', '20:00:00', '20:30:00', '21:00:00', '17:30:00', '17:00:00'];
+    const statuses: Array<'pending' | 'approved' | 'cancelled' | 'completed'> = ['pending', 'approved', 'completed', 'cancelled'];
+    const specialRequests = ['Window seat preferred', 'Birthday celebration', 'Anniversary dinner', null, null, null];
+
+    for (let i = 0; i < 15; i++) {
+      const reservationDate = new Date(today);
+      if (i < 8) {
+        // Upcoming reservations
+        reservationDate.setDate(today.getDate() + i);
+      } else {
+        // Past reservations
+        reservationDate.setDate(today.getDate() - (i - 7));
+      }
+
+      const status = statuses[i % statuses.length];
+      const timeIndex = i % times.length;
+
+      dummyReservations.push({
+        id: i + 1,
+        customer_name: customerNames[i],
+        customer_email: customerEmails[i],
+        customer_phone: customerPhones[i],
+        reservation_date: reservationDate.toISOString().split('T')[0],
+        reservation_time: times[timeIndex],
+        party_size: 2 + (i % 6),
+        status: status,
+        special_requests: specialRequests[i % specialRequests.length],
+        approved_by: status === 'approved' || status === 'completed' ? 'Restaurant Staff' : null,
+        approved_at: status === 'approved' || status === 'completed' 
+          ? new Date(Date.now() - (i * 24 * 60 * 60 * 1000)).toISOString() 
+          : null,
+        client_id: null,
+        org_id: orgId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+    return dummyReservations;
+  };
+
+  // Use dummy data if no reservations found
+  const allReservations = (reservations && reservations.length > 0) ? reservations : generateDummyReservations();
+
+  // Separate upcoming and past reservations
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const upcomingReservations = allReservations.filter((reservation) => {
+    const reservationDate = new Date(reservation.reservation_date);
+    reservationDate.setHours(0, 0, 0, 0);
+    return reservationDate >= today;
+  });
+
+  const pastReservations = allReservations.filter((reservation) => {
+    const reservationDate = new Date(reservation.reservation_date);
+    reservationDate.setHours(0, 0, 0, 0);
+    return reservationDate < today;
+  });
+
+  return (
+    <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+        <ReservationsList
+          upcomingReservations={upcomingReservations || []}
+          pastReservations={pastReservations || []}
+          orgId={orgId}
+        />
+      </div>
+    </div>
+  );
+}
+
