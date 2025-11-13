@@ -20,7 +20,7 @@ function transformMenuItemRecord(record: Record<string, unknown>): MenuItem {
   
   return {
     id: record.id as number,
-    menuId: menuId,
+    menuId: menuId as number, // Type assertion - menu_id should always be present after migration
     menuCategoryId: record.menu_category_id as number | undefined,
     menuType: (record.menu_type as MenuType) || undefined,
     name: record.name as string,
@@ -148,13 +148,13 @@ export async function getMenuItems(
     }
 
     if (data && data.length > 0) {
-      console.log('Raw menu items from DB:', data.map(item => ({ id: item.id, name: item.name, menu_id: item.menu_id })));
+      console.log('Raw menu items from DB:', data.map((item: Record<string, unknown>) => ({ id: item.id, name: item.name, menu_id: item.menu_id })));
     }
 
     const transformed = data?.map(transformMenuItemRecord) || [];
     
     if (transformed.length > 0) {
-      console.log('Transformed menu items:', transformed.map(item => ({ id: item.id, name: item.name, menuId: item.menuId })));
+      console.log('Transformed menu items:', transformed.map((item: MenuItem) => ({ id: item.id, name: item.name, menuId: item.menuId })));
     }
 
     return transformed;

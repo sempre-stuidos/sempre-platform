@@ -18,6 +18,11 @@ export async function sendTeamMemberInvitation(
     // First, check if user already exists by listing users with email filter
     const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     
+    if (listError) {
+      console.error('Error listing users:', listError);
+      return { success: false, error: 'Failed to check existing users' };
+    }
+    
     const existingUser = usersData?.users?.find(user => 
       user.email?.toLowerCase() === email.toLowerCase()
     );
@@ -53,7 +58,7 @@ export async function sendTeamMemberInvitation(
 
     // User doesn't exist, send invitation
     const baseUrl = getBaseUrl();
-    const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+    const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       redirectTo: `${baseUrl}/auth/callback`,
       data: {
         role, // Store role in user metadata
@@ -75,6 +80,11 @@ export async function sendTeamMemberInvitation(
       .select('id, user_id')
       .eq('invited_email', lowerEmail)
       .maybeSingle(); // Use maybeSingle() instead of single() to avoid error when no rows
+    
+    if (checkError) {
+      console.error('Error checking existing invitation:', checkError);
+      return { success: false, error: 'Failed to check existing invitations' };
+    }
 
     // Check if there's an accepted invitation (user already has a role)
     if (existingInvitation && existingInvitation.user_id !== null) {

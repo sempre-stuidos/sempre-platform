@@ -117,7 +117,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     console.log('Update data:', { name, menuId, menuCategoryId, priceCents: finalPriceCents });
     console.log('Full body:', body);
 
-    const updates: any = {};
+    const updates: Partial<{
+      name: string;
+      menuId: number;
+      menuCategoryId: number;
+      description: string;
+      priceCents: number;
+      imageUrl: string;
+      isVisible: boolean;
+      isFeatured: boolean;
+      position: number;
+    }> = {};
     if (name !== undefined) updates.name = name;
     if (menuId !== undefined && menuId !== null) updates.menuId = menuId;
     if (menuCategoryId !== undefined) updates.menuCategoryId = menuCategoryId;
