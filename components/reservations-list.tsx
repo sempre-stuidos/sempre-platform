@@ -805,7 +805,7 @@ function ReservationsCalendar({
           </div>
         </div>
       </div>
-      <div className="p-4 flex-1 overflow-hidden min-h-0">
+      <div className="p-1 flex-1 overflow-hidden min-h-0">
         <div className="grid grid-cols-7 gap-2 h-full">
           {dayNames.map((day, index) => {
             const date = weekDates[index]
