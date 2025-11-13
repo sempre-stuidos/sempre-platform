@@ -6,6 +6,8 @@ import {
   updateUserRoleInOrg,
   removeUserFromOrganization,
 } from '@/lib/organizations';
+import { supabaseAdmin } from '@/lib/supabase';
+import { getUserRole } from '@/lib/invitations';
 
 interface RouteParams {
   params: Promise<{
@@ -41,9 +43,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify user is owner or admin
-    const role = await getUserRoleInOrg(user.id, orgId);
-    if (!role || (role !== 'owner' && role !== 'admin')) {
+    // Check if user is Admin (use supabaseAdmin for server-side)
+    const userRole = await getUserRole(user.id, supabaseAdmin);
+    const isAdmin = userRole === 'Admin';
+    
+    // Verify user is owner, admin, or system Admin
+    const role = await getUserRoleInOrg(user.id, orgId, supabase);
+    if (!isAdmin && (!role || (role !== 'owner' && role !== 'admin'))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -103,9 +109,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify user is owner or admin
+    // Check if user is Admin (use supabaseAdmin for server-side)
+    const userRole = await getUserRole(user.id, supabaseAdmin);
+    const isAdmin = userRole === 'Admin';
+    
+    // Verify user is owner, admin, or system Admin
     const role = await getUserRoleInOrg(user.id, orgId, supabase);
-    if (!role || (role !== 'owner' && role !== 'admin')) {
+    if (!isAdmin && (!role || (role !== 'owner' && role !== 'admin'))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

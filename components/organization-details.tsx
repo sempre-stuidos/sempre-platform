@@ -53,7 +53,7 @@ export function OrganizationDetails({ orgId, organization, userRole, isAdmin = f
           </div>
           
           <TabsContent value="members" className="mt-6">
-            <OrganizationMembers orgId={orgId} canManage={canManage} />
+            <OrganizationMembers orgId={orgId} canManage={canManage} isAdmin={isAdmin} />
           </TabsContent>
           
           <TabsContent value="site" className="mt-6">

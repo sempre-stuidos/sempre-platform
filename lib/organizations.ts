@@ -1,6 +1,7 @@
 import { supabase, supabaseAdmin } from './supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+
 export interface Organization {
   id: string;
   name: string;
@@ -124,6 +125,8 @@ export async function getOrganizationMembers(
 ): Promise<Array<Membership & { profile?: any; email?: string }>> {
   try {
     const client = supabaseClient || supabase;
+    // Check if we're using admin client (by comparing to supabaseAdmin)
+    const isUsingAdmin = supabaseClient === supabaseAdmin;
     
     // Get memberships
     const { data: memberships, error: membershipsError } = await client
@@ -132,15 +135,24 @@ export async function getOrganizationMembers(
       .eq('org_id', orgId)
       .order('created_at', { ascending: true });
 
-    if (membershipsError) throw membershipsError;
+    if (membershipsError) {
+      console.error('Error fetching memberships:', membershipsError);
+      throw membershipsError;
+    }
 
-    if (!memberships || memberships.length === 0) return [];
+    if (!memberships || memberships.length === 0) {
+      console.log('No memberships found for organization:', orgId);
+      return [];
+    }
+
+    console.log('Found memberships:', memberships.length, 'for org:', orgId);
 
     // Get user IDs
     const userIds = memberships.map(m => m.user_id);
 
-    // Fetch profiles
-    const { data: profiles, error: profilesError } = await client
+    // Fetch profiles - use supabaseAdmin if we're using admin client (to bypass RLS)
+    const profileClient = isUsingAdmin ? supabaseAdmin : client;
+    const { data: profiles, error: profilesError } = await profileClient
       .from('profiles')
       .select('*')
       .in('id', userIds);
@@ -152,9 +164,20 @@ export async function getOrganizationMembers(
 
     // Fetch user emails from auth (if using admin client)
     let userEmails: Record<string, string> = {};
-    if (supabaseClient) {
-      // Try to get emails from auth if possible
-      // Note: This requires admin access, so we'll skip for regular client
+    if (isUsingAdmin) {
+      // Try to get emails from auth using admin client
+      try {
+        const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
+        if (usersData?.users) {
+          usersData.users.forEach(user => {
+            if (user.email && userIds.includes(user.id)) {
+              userEmails[user.id] = user.email;
+            }
+          });
+        }
+      } catch (error) {
+        console.warn('Error fetching user emails:', error);
+      }
     }
 
     // Combine the data

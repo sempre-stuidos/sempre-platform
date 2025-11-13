@@ -52,7 +52,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const members = await getOrganizationMembers(orgId, supabase);
+    // Use supabaseAdmin for Admins to bypass RLS and see all members including owner
+    const members = await getOrganizationMembers(orgId, isAdmin ? supabaseAdmin : supabase);
 
     // Enrich with email addresses from auth
     const membersWithEmails = await Promise.all(
