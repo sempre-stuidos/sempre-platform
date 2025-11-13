@@ -230,16 +230,52 @@ export interface GalleryImage {
   updated_at: string;
 }
 
-export interface MenuItem {
+export type MenuType = 'brunch' | 'dinner' | 'lunch' | 'breakfast' | 'dessert' | null;
+
+export interface Menu {
   id: number;
-  clientId: number;
+  organizationId: string;
   name: string;
   description?: string;
-  price?: number;
-  category?: string;
-  imageUrl?: string;
+  isActive: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface MenuCategory {
+  id: number;
+  menuId: number;
+  menuType?: MenuType;
+  name: string;
+  slug: string;
+  sortOrder: number;
+  isActive: boolean;
+  created_at: string;
+  updated_at: string;
+  // Keep for backward compatibility during transition
+  clientId?: number;
+}
+
+export interface MenuItem {
+  id: number;
+  menuId: number;
+  menuCategoryId?: number;
+  menuType?: MenuType;
+  name: string;
+  description?: string;
+  price?: number; // Keep for backward compatibility
+  priceCents?: number; // New field - price in cents
+  category?: string; // Keep for backward compatibility
+  imageUrl?: string;
+  isVisible: boolean;
+  isFeatured: boolean;
+  position: number;
+  isArchived: boolean;
+  archivedAt?: string;
+  created_at: string;
+  updated_at: string;
+  // Keep for backward compatibility during transition
+  clientId?: number;
 }
 
 export interface PageSection {
