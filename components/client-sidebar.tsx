@@ -7,6 +7,8 @@ import {
   IconMenu2,
   IconFileText,
   IconBuilding,
+  IconChartBar,
+  IconCalendar,
 } from "@tabler/icons-react"
 import { useParams, usePathname } from "next/navigation"
 import { NavUser } from "@/components/nav-user"
@@ -38,6 +40,16 @@ const getClientNavItems = (orgId: string) => ({
       title: "Dashboard",
       url: `/client/${orgId}/dashboard`,
       icon: IconDashboard,
+    },
+    {
+      title: "Analytics",
+      url: `/client/${orgId}/analytics`,
+      icon: IconChartBar,
+    },
+    {
+      title: "Bookings",
+      url: `/client/${orgId}/bookings`,
+      icon: IconCalendar,
     },
   ],
   restaurant: [
