@@ -3,7 +3,6 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserRoleInOrg } from '@/lib/organizations';
 import { getGalleryImageById, updateGalleryImage, deleteGalleryImage } from '@/lib/gallery';
-import { getOrganizationById } from '@/lib/organizations';
 
 interface RouteParams {
   params: Promise<{
@@ -107,10 +106,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
     const { imageUrl, title, description } = body;
 
-    const updates: any = {};
+    const updates: Partial<{ imageUrl: string; title?: string; description?: string }> = {};
     if (imageUrl !== undefined) updates.imageUrl = imageUrl;
-    if (title !== undefined) updates.title = title;
-    if (description !== undefined) updates.description = description;
+    if (title !== undefined) updates.title = title || undefined;
+    if (description !== undefined) updates.description = description || undefined;
 
     const galleryImage = await updateGalleryImage(id, updates, supabase);
 

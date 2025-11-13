@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { IconUpload, IconX, IconArrowLeft, IconLoader } from "@tabler/icons-react"
 import { toast } from "sonner"
 import Image from "next/image"
+import { GalleryImage } from "@/lib/types"
 
 export default function EditGalleryImagePage() {
   const params = useParams()
@@ -17,7 +18,6 @@ export default function EditGalleryImagePage() {
   const orgId = params.orgId as string
   const imageId = params.imageId as string
   
-  const [image, setImage] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [imagePreview, setImagePreview] = useState<string>("")
@@ -30,13 +30,7 @@ export default function EditGalleryImagePage() {
     imageUrl: "",
   })
 
-  useEffect(() => {
-    if (imageId) {
-      fetchImage()
-    }
-  }, [imageId])
-
-  const fetchImage = async () => {
+  const fetchImage = useCallback(async () => {
     try {
       setIsLoading(true)
       const response = await fetch(`/api/organizations/${orgId}/gallery-images/${imageId}`)
@@ -46,7 +40,6 @@ export default function EditGalleryImagePage() {
       }
 
       const data = await response.json()
-      setImage(data.image)
       setFormData({
         title: data.image.title || "",
         description: data.image.description || "",
@@ -60,7 +53,13 @@ export default function EditGalleryImagePage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [orgId, imageId, router])
+
+  useEffect(() => {
+    if (imageId) {
+      fetchImage()
+    }
+  }, [imageId, fetchImage])
 
   const handleImageSelect = async (file: File) => {
     // Validate file type
