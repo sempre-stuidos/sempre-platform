@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { IconCheck, IconX, IconEye } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
+import { ImagePicker } from "@/components/image-picker"
 
 interface SectionFormProps {
   component: string
@@ -212,7 +213,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 placeholder="5PM - 11PM Daily"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
@@ -221,7 +222,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 placeholder="+1 (555) 123-4567"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="tagline">Tagline</Label>
               <Input
                 id="tagline"
@@ -246,7 +247,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 placeholder="Culinary Excellence"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="subtitle">Subtitle</Label>
               <Textarea
                 id="subtitle"
@@ -256,7 +257,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 rows={3}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="ctaLabel">CTA Button Label</Label>
               <Input
                 id="ctaLabel"
@@ -265,22 +266,19 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 placeholder="View Our Menu"
               />
             </div>
-            <div>
-              <Label htmlFor="imageUrl">Image URL</Label>
-              <Input
-                id="imageUrl"
-                value={draftContent.imageUrl || ''}
-                onChange={(e) => handleFieldChange('imageUrl', e.target.value)}
-                placeholder="/elegant-restaurant-interior.png"
-              />
-            </div>
+            <ImagePicker
+              value={draftContent.imageUrl || ''}
+              onChange={(url) => handleFieldChange('imageUrl', url)}
+              label="Hero Image"
+              placeholder="/elegant-restaurant-interior.png"
+            />
           </div>
         )
 
       case 'PromoCard':
         return (
           <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="eyebrow">Eyebrow</Label>
               <Input
                 id="eyebrow"
@@ -289,7 +287,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 placeholder="EXPLORE"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
@@ -298,7 +296,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 placeholder="Delicious Breakfast Menu"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="hours">Hours</Label>
               <Input
                 id="hours"
@@ -307,7 +305,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 placeholder="7.00am – 4.00pm"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="ctaLabel">CTA Label</Label>
               <Input
                 id="ctaLabel"
@@ -316,7 +314,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 placeholder="ORDER NOW"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="ctaLink">CTA Link</Label>
               <Input
                 id="ctaLink"
@@ -325,22 +323,19 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 placeholder="/menu"
               />
             </div>
-            <div>
-              <Label htmlFor="imageUrl">Image URL</Label>
-              <Input
-                id="imageUrl"
-                value={draftContent.imageUrl || ''}
-                onChange={(e) => handleFieldChange('imageUrl', e.target.value)}
-                placeholder="/gourmet-breakfast.png"
-              />
-            </div>
+            <ImagePicker
+              value={draftContent.imageUrl || ''}
+              onChange={(url) => handleFieldChange('imageUrl', url)}
+              label="Promo Image"
+              placeholder="/gourmet-breakfast.png"
+            />
           </div>
         )
 
       case 'WhyWeStand':
         return (
           <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label>Reasons</Label>
               {(draftContent.reasons || []).map((reason: any, index: number) => (
                 <div key={index} className="border rounded-lg p-4 mb-4 space-y-2">
@@ -408,9 +403,10 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                     placeholder="Description"
                     rows={3}
                   />
-                  <Input
+                  <ImagePicker
                     value={specialty.image || ''}
-                    onChange={(e) => handleArrayItemChange('specialties', index, { ...specialty, image: e.target.value })}
+                    onChange={(url) => handleArrayItemChange('specialties', index, { ...specialty, image: url })}
+                    label=""
                     placeholder="Image URL"
                   />
                 </div>
@@ -429,17 +425,18 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
       case 'GalleryTeaser':
         return (
           <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label>Images</Label>
               {(draftContent.images || []).map((image: string, index: number) => (
-                <div key={index} className="flex gap-2 mb-2">
-                  <Input
+                <div key={index} className="space-y-2">
+                  <ImagePicker
                     value={image || ''}
-                    onChange={(e) => {
+                    onChange={(url) => {
                       const newImages = [...(draftContent.images || [])]
-                      newImages[index] = e.target.value
+                      newImages[index] = url
                       handleFieldChange('images', newImages)
                     }}
+                    label={`Image ${index + 1}`}
                     placeholder="/image.jpg"
                   />
                   <Button
@@ -451,8 +448,9 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                       newImages.splice(index, 1)
                       handleFieldChange('images', newImages)
                     }}
+                    className="w-full"
                   >
-                    Remove
+                    Remove Image
                   </Button>
                 </div>
               ))}
@@ -467,7 +465,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 Add Image
               </Button>
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="ctaLabel">CTA Button Label</Label>
               <Input
                 id="ctaLabel"
@@ -482,7 +480,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
       case 'CTABanner':
         return (
           <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
@@ -491,7 +489,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 placeholder="Ready to Dine with Us?"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
@@ -501,7 +499,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 rows={3}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="ctaLabel">CTA Button Label</Label>
               <Input
                 id="ctaLabel"
@@ -541,7 +539,6 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Edit Content</h3>
         {renderForm()}
       </div>
 

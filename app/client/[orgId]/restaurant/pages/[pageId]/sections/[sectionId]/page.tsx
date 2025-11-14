@@ -174,7 +174,6 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
             {/* Left: Form */}
             <div className="space-y-4">
               <div className="border rounded-lg p-6 bg-card">
-                <h2 className="text-lg font-semibold mb-4">Edit Content</h2>
                 <SectionForm
                   component={section.component}
                   draftContent={draftContent}
