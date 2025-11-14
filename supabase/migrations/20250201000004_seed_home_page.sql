@@ -86,6 +86,36 @@ BEGIN
   )
   ON CONFLICT (page_id, key) DO NOTHING;
 
+  -- Create GalleryTeaser section
+  INSERT INTO page_sections_v2 (page_id, org_id, key, label, component, position, published_content, draft_content, status)
+  VALUES (
+    page_uuid,
+    org_uuid,
+    'gallery_teaser',
+    'Gallery Teaser',
+    'GalleryTeaser',
+    5,
+    '{"images": ["/plated-fine-dining-dish.jpg", "/elegant-restaurant-dining-room.jpg", "/gourmet-food-presentation.jpg"], "ctaLabel": "View Full Gallery"}'::jsonb,
+    '{"images": ["/plated-fine-dining-dish.jpg", "/elegant-restaurant-dining-room.jpg", "/gourmet-food-presentation.jpg"], "ctaLabel": "View Full Gallery"}'::jsonb,
+    'published'
+  )
+  ON CONFLICT (page_id, key) DO NOTHING;
+
+  -- Create CTABanner section
+  INSERT INTO page_sections_v2 (page_id, org_id, key, label, component, position, published_content, draft_content, status)
+  VALUES (
+    page_uuid,
+    org_uuid,
+    'cta_banner',
+    'Call to Action Banner',
+    'CTABanner',
+    6,
+    '{"title": "Ready to Dine with Us?", "description": "Reserve your table now and prepare for an unforgettable culinary journey", "ctaLabel": "Book Your Reservation"}'::jsonb,
+    '{"title": "Ready to Dine with Us?", "description": "Reserve your table now and prepare for an unforgettable culinary journey", "ctaLabel": "Book Your Reservation"}'::jsonb,
+    'published'
+  )
+  ON CONFLICT (page_id, key) DO NOTHING;
+
   RETURN page_uuid;
 END;
 $$ LANGUAGE plpgsql;

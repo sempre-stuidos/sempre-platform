@@ -27,62 +27,6 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
   const [isPublishing, setIsPublishing] = React.useState(false)
   const [isDiscarding, setIsDiscarding] = React.useState(false)
   const [isPreviewing, setIsPreviewing] = React.useState(false)
-  const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
-  const lastSavedContentRef = React.useRef<string>('')
-
-  // Listen for section loaded event to reset saved content ref
-  React.useEffect(() => {
-    const handleSectionLoaded = (event: CustomEvent) => {
-      lastSavedContentRef.current = JSON.stringify(event.detail || {})
-    }
-
-    window.addEventListener('section-loaded', handleSectionLoaded as EventListener)
-    return () => {
-      window.removeEventListener('section-loaded', handleSectionLoaded as EventListener)
-    }
-  }, [])
-
-  // Debounced auto-save
-  React.useEffect(() => {
-    // Clear existing timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current)
-    }
-
-    // Only save if content has actually changed
-    const currentContentStr = JSON.stringify(draftContent)
-    if (Object.keys(draftContent).length > 0 && currentContentStr !== lastSavedContentRef.current) {
-      saveTimeoutRef.current = setTimeout(async () => {
-        try {
-          setIsSaving(true)
-          const response = await fetch(`/api/sections/${sectionId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              draftContent,
-            }),
-          })
-
-          if (response.ok) {
-            lastSavedContentRef.current = currentContentStr
-            onSave?.()
-          }
-        } catch (error) {
-          console.error('Error auto-saving draft:', error)
-        } finally {
-          setIsSaving(false)
-        }
-      }, 1000)
-    }
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current)
-      }
-    }
-  }, [draftContent, sectionId, onSave])
 
   const handleSaveDraft = async (silent = false) => {
     try {
@@ -106,9 +50,6 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
         }
         return
       }
-
-      // Update saved content ref to prevent immediate re-save
-      lastSavedContentRef.current = JSON.stringify(draftContent)
 
       if (!silent) {
         toast.success('Draft saved')
@@ -140,12 +81,6 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
         return
       }
 
-      // After publishing, draft_content should match published_content
-      // Update saved content ref to prevent unnecessary saves
-      if (data.section) {
-        lastSavedContentRef.current = JSON.stringify(data.section.draft_content || {})
-      }
-
       toast.success('Section published successfully')
       onSave?.()
       router.refresh()
@@ -175,8 +110,6 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
       if (data.section) {
         const discardedContent = data.section.draft_content || {}
         onContentChange(discardedContent)
-        // Update saved content ref to match discarded content
-        lastSavedContentRef.current = JSON.stringify(discardedContent)
       }
       toast.success('Changes discarded')
       onSave?.()
@@ -489,6 +422,93 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               >
                 Add Specialty
               </Button>
+            </div>
+          </div>
+        )
+
+      case 'GalleryTeaser':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>Images</Label>
+              {(draftContent.images || []).map((image: string, index: number) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <Input
+                    value={image || ''}
+                    onChange={(e) => {
+                      const newImages = [...(draftContent.images || [])]
+                      newImages[index] = e.target.value
+                      handleFieldChange('images', newImages)
+                    }}
+                    placeholder="/image.jpg"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const newImages = [...(draftContent.images || [])]
+                      newImages.splice(index, 1)
+                      handleFieldChange('images', newImages)
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const newImages = [...(draftContent.images || []), '']
+                  handleFieldChange('images', newImages)
+                }}
+              >
+                Add Image
+              </Button>
+            </div>
+            <div>
+              <Label htmlFor="ctaLabel">CTA Button Label</Label>
+              <Input
+                id="ctaLabel"
+                value={draftContent.ctaLabel || ''}
+                onChange={(e) => handleFieldChange('ctaLabel', e.target.value)}
+                placeholder="View Full Gallery"
+              />
+            </div>
+          </div>
+        )
+
+      case 'CTABanner':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={draftContent.title || ''}
+                onChange={(e) => handleFieldChange('title', e.target.value)}
+                placeholder="Ready to Dine with Us?"
+              />
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={draftContent.description || ''}
+                onChange={(e) => handleFieldChange('description', e.target.value)}
+                placeholder="Reserve your table now..."
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label htmlFor="ctaLabel">CTA Button Label</Label>
+              <Input
+                id="ctaLabel"
+                value={draftContent.ctaLabel || ''}
+                onChange={(e) => handleFieldChange('ctaLabel', e.target.value)}
+                placeholder="Book Your Reservation"
+              />
             </div>
           </div>
         )

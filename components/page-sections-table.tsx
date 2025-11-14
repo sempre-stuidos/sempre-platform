@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { IconEdit, IconEye } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +15,6 @@ import {
 } from "@/components/ui/table"
 import type { PageSectionV2, Organization } from "@/lib/types"
 import { toast } from "sonner"
-import { SectionEditorDrawer } from "@/components/section-editor-drawer"
 
 interface PageSectionsTableProps {
   orgId: string
@@ -25,7 +25,7 @@ interface PageSectionsTableProps {
 }
 
 export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organization }: PageSectionsTableProps) {
-  const [editingSectionId, setEditingSectionId] = React.useState<string | null>(null)
+  const router = useRouter()
   const [previewingSectionId, setPreviewingSectionId] = React.useState<string | null>(null)
 
   const handlePreview = async (section: PageSectionV2) => {
@@ -134,7 +134,7 @@ export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organizat
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setEditingSectionId(section.id)}
+                      onClick={() => router.push(`/client/${orgId}/restaurant/pages/${pageId}/sections/${section.id}`)}
                     >
                       <IconEdit className="h-4 w-4 mr-2" />
                       Edit
@@ -155,17 +155,6 @@ export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organizat
           </TableBody>
         </Table>
       </div>
-
-      {editingSectionId && (
-        <SectionEditorDrawer
-          sectionId={editingSectionId}
-          orgId={orgId}
-          pageId={pageId}
-          pageSlug={pageSlug}
-          isOpen={!!editingSectionId}
-          onClose={() => setEditingSectionId(null)}
-        />
-      )}
     </>
   )
 }

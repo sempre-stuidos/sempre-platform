@@ -139,6 +139,57 @@ export function SectionPreview({ component, content }: SectionPreviewProps) {
           </section>
         )
 
+      case 'GalleryTeaser':
+        return (
+          <section className="py-12 bg-background">
+            <div className="max-w-6xl mx-auto px-4">
+              <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-4 text-center">
+                Gallery
+              </h2>
+              <div className="h-1 w-16 bg-primary mx-auto mb-8"></div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                {(content.images || []).map((img: string, idx: number) => (
+                  <div key={idx} className="h-48 overflow-hidden rounded-lg shadow-lg">
+                    <img 
+                      src={img || "/placeholder.svg"}
+                      alt={`Gallery image ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+              
+              {content.ctaLabel && (
+                <div className="text-center">
+                  <button className="bg-primary text-primary-foreground px-6 py-2 text-sm hover:opacity-90 transition">
+                    {content.ctaLabel}
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+        )
+
+      case 'CTABanner':
+        return (
+          <section className="py-12 bg-primary text-primary-foreground text-center">
+            <div className="max-w-4xl mx-auto px-4">
+              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4">
+                {content.title || 'Ready to Dine with Us?'}
+              </h2>
+              <p className="text-lg md:text-xl mb-6 opacity-95">
+                {content.description || 'Reserve your table now and prepare for an unforgettable culinary journey'}
+              </p>
+              {content.ctaLabel && (
+                <button className="bg-primary-foreground text-primary px-8 py-3 text-base font-semibold hover:opacity-90 transition">
+                  {content.ctaLabel}
+                </button>
+              )}
+            </div>
+          </section>
+        )
+
       default:
         return (
           <div className="p-4 border rounded-lg">
