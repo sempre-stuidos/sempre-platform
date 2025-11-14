@@ -13,7 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { Page, Organization } from "@/lib/types"
+import type { Page } from "@/lib/types"
+import type { Organization } from "@/lib/organizations"
 import { toast } from "sonner"
 
 interface PagesListTableProps {
@@ -50,7 +51,8 @@ export function PagesListTable({ orgId, pages, organization }: PagesListTablePro
       }
 
       // Get organization slug for public site URL
-      const orgSlug = organization?.slug || orgId
+      // Use orgId for public site URL (Organization type doesn't have slug)
+      const orgSlug = orgId
       const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
       // Build preview URL using page slug

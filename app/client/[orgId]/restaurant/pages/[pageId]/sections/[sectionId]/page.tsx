@@ -28,7 +28,7 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
   } | null>(null)
   const [section, setSection] = React.useState<PageSectionV2 | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
-  const [draftContent, setDraftContent] = React.useState<Record<string, any>>({})
+  const [draftContent, setDraftContent] = React.useState<Record<string, unknown>>({})
   const [pageSlug, setPageSlug] = React.useState<string>('')
   const [pageName, setPageName] = React.useState<string>('')
   const [previewToken, setPreviewToken] = React.useState<string | null>(null)
@@ -165,7 +165,7 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
     }
   }
 
-  const handleContentChange = (newContent: Record<string, any>) => {
+  const handleContentChange = (newContent: Record<string, unknown>) => {
     setDraftContent(newContent)
   }
 
@@ -292,7 +292,7 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
                           The live preview is temporarily unavailable. Please contact technical support if this persists.
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          We're already working on resolving this issue.
+                          We&apos;re already working on resolving this issue.
                         </p>
                       </div>
                     </div>
@@ -334,12 +334,12 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
                                   if (sectionElement) {
                                     sectionElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
                                   }
-                                } catch (e) {
+                                } catch {
                                   // Cross-origin restrictions may prevent this, that's okay
                                 }
                               }, 500)
                             }
-                          } catch (error) {
+                          } catch {
                             // Cross-origin restrictions may prevent this, that's okay
                             console.log('Could not scroll to section (may be cross-origin restriction)')
                           }

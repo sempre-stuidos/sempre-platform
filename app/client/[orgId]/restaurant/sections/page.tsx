@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { IconPlus } from '@tabler/icons-react';
 import Link from 'next/link';
-import { PageSectionsTable } from '@/components/page-sections-table';
 
 interface SectionsPageProps {
   params: Promise<{
@@ -76,7 +75,19 @@ export default async function SectionsPage({ params }: SectionsPageProps) {
 
         <div className="px-4 lg:px-6">
           {clientId ? (
-            <PageSectionsTable orgId={orgId} clientId={clientId} initialSections={pageSections} />
+            <Card>
+              <CardHeader>
+                <CardTitle>Page Sections</CardTitle>
+                <CardDescription>
+                  This page is using the legacy page sections system. Please use the Pages section to manage sections for specific pages.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Found {pageSections.length} legacy section{pageSections.length !== 1 ? 's' : ''}.
+                </p>
+              </CardContent>
+            </Card>
           ) : (
             <Card>
               <CardHeader>

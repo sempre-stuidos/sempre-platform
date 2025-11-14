@@ -150,7 +150,7 @@ Return as JSON:
   const response = await callAI(prompt)
   try {
     return JSON.parse(response)
-  } catch (error) {
+  } catch {
     console.error('Failed to parse basic info JSON:', response)
     throw new Error('AI returned invalid JSON format for basic info')
   }
@@ -167,7 +167,7 @@ Return as JSON array of strings:
   const response = await callAI(prompt)
   try {
     return JSON.parse(response)
-  } catch (error) {
+  } catch {
     console.error('Failed to parse deliverables JSON:', response)
     throw new Error('AI returned invalid JSON format for deliverables')
   }
@@ -190,7 +190,7 @@ Return as JSON array:
   const response = await callAI(prompt)
   try {
     return JSON.parse(response)
-  } catch (error) {
+  } catch {
     console.error('Failed to parse timeline JSON:', response)
     throw new Error('AI returned invalid JSON format for timeline')
   }
@@ -216,7 +216,7 @@ Return as JSON array:
   const response = await callAI(prompt)
   try {
     return JSON.parse(response)
-  } catch (error) {
+  } catch {
     console.error('Failed to parse tasks JSON:', response)
     throw new Error('AI returned invalid JSON format for tasks')
   }

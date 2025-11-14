@@ -20,7 +20,7 @@ interface SectionEditorDrawerProps {
 export function SectionEditorDrawer({ sectionId, orgId, pageId, pageSlug, isOpen, onClose }: SectionEditorDrawerProps) {
   const [section, setSection] = React.useState<PageSectionV2 | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
-  const [draftContent, setDraftContent] = React.useState<Record<string, any>>({})
+  const [draftContent, setDraftContent] = React.useState<Record<string, unknown>>({})
 
   React.useEffect(() => {
     if (isOpen && sectionId) {
@@ -49,7 +49,7 @@ export function SectionEditorDrawer({ sectionId, orgId, pageId, pageSlug, isOpen
     }
   }
 
-  const handleContentChange = (newContent: Record<string, any>) => {
+  const handleContentChange = (newContent: Record<string, unknown>) => {
     setDraftContent(newContent)
   }
 

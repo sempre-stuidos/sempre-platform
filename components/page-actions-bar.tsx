@@ -4,7 +4,7 @@ import * as React from "react"
 import { IconEye, IconCheck } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import type { Organization } from "@/lib/types"
+import type { Organization } from "@/lib/organizations"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
@@ -70,7 +70,8 @@ export function PageActionsBar({ orgId, pageId, pageSlug, hasDirtySections, orga
       }
 
       // Get organization slug for public site URL
-      const orgSlug = organization?.slug || orgId
+      // Use orgId for public site URL (Organization type doesn't have slug)
+      const orgSlug = orgId
       const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
       // Build preview URL using page slug

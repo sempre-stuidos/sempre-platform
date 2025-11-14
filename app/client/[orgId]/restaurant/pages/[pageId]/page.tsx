@@ -53,7 +53,7 @@ export default async function EditPage({ params }: EditPageProps) {
               <div className="rounded-lg border bg-card p-8 text-center">
                 <h2 className="text-2xl font-bold mb-4">Database Tables Not Found</h2>
                 <p className="text-muted-foreground mb-4">
-                  The pages and page_sections_v2 tables don't exist yet. Please run the database migrations first.
+                  The pages and page_sections_v2 tables don&apos;t exist yet. Please run the database migrations first.
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Run: <code className="bg-muted px-2 py-1 rounded">supabase migration up</code>

@@ -12,8 +12,8 @@ import { ImagePicker } from "@/components/image-picker"
 
 interface SectionFormProps {
   component: string
-  draftContent: Record<string, any>
-  onContentChange: (content: Record<string, any>) => void
+  draftContent: Record<string, unknown>
+  onContentChange: (content: Record<string, unknown>) => void
   sectionId: string
   orgId: string
   pageId: string
@@ -164,15 +164,16 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
     }
   }
 
-  const handleFieldChange = (field: string, value: any) => {
+  const handleFieldChange = (field: string, value: unknown) => {
     onContentChange({
       ...draftContent,
       [field]: value,
     })
   }
 
-  const handleArrayItemChange = (field: string, index: number, value: any) => {
-    const array = draftContent[field] || []
+  const handleArrayItemChange = (field: string, index: number, value: unknown) => {
+    const fieldValue = draftContent[field]
+    const array = Array.isArray(fieldValue) ? fieldValue : []
     const newArray = [...array]
     newArray[index] = value
     onContentChange({
@@ -181,8 +182,9 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
     })
   }
 
-  const handleArrayItemAdd = (field: string, defaultValue: any) => {
-    const array = draftContent[field] || []
+  const handleArrayItemAdd = (field: string, defaultValue: unknown) => {
+    const fieldValue = draftContent[field]
+    const array = Array.isArray(fieldValue) ? fieldValue : []
     onContentChange({
       ...draftContent,
       [field]: [...array, defaultValue],
@@ -190,12 +192,23 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
   }
 
   const handleArrayItemRemove = (field: string, index: number) => {
-    const array = draftContent[field] || []
-    const newArray = array.filter((_: any, i: number) => i !== index)
+    const fieldValue = draftContent[field]
+    const array = Array.isArray(fieldValue) ? fieldValue : []
+    const newArray = array.filter((_: unknown, i: number) => i !== index)
     onContentChange({
       ...draftContent,
       [field]: newArray,
     })
+  }
+
+  // Helper function to safely get string value from draftContent
+  const getStringValue = (value: unknown): string => {
+    return typeof value === 'string' ? value : ''
+  }
+
+  // Helper function to safely get array value from draftContent
+  const getArrayValue = <T,>(value: unknown): T[] => {
+    return Array.isArray(value) ? value as T[] : []
   }
 
   // Render form based on component type
@@ -208,7 +221,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="hours">Hours</Label>
               <Input
                 id="hours"
-                value={draftContent.hours || ''}
+                value={getStringValue(draftContent.hours)}
                 onChange={(e) => handleFieldChange('hours', e.target.value)}
                 placeholder="5PM - 11PM Daily"
               />
@@ -217,7 +230,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
-                value={draftContent.phone || ''}
+                value={getStringValue(draftContent.phone)}
                 onChange={(e) => handleFieldChange('phone', e.target.value)}
                 placeholder="+1 (555) 123-4567"
               />
@@ -226,7 +239,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="tagline">Tagline</Label>
               <Input
                 id="tagline"
-                value={draftContent.tagline || ''}
+                value={getStringValue(draftContent.tagline)}
                 onChange={(e) => handleFieldChange('tagline', e.target.value)}
                 placeholder="Fine Dining Experience"
               />
@@ -242,7 +255,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
-                value={draftContent.title || ''}
+                value={getStringValue(draftContent.title)}
                 onChange={(e) => handleFieldChange('title', e.target.value)}
                 placeholder="Culinary Excellence"
               />
@@ -251,7 +264,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="subtitle">Subtitle</Label>
               <Textarea
                 id="subtitle"
-                value={draftContent.subtitle || ''}
+                value={getStringValue(draftContent.subtitle)}
                 onChange={(e) => handleFieldChange('subtitle', e.target.value)}
                 placeholder="Experience an unforgettable evening..."
                 rows={3}
@@ -261,13 +274,13 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="ctaLabel">CTA Button Label</Label>
               <Input
                 id="ctaLabel"
-                value={draftContent.ctaLabel || ''}
+                value={getStringValue(draftContent.ctaLabel)}
                 onChange={(e) => handleFieldChange('ctaLabel', e.target.value)}
                 placeholder="View Our Menu"
               />
             </div>
             <ImagePicker
-              value={draftContent.imageUrl || ''}
+              value={getStringValue(draftContent.imageUrl)}
               onChange={(url) => handleFieldChange('imageUrl', url)}
               label="Hero Image"
               placeholder="/elegant-restaurant-interior.png"
@@ -282,7 +295,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="eyebrow">Eyebrow</Label>
               <Input
                 id="eyebrow"
-                value={draftContent.eyebrow || ''}
+                value={getStringValue(draftContent.eyebrow)}
                 onChange={(e) => handleFieldChange('eyebrow', e.target.value)}
                 placeholder="EXPLORE"
               />
@@ -291,7 +304,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
-                value={draftContent.title || ''}
+                value={getStringValue(draftContent.title)}
                 onChange={(e) => handleFieldChange('title', e.target.value)}
                 placeholder="Delicious Breakfast Menu"
               />
@@ -300,7 +313,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="hours">Hours</Label>
               <Input
                 id="hours"
-                value={draftContent.hours || ''}
+                value={getStringValue(draftContent.hours)}
                 onChange={(e) => handleFieldChange('hours', e.target.value)}
                 placeholder="7.00am – 4.00pm"
               />
@@ -309,7 +322,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="ctaLabel">CTA Label</Label>
               <Input
                 id="ctaLabel"
-                value={draftContent.ctaLabel || ''}
+                value={getStringValue(draftContent.ctaLabel)}
                 onChange={(e) => handleFieldChange('ctaLabel', e.target.value)}
                 placeholder="ORDER NOW"
               />
@@ -318,13 +331,13 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="ctaLink">CTA Link</Label>
               <Input
                 id="ctaLink"
-                value={draftContent.ctaLink || ''}
+                value={getStringValue(draftContent.ctaLink)}
                 onChange={(e) => handleFieldChange('ctaLink', e.target.value)}
                 placeholder="/menu"
               />
             </div>
             <ImagePicker
-              value={draftContent.imageUrl || ''}
+              value={getStringValue(draftContent.imageUrl)}
               onChange={(url) => handleFieldChange('imageUrl', url)}
               label="Promo Image"
               placeholder="/gourmet-breakfast.png"
@@ -337,7 +350,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Reasons</Label>
-              {(draftContent.reasons || []).map((reason: any, index: number) => (
+              {getArrayValue<Record<string, unknown>>(draftContent.reasons).map((reason: Record<string, unknown>, index: number) => (
                 <div key={index} className="border rounded-lg p-4 mb-4 space-y-2">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium">Reason {index + 1}</span>
@@ -351,12 +364,12 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                     </Button>
                   </div>
                   <Input
-                    value={reason.title || ''}
+                    value={getStringValue(reason.title)}
                     onChange={(e) => handleArrayItemChange('reasons', index, { ...reason, title: e.target.value })}
                     placeholder="Title"
                   />
                   <Textarea
-                    value={reason.description || ''}
+                    value={getStringValue(reason.description)}
                     onChange={(e) => handleArrayItemChange('reasons', index, { ...reason, description: e.target.value })}
                     placeholder="Description"
                     rows={3}
@@ -379,7 +392,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
           <div className="space-y-4">
             <div>
               <Label>Specialties</Label>
-              {(draftContent.specialties || []).map((specialty: any, index: number) => (
+              {getArrayValue<Record<string, unknown>>(draftContent.specialties).map((specialty: Record<string, unknown>, index: number) => (
                 <div key={index} className="border rounded-lg p-4 mb-4 space-y-2">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium">Specialty {index + 1}</span>
@@ -393,18 +406,18 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                     </Button>
                   </div>
                   <Input
-                    value={specialty.title || ''}
+                    value={getStringValue(specialty.title)}
                     onChange={(e) => handleArrayItemChange('specialties', index, { ...specialty, title: e.target.value })}
                     placeholder="Title"
                   />
                   <Textarea
-                    value={specialty.description || ''}
+                    value={getStringValue(specialty.description)}
                     onChange={(e) => handleArrayItemChange('specialties', index, { ...specialty, description: e.target.value })}
                     placeholder="Description"
                     rows={3}
                   />
                   <ImagePicker
-                    value={specialty.image || ''}
+                    value={getStringValue(specialty.image)}
                     onChange={(url) => handleArrayItemChange('specialties', index, { ...specialty, image: url })}
                     label=""
                     placeholder="Image URL"
@@ -427,12 +440,12 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Images</Label>
-              {(draftContent.images || []).map((image: string, index: number) => (
+              {getArrayValue<string>(draftContent.images).map((image: string, index: number) => (
                 <div key={index} className="space-y-2">
                   <ImagePicker
                     value={image || ''}
                     onChange={(url) => {
-                      const newImages = [...(draftContent.images || [])]
+                      const newImages = [...getArrayValue<string>(draftContent.images)]
                       newImages[index] = url
                       handleFieldChange('images', newImages)
                     }}
@@ -444,7 +457,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      const newImages = [...(draftContent.images || [])]
+                      const newImages = [...getArrayValue<string>(draftContent.images)]
                       newImages.splice(index, 1)
                       handleFieldChange('images', newImages)
                     }}
@@ -458,7 +471,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  const newImages = [...(draftContent.images || []), '']
+                  const newImages = [...getArrayValue<string>(draftContent.images), '']
                   handleFieldChange('images', newImages)
                 }}
               >
@@ -469,7 +482,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="ctaLabel">CTA Button Label</Label>
               <Input
                 id="ctaLabel"
-                value={draftContent.ctaLabel || ''}
+                value={getStringValue(draftContent.ctaLabel)}
                 onChange={(e) => handleFieldChange('ctaLabel', e.target.value)}
                 placeholder="View Full Gallery"
               />
@@ -484,7 +497,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
-                value={draftContent.title || ''}
+                value={getStringValue(draftContent.title)}
                 onChange={(e) => handleFieldChange('title', e.target.value)}
                 placeholder="Ready to Dine with Us?"
               />
@@ -493,7 +506,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={draftContent.description || ''}
+                value={getStringValue(draftContent.description)}
                 onChange={(e) => handleFieldChange('description', e.target.value)}
                 placeholder="Reserve your table now..."
                 rows={3}
@@ -503,7 +516,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="ctaLabel">CTA Button Label</Label>
               <Input
                 id="ctaLabel"
-                value={draftContent.ctaLabel || ''}
+                value={getStringValue(draftContent.ctaLabel)}
                 onChange={(e) => handleFieldChange('ctaLabel', e.target.value)}
                 placeholder="Book Your Reservation"
               />
@@ -523,7 +536,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                   try {
                     const parsed = JSON.parse(e.target.value)
                     onContentChange(parsed)
-                  } catch (err) {
+                  } catch {
                     // Invalid JSON, ignore
                   }
                 }}
@@ -544,14 +557,14 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
 
       <div className="flex flex-wrap gap-2 pt-4 border-t">
         <Button
-          onClick={handleSaveDraft}
+          onClick={() => handleSaveDraft()}
           disabled={isSaving}
           variant="outline"
         >
           {isSaving ? 'Saving...' : 'Save Draft'}
         </Button>
         <Button
-          onClick={handleDiscard}
+          onClick={() => handleDiscard()}
           disabled={isDiscarding}
           variant="outline"
         >
@@ -559,7 +572,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
           Discard Changes
         </Button>
         <Button
-          onClick={handlePublish}
+          onClick={() => handlePublish()}
           disabled={isPublishing}
           className="bg-primary text-primary-foreground"
         >
@@ -567,7 +580,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
           {isPublishing ? 'Publishing...' : 'Publish Section'}
         </Button>
         <Button
-          onClick={handlePreviewOnSite}
+          onClick={() => handlePreviewOnSite()}
           disabled={isPreviewing}
           variant="outline"
         >

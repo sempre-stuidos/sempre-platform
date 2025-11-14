@@ -310,8 +310,8 @@ export interface PageSectionV2 {
   label: string;
   component: string;
   position: number;
-  published_content: Record<string, any>;
-  draft_content: Record<string, any>;
+  published_content: Record<string, unknown>;
+  draft_content: Record<string, unknown>;
   status: 'published' | 'dirty' | 'draft';
   created_at: string;
   updated_at: string;

@@ -53,7 +53,7 @@ export function ImagePicker({ value, onChange, label = "Image", placeholder = "/
       const response = await fetch(`/api/organizations/${orgId}/gallery-images`)
       if (response.ok) {
         const data = await response.json()
-        setGalleryImages((data.images || []).map((img: any) => ({
+        setGalleryImages((data.images || []).map((img: Record<string, unknown>) => ({
           id: img.id,
           url: img.url || img.image_url,
           name: img.name || img.filename || 'Untitled'

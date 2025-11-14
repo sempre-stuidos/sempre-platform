@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { AgencyToolkit, Invoice, CostHistory } from './types';
+import { AgencyToolkit } from './types';
 
 // Transform database record to match frontend interface
 function transformAgencyToolkitRecord(record: Record<string, unknown>, invoices: Record<string, unknown>[], costHistory: Record<string, unknown>[]): AgencyToolkit {
@@ -237,12 +237,10 @@ export async function createAgencyToolkit(agencyToolkit: Omit<AgencyToolkit, 'id
 export async function updateAgencyToolkit(id: number, updates: Partial<AgencyToolkit>): Promise<AgencyToolkit | null> {
   try {
     // Update agency toolkit
-    const { data: updatedAgencyToolkit, error: agencyToolkitError } = await supabase
+    const { error: agencyToolkitError } = await supabase
       .from('agency_toolkit')
       .update(transformAgencyToolkitToRecord(updates))
-      .eq('id', id)
-      .select()
-      .single();
+      .eq('id', id);
 
     if (agencyToolkitError) {
       console.error('Error updating agency toolkit:', agencyToolkitError);

@@ -13,7 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { PageSectionV2, Organization } from "@/lib/types"
+import type { PageSectionV2 } from "@/lib/types"
+import type { Organization } from "@/lib/organizations"
 import { toast } from "sonner"
 
 interface PageSectionsTableProps {
@@ -52,8 +53,8 @@ export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organizat
         return
       }
 
-      // Get organization slug for public site URL
-      const orgSlug = organization?.slug || orgId
+      // Use orgId for public site URL (Organization type doesn't have slug)
+      const orgSlug = orgId
       const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
       // Build preview URL with section key using page slug

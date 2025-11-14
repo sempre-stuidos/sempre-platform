@@ -1,5 +1,4 @@
 import { supabase } from './supabase';
-import { supabaseAdmin } from './supabase';
 import { Client } from './types';
 import { getUserRole } from './invitations';
 

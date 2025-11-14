@@ -66,7 +66,7 @@ export async function getSectionById(
  */
 export async function updateSectionDraft(
   sectionId: string,
-  draftContent: Record<string, any>,
+  draftContent: Record<string, unknown>,
   supabaseClient?: SupabaseQueryClient
 ): Promise<{ success: boolean; section?: PageSectionV2; error?: string }> {
   try {
