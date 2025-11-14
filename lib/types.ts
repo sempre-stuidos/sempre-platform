@@ -289,3 +289,51 @@ export interface PageSection {
   created_at: string;
   updated_at: string;
 }
+
+// New page management types
+export interface Page {
+  id: string;
+  org_id: string;
+  name: string;
+  slug: string;
+  template?: string;
+  status: 'published' | 'dirty' | 'draft';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PageSectionV2 {
+  id: string;
+  page_id: string;
+  org_id: string;
+  key: string;
+  label: string;
+  component: string;
+  position: number;
+  published_content: Record<string, any>;
+  draft_content: Record<string, any>;
+  status: 'published' | 'dirty' | 'draft';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PageWithSections extends Page {
+  sections: PageSectionV2[];
+}
+
+export interface PreviewToken {
+  id: string;
+  org_id: string;
+  page_id?: string;
+  section_id?: string;
+  user_id?: string;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface PageInput {
+  name: string;
+  slug: string;
+  template?: string;
+  status?: 'published' | 'dirty' | 'draft';
+}

@@ -56,6 +56,11 @@ const getClientNavItems = (orgId: string) => ({
   ],
   site: [
     {
+      title: "Pages",
+      url: `/client/${orgId}/restaurant/pages`,
+      icon: IconFileText,
+    },
+    {
       title: "Menu",
       url: `/client/${orgId}/restaurant/menu`,
       icon: IconMenu2,

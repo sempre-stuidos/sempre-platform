@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
-import { PageSection } from "@/lib/types"
+import * as React from "react"
+import { IconEdit, IconEye } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
   Table,
   TableBody,
@@ -11,95 +12,146 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { IconEdit, IconTrash } from "@tabler/icons-react"
+import type { PageSectionV2, Organization } from "@/lib/types"
+import { createPreviewToken } from "@/lib/preview"
 import { toast } from "sonner"
+import { SectionEditorDrawer } from "@/components/section-editor-drawer"
 
 interface PageSectionsTableProps {
   orgId: string
-  clientId: number
-  initialSections: PageSection[]
+  pageId: string
+  sections: PageSectionV2[]
+  organization: Organization | null
 }
 
-export function PageSectionsTable({ orgId, clientId, initialSections }: PageSectionsTableProps) {
-  const [sections, setSections] = useState(initialSections)
-  const [isDeleting, setIsDeleting] = useState<number | null>(null)
+export function PageSectionsTable({ orgId, pageId, sections, organization }: PageSectionsTableProps) {
+  const [editingSectionId, setEditingSectionId] = React.useState<string | null>(null)
+  const [previewingSectionId, setPreviewingSectionId] = React.useState<string | null>(null)
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this section?')) {
-      return
-    }
-
-    setIsDeleting(id)
+  const handlePreview = async (section: PageSectionV2) => {
     try {
-      const response = await fetch(`/api/page-sections/${id}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to delete section')
+      setPreviewingSectionId(section.id)
+      
+      // Create preview token for this section
+      const result = await createPreviewToken(orgId, pageId, section.id)
+      
+      if (!result.success || !result.token) {
+        toast.error(result.error || 'Failed to create preview token')
+        return
       }
 
-      setSections(sections.filter(section => section.id !== id))
-      toast.success('Section deleted successfully')
+      // Get organization slug for public site URL
+      const orgSlug = organization?.slug || orgId
+      const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
+      
+      // Build preview URL
+      const previewUrl = `${publicSiteUrl}/preview?page=${pageId}&section=${section.key}&token=${result.token}`
+      
+      // Open in new tab
+      window.open(previewUrl, '_blank')
+      
+      toast.success('Opening preview in new tab')
     } catch (error) {
-      console.error('Error deleting section:', error)
-      toast.error('Failed to delete section')
+      console.error('Error creating preview:', error)
+      toast.error('Failed to create preview')
     } finally {
-      setIsDeleting(null)
+      setPreviewingSectionId(null)
     }
+  }
+
+  const getStatusBadge = (section: PageSectionV2) => {
+    if (section.status === 'dirty') {
+      return (
+        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+          Dirty
+        </Badge>
+      )
+    }
+    if (section.status === 'published') {
+      return (
+        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+          Published
+        </Badge>
+      )
+    }
+    return (
+      <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+        Draft
+      </Badge>
+    )
+  }
+
+  const getComponentLabel = (component: string) => {
+    // Humanize component names
+    return component
+      .replace(/([A-Z])/g, ' $1')
+      .trim()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
   }
 
   if (sections.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">No page sections yet. Add your first section to get started.</p>
+      <div className="rounded-md border p-8 text-center">
+        <p className="text-muted-foreground">No sections found for this page.</p>
       </div>
     )
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Section Name</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead>Content</TableHead>
-            <TableHead>Order</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sections.map((section) => (
-            <TableRow key={section.id}>
-              <TableCell className="font-medium">{section.sectionName}</TableCell>
-              <TableCell>{section.title || '-'}</TableCell>
-              <TableCell className="max-w-md truncate">{section.content || '-'}</TableCell>
-              <TableCell>{section.order ?? 0}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => window.location.href = `/client/${orgId}/restaurant/sections/${section.id}/edit`}
-                  >
-                    <IconEdit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(section.id)}
-                    disabled={isDeleting === section.id}
-                  >
-                    <IconTrash className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </TableCell>
+    <>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Section</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {sections.map((section) => (
+              <TableRow key={section.id}>
+                <TableCell className="font-medium">{section.label}</TableCell>
+                <TableCell>{getComponentLabel(section.component)}</TableCell>
+                <TableCell>{getStatusBadge(section)}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingSectionId(section.id)}
+                    >
+                      <IconEdit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handlePreview(section)}
+                      disabled={previewingSectionId === section.id}
+                    >
+                      <IconEye className="h-4 w-4 mr-2" />
+                      Preview
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {editingSectionId && (
+        <SectionEditorDrawer
+          sectionId={editingSectionId}
+          orgId={orgId}
+          isOpen={!!editingSectionId}
+          onClose={() => setEditingSectionId(null)}
+        />
+      )}
+    </>
   )
 }
-
