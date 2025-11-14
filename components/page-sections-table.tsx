@@ -160,6 +160,8 @@ export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organizat
         <SectionEditorDrawer
           sectionId={editingSectionId}
           orgId={orgId}
+          pageId={pageId}
+          pageSlug={pageSlug}
           isOpen={!!editingSectionId}
           onClose={() => setEditingSectionId(null)}
         />

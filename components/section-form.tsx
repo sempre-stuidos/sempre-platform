@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { updateSectionDraft, publishSection, discardSectionChanges } from "@/lib/page-sections-v2"
-import { createPreviewToken } from "@/lib/preview"
 import { toast } from "sonner"
 import { IconCheck, IconX, IconEye } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
@@ -16,37 +14,101 @@ interface SectionFormProps {
   draftContent: Record<string, any>
   onContentChange: (content: Record<string, any>) => void
   sectionId: string
+  orgId: string
+  pageId: string
+  pageSlug: string
+  sectionKey: string
   onSave?: () => void
 }
 
-export function SectionForm({ component, draftContent, onContentChange, sectionId, onSave }: SectionFormProps) {
+export function SectionForm({ component, draftContent, onContentChange, sectionId, orgId, pageId, pageSlug, sectionKey, onSave }: SectionFormProps) {
   const router = useRouter()
   const [isSaving, setIsSaving] = React.useState(false)
   const [isPublishing, setIsPublishing] = React.useState(false)
   const [isDiscarding, setIsDiscarding] = React.useState(false)
+  const [isPreviewing, setIsPreviewing] = React.useState(false)
+  const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+  const lastSavedContentRef = React.useRef<string>('')
+
+  // Listen for section loaded event to reset saved content ref
+  React.useEffect(() => {
+    const handleSectionLoaded = (event: CustomEvent) => {
+      lastSavedContentRef.current = JSON.stringify(event.detail || {})
+    }
+
+    window.addEventListener('section-loaded', handleSectionLoaded as EventListener)
+    return () => {
+      window.removeEventListener('section-loaded', handleSectionLoaded as EventListener)
+    }
+  }, [])
 
   // Debounced auto-save
   React.useEffect(() => {
-    const timer = setTimeout(() => {
-      if (Object.keys(draftContent).length > 0) {
-        handleSaveDraft(true) // Silent save
-      }
-    }, 1000)
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
 
-    return () => clearTimeout(timer)
-  }, [draftContent])
+    // Only save if content has actually changed
+    const currentContentStr = JSON.stringify(draftContent)
+    if (Object.keys(draftContent).length > 0 && currentContentStr !== lastSavedContentRef.current) {
+      saveTimeoutRef.current = setTimeout(async () => {
+        try {
+          setIsSaving(true)
+          const response = await fetch(`/api/sections/${sectionId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              draftContent,
+            }),
+          })
+
+          if (response.ok) {
+            lastSavedContentRef.current = currentContentStr
+            onSave?.()
+          }
+        } catch (error) {
+          console.error('Error auto-saving draft:', error)
+        } finally {
+          setIsSaving(false)
+        }
+      }, 1000)
+    }
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [draftContent, sectionId, onSave])
 
   const handleSaveDraft = async (silent = false) => {
     try {
       setIsSaving(true)
-      const result = await updateSectionDraft(sectionId, draftContent)
       
-      if (!result.success) {
+      const response = await fetch(`/api/sections/${sectionId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          draftContent,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
         if (!silent) {
-          toast.error(result.error || 'Failed to save draft')
+          toast.error(data.error || 'Failed to save draft')
         }
         return
       }
+
+      // Update saved content ref to prevent immediate re-save
+      lastSavedContentRef.current = JSON.stringify(draftContent)
 
       if (!silent) {
         toast.success('Draft saved')
@@ -66,11 +128,22 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
   const handlePublish = async () => {
     try {
       setIsPublishing(true)
-      const result = await publishSection(sectionId)
       
-      if (!result.success) {
-        toast.error(result.error || 'Failed to publish section')
+      const response = await fetch(`/api/sections/${sectionId}/publish`, {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        toast.error(data.error || 'Failed to publish section')
         return
+      }
+
+      // After publishing, draft_content should match published_content
+      // Update saved content ref to prevent unnecessary saves
+      if (data.section) {
+        lastSavedContentRef.current = JSON.stringify(data.section.draft_content || {})
       }
 
       toast.success('Section published successfully')
@@ -87,15 +160,23 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
   const handleDiscard = async () => {
     try {
       setIsDiscarding(true)
-      const result = await discardSectionChanges(sectionId)
       
-      if (!result.success) {
-        toast.error(result.error || 'Failed to discard changes')
+      const response = await fetch(`/api/sections/${sectionId}/discard`, {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        toast.error(data.error || 'Failed to discard changes')
         return
       }
 
-      if (result.section) {
-        onContentChange(result.section.draft_content || {})
+      if (data.section) {
+        const discardedContent = data.section.draft_content || {}
+        onContentChange(discardedContent)
+        // Update saved content ref to match discarded content
+        lastSavedContentRef.current = JSON.stringify(discardedContent)
       }
       toast.success('Changes discarded')
       onSave?.()
@@ -105,6 +186,47 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
       toast.error('Failed to discard changes')
     } finally {
       setIsDiscarding(false)
+    }
+  }
+
+  const handlePreviewOnSite = async () => {
+    try {
+      setIsPreviewing(true)
+      
+      // Create preview token using API route
+      const response = await fetch('/api/preview/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orgId,
+          pageId,
+          sectionId,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.token) {
+        toast.error(data.error || 'Failed to create preview token')
+        return
+      }
+
+      const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
+      
+      // Build preview URL with section key
+      const previewUrl = `${publicSiteUrl}/?page=${pageSlug}&section=${sectionKey}&token=${data.token}`
+      
+      // Open in new tab
+      window.open(previewUrl, '_blank')
+      
+      toast.success('Opening preview in new tab')
+    } catch (error) {
+      console.error('Error creating preview:', error)
+      toast.error('Failed to create preview')
+    } finally {
+      setIsPreviewing(false)
     }
   }
 
@@ -403,7 +525,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
         {renderForm()}
       </div>
 
-      <div className="flex gap-2 pt-4 border-t">
+      <div className="flex flex-wrap gap-2 pt-4 border-t">
         <Button
           onClick={handleSaveDraft}
           disabled={isSaving}
@@ -426,6 +548,14 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
         >
           <IconCheck className="h-4 w-4 mr-2" />
           {isPublishing ? 'Publishing...' : 'Publish Section'}
+        </Button>
+        <Button
+          onClick={handlePreviewOnSite}
+          disabled={isPreviewing}
+          variant="outline"
+        >
+          <IconEye className="h-4 w-4 mr-2" />
+          {isPreviewing ? 'Opening...' : 'Preview on Site'}
         </Button>
       </div>
     </div>

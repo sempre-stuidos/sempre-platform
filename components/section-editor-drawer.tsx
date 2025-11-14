@@ -11,11 +11,13 @@ import type { PageSectionV2 } from "@/lib/types"
 interface SectionEditorDrawerProps {
   sectionId: string
   orgId: string
+  pageId: string
+  pageSlug: string
   isOpen: boolean
   onClose: () => void
 }
 
-export function SectionEditorDrawer({ sectionId, orgId, isOpen, onClose }: SectionEditorDrawerProps) {
+export function SectionEditorDrawer({ sectionId, orgId, pageId, pageSlug, isOpen, onClose }: SectionEditorDrawerProps) {
   const [section, setSection] = React.useState<PageSectionV2 | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const [draftContent, setDraftContent] = React.useState<Record<string, any>>({})
@@ -35,7 +37,10 @@ export function SectionEditorDrawer({ sectionId, orgId, isOpen, onClose }: Secti
       const loadedSection = await getSectionById(sectionId)
       if (loadedSection) {
         setSection(loadedSection)
-        setDraftContent(loadedSection.draft_content || {})
+        const initialContent = loadedSection.draft_content || {}
+        setDraftContent(initialContent)
+        // Trigger a custom event to reset the saved content ref in SectionForm
+        window.dispatchEvent(new CustomEvent('section-loaded', { detail: initialContent }))
       }
     } catch (error) {
       console.error('Error loading section:', error)
@@ -99,6 +104,10 @@ export function SectionEditorDrawer({ sectionId, orgId, isOpen, onClose }: Secti
                 draftContent={draftContent}
                 onContentChange={handleContentChange}
                 sectionId={section.id}
+                orgId={orgId}
+                pageId={pageId}
+                pageSlug={pageSlug}
+                sectionKey={section.key}
                 onSave={() => {
                   loadSection()
                   // Trigger refresh in parent
