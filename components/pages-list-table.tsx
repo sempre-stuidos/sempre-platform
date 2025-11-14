@@ -14,7 +14,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { Page, Organization } from "@/lib/types"
-import { createPreviewToken } from "@/lib/preview"
 import { toast } from "sonner"
 
 interface PagesListTableProps {
@@ -31,11 +30,22 @@ export function PagesListTable({ orgId, pages, organization }: PagesListTablePro
     try {
       setPreviewingPageId(page.id)
       
-      // Create preview token
-      const result = await createPreviewToken(orgId, page.id)
-      
-      if (!result.success || !result.token) {
-        toast.error(result.error || 'Failed to create preview token')
+      // Create preview token using API route
+      const response = await fetch('/api/preview/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orgId,
+          pageId: page.id,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.token) {
+        toast.error(data.error || 'Failed to create preview token')
         return
       }
 
@@ -43,8 +53,8 @@ export function PagesListTable({ orgId, pages, organization }: PagesListTablePro
       const orgSlug = organization?.slug || orgId
       const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
-      // Build preview URL
-      const previewUrl = `${publicSiteUrl}/preview?page=${page.slug}&token=${result.token}`
+      // Build preview URL using page slug
+      const previewUrl = `${publicSiteUrl}/?page=${page.slug}&token=${data.token}`
       
       // Open in new tab
       window.open(previewUrl, '_blank')

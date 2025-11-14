@@ -14,6 +14,8 @@ export function ClientSiteHeader() {
     pageName = "Dashboard"
   } else if (pathname?.includes("/analytics")) {
     pageName = "Analytics"
+  } else if (pathname?.includes("/restaurant/pages")) {
+    pageName = "Pages"
   } else if (pathname?.includes("/menu")) {
     pageName = "Menu"
   } else if (pathname?.includes("/gallery")) {

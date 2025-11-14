@@ -39,13 +39,15 @@ export default async function PagesPage({ params }: PagesPageProps) {
   const pages = await getPagesForOrg(orgId, supabase);
   
   // For each page, check if any sections are dirty to determine status
+  // Status is "Published" if all sections are published, otherwise "Has Unpublished Changes"
   const pagesWithStatus = await Promise.all(
     pages.map(async (page) => {
       const sections = await getSectionsForPage(page.id, supabase);
       const hasDirtySections = sections.some(s => s.status === 'dirty');
+      const allPublished = sections.length > 0 && sections.every(s => s.status === 'published');
       return {
         ...page,
-        hasUnpublishedChanges: hasDirtySections,
+        hasUnpublishedChanges: hasDirtySections || !allPublished,
       };
     })
   );
