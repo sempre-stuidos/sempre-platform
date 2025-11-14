@@ -38,14 +38,42 @@ export default async function EditPage({ params }: EditPageProps) {
   const organization = await getOrganizationById(orgId, supabase);
   
   // Get page with sections
-  const pageWithSections = await getPageWithSections(pageId, supabase);
+  let pageWithSections;
+  try {
+    pageWithSections = await getPageWithSections(pageId, supabase);
+  } catch (error) {
+    console.error('Error fetching page:', error);
+    // Check if it's a table not found error
+    if (error instanceof Error && (error.message.includes('relation') || error.message.includes('does not exist'))) {
+      return (
+        <div className="@container/main flex flex-1 flex-col gap-2">
+          <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <div className="px-4 lg:px-6">
+              <div className="rounded-lg border bg-card p-8 text-center">
+                <h2 className="text-2xl font-bold mb-4">Database Tables Not Found</h2>
+                <p className="text-muted-foreground mb-4">
+                  The pages and page_sections_v2 tables don't exist yet. Please run the database migrations first.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Run: <code className="bg-muted px-2 py-1 rounded">supabase migration up</code>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    notFound();
+  }
   
   if (!pageWithSections) {
+    console.error('Page not found:', pageId);
     notFound();
   }
 
   // Check if page belongs to this org
   if (pageWithSections.org_id !== orgId) {
+    console.error('Page org mismatch:', pageWithSections.org_id, 'expected:', orgId);
     notFound();
   }
 

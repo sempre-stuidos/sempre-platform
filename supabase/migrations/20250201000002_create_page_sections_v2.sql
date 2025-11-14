@@ -85,7 +85,7 @@ CREATE POLICY "Public can view published page sections" ON page_sections_v2
 -- Add comments
 COMMENT ON TABLE page_sections_v2 IS 'Sections/blocks within pages (hero, promo cards, etc.) with draft/published workflow';
 COMMENT ON COLUMN page_sections_v2.key IS 'Internal stable key (e.g., "hero_welcome", "breakfast_promo")';
-COMMENT ON COLUMN page_sections_v2.label IS 'Human-readable name (e.g., "Hero – Welcome to Johnny G\'s")';
+COMMENT ON COLUMN page_sections_v2.label IS 'Human-readable name (e.g., "Hero – Welcome to Restaurant")';
 COMMENT ON COLUMN page_sections_v2.component IS 'Front-end component type (e.g., "HeroWelcome", "PromoCard", "InfoBar")';
 COMMENT ON COLUMN page_sections_v2.position IS 'Sort order within the page';
 COMMENT ON COLUMN page_sections_v2.published_content IS 'Live version of content (JSONB)';
