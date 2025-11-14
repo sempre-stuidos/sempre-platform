@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { ClientSidebar } from '@/components/client-sidebar';
 import { ClientSiteHeader } from '@/components/client-site-header';
+import { BreadcrumbProvider } from '@/components/breadcrumb-context';
 import {
   SidebarInset,
   SidebarProvider,
@@ -61,22 +62,24 @@ export default async function ClientLayout({ children, params }: ClientLayoutPro
   }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <ClientSidebar variant="inset" />
-      <SidebarInset>
-        <ClientSiteHeader />
-        <div className="flex flex-1 flex-col">
-          {children}
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+    <BreadcrumbProvider>
+      <SidebarProvider
+        style={
+          {
+            "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--header-height": "calc(var(--spacing) * 12)",
+          } as React.CSSProperties
+        }
+      >
+        <ClientSidebar variant="inset" />
+        <SidebarInset>
+          <ClientSiteHeader />
+          <div className="flex flex-1 flex-col">
+            {children}
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </BreadcrumbProvider>
   );
 }
 

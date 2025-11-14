@@ -2,9 +2,16 @@
 
 import { usePathname } from "next/navigation"
 import { SiteHeader } from "@/components/site-header"
+import { useBreadcrumb } from "@/components/breadcrumb-context"
 
 export function ClientSiteHeader() {
   const pathname = usePathname()
+  const { breadcrumb } = useBreadcrumb()
+  
+  // Use breadcrumb from context if available
+  if (breadcrumb) {
+    return <SiteHeader breadcrumb={breadcrumb} />
+  }
   
   // Determine page name based on pathname
   let pageName = "Dashboard"

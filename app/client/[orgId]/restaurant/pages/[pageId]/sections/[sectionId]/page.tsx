@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { IconArrowLeft } from "@tabler/icons-react"
 import { SectionForm } from "@/components/section-form"
+import { useBreadcrumb } from "@/components/breadcrumb-context"
 import type { PageSectionV2 } from "@/lib/types"
 import { toast } from "sonner"
 
@@ -19,6 +20,7 @@ interface SectionEditPageProps {
 
 export default function SectionEditPage({ params }: SectionEditPageProps) {
   const router = useRouter()
+  const { setBreadcrumb } = useBreadcrumb()
   const [resolvedParams, setResolvedParams] = React.useState<{
     orgId: string
     pageId: string
@@ -28,6 +30,7 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
   const [isLoading, setIsLoading] = React.useState(true)
   const [draftContent, setDraftContent] = React.useState<Record<string, any>>({})
   const [pageSlug, setPageSlug] = React.useState<string>('')
+  const [pageName, setPageName] = React.useState<string>('')
   const [previewToken, setPreviewToken] = React.useState<string | null>(null)
   const [isLoadingPreview, setIsLoadingPreview] = React.useState(false)
   const [previewError, setPreviewError] = React.useState<string | null>(null)
@@ -68,6 +71,18 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, pageSlug, resolvedParams])
 
+  // Update breadcrumb in header when page name and section are loaded
+  React.useEffect(() => {
+    if (pageName && section) {
+      const breadcrumb = `Pages\\${pageName}\\${section.label}`
+      setBreadcrumb(breadcrumb)
+    }
+    // Cleanup breadcrumb on unmount
+    return () => {
+      setBreadcrumb(null)
+    }
+  }, [pageName, section, setBreadcrumb])
+
   const loadSection = async () => {
     if (!resolvedParams) return
 
@@ -96,15 +111,13 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
         return
       }
 
-      // Get page slug from the pageId - we can get it from the section's page_id
-      // Or we can fetch it separately if needed
-      // For now, we'll use the pageId to construct the back URL, but we need the slug for preview
-      // Let's fetch the page to get the slug
+      // Get page slug and name from the pageId
       const pageResponse = await fetch(`/api/pages/${resolvedParams.pageId}`)
       if (pageResponse.ok) {
         const pageData = await pageResponse.json()
         if (pageData.page) {
           setPageSlug(pageData.page.slug)
+          setPageName(pageData.page.name)
         }
       }
 
@@ -230,14 +243,6 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
                 <IconArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">
-                  Edit Section – {section.label}
-                </h1>
-                <p className="text-muted-foreground mt-2">
-                  {section.component}
-                </p>
-              </div>
             </div>
             <Badge 
               variant="outline" 
@@ -257,18 +262,20 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left: Form */}
             <div className="space-y-4">
-              <div className="border rounded-lg p-6 bg-card">
-                <SectionForm
-                  component={section.component}
-                  draftContent={draftContent}
-                  onContentChange={handleContentChange}
-                  sectionId={section.id}
-                  orgId={resolvedParams.orgId}
-                  pageId={resolvedParams.pageId}
-                  pageSlug={pageSlug}
-                  sectionKey={section.key}
-                  onSave={handleSave}
-                />
+              <div className="border rounded-lg p-6 bg-card" style={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                <div className="overflow-y-auto flex-1">
+                  <SectionForm
+                    component={section.component}
+                    draftContent={draftContent}
+                    onContentChange={handleContentChange}
+                    sectionId={section.id}
+                    orgId={resolvedParams.orgId}
+                    pageId={resolvedParams.pageId}
+                    pageSlug={pageSlug}
+                    sectionKey={section.key}
+                    onSave={handleSave}
+                  />
+                </div>
               </div>
             </div>
 

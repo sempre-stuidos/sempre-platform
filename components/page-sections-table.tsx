@@ -91,7 +91,7 @@ export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organizat
         Draft
       </Badge>
     )
-  }
+    }
 
   const getComponentLabel = (component: string) => {
     // Humanize component names
@@ -113,48 +113,48 @@ export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organizat
 
   return (
     <>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
               <TableHead>Section</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sections.map((section) => (
-              <TableRow key={section.id}>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sections.map((section) => (
+            <TableRow key={section.id}>
                 <TableCell className="font-medium">{section.label}</TableCell>
                 <TableCell>{getComponentLabel(section.component)}</TableCell>
                 <TableCell>{getStatusBadge(section)}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
+              <TableCell className="text-right">
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
                       size="sm"
                       onClick={() => router.push(`/client/${orgId}/restaurant/pages/${pageId}/sections/${section.id}`)}
-                    >
+                  >
                       <IconEdit className="h-4 w-4 mr-2" />
                       Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
+                  </Button>
+                  <Button
+                    variant="ghost"
                       size="sm"
                       onClick={() => handlePreview(section)}
                       disabled={previewingSectionId === section.id}
-                    >
+                  >
                       <IconEye className="h-4 w-4 mr-2" />
                       Preview
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
     </>
   )
 }
