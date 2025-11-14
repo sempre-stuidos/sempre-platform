@@ -4,6 +4,7 @@ import { getOrganizationById } from '@/lib/organizations';
 import { getPageWithSections } from '@/lib/pages';
 import { PageSectionsTable } from '@/components/page-sections-table';
 import { PageActionsBar } from '@/components/page-actions-bar';
+import { Badge } from '@/components/ui/badge';
 import { notFound } from 'next/navigation';
 
 interface EditPageProps {
@@ -83,17 +84,29 @@ export default async function EditPage({ params }: EditPageProps) {
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="px-4 lg:px-6">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold tracking-tight">{pageWithSections.name}</h1>
-            <p className="text-muted-foreground mt-2">
-              Template: {pageWithSections.template ? pageWithSections.template.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Default'}
-            </p>
+          <div className="mb-6 flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">{pageWithSections.name}</h1>
+              <p className="text-muted-foreground mt-2">
+                Template: {pageWithSections.template ? pageWithSections.template.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Default'}
+              </p>
+            </div>
+            {hasDirtySections ? (
+              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                Has Unpublished Changes
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                Published
+              </Badge>
+            )}
           </div>
           
           <div className="mb-4">
             <PageActionsBar 
               orgId={orgId}
               pageId={pageId}
+              pageSlug={pageWithSections.slug}
               hasDirtySections={hasDirtySections}
               organization={organization}
             />
@@ -102,6 +115,7 @@ export default async function EditPage({ params }: EditPageProps) {
           <PageSectionsTable 
             orgId={orgId}
             pageId={pageId}
+            pageSlug={pageWithSections.slug}
             sections={pageWithSections.sections}
             organization={organization}
           />

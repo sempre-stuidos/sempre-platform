@@ -5,19 +5,18 @@ import { IconEye, IconCheck } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import type { Organization } from "@/lib/types"
-import { publishAllSectionsForPage } from "@/lib/page-sections-v2"
-import { createPreviewToken } from "@/lib/preview"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
 interface PageActionsBarProps {
   orgId: string
   pageId: string
+  pageSlug: string
   hasDirtySections: boolean
   organization: Organization | null
 }
 
-export function PageActionsBar({ orgId, pageId, hasDirtySections, organization }: PageActionsBarProps) {
+export function PageActionsBar({ orgId, pageId, pageSlug, hasDirtySections, organization }: PageActionsBarProps) {
   const router = useRouter()
   const [isPublishing, setIsPublishing] = React.useState(false)
   const [isPreviewing, setIsPreviewing] = React.useState(false)
@@ -26,10 +25,14 @@ export function PageActionsBar({ orgId, pageId, hasDirtySections, organization }
     try {
       setIsPublishing(true)
       
-      const result = await publishAllSectionsForPage(pageId)
-      
-      if (!result.success) {
-        toast.error(result.error || 'Failed to publish all changes')
+      const response = await fetch(`/api/pages/${pageId}/publish-all`, {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        toast.error(data.error || 'Failed to publish all changes')
         return
       }
 
@@ -47,11 +50,22 @@ export function PageActionsBar({ orgId, pageId, hasDirtySections, organization }
     try {
       setIsPreviewing(true)
       
-      // Create preview token for the entire page
-      const result = await createPreviewToken(orgId, pageId)
-      
-      if (!result.success || !result.token) {
-        toast.error(result.error || 'Failed to create preview token')
+      // Create preview token using API route
+      const response = await fetch('/api/preview/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orgId,
+          pageId,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.token) {
+        toast.error(data.error || 'Failed to create preview token')
         return
       }
 
@@ -59,8 +73,8 @@ export function PageActionsBar({ orgId, pageId, hasDirtySections, organization }
       const orgSlug = organization?.slug || orgId
       const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
-      // Build preview URL - we'll need to get the page slug, but for now use pageId
-      const previewUrl = `${publicSiteUrl}/preview?page=${pageId}&token=${result.token}`
+      // Build preview URL using page slug
+      const previewUrl = `${publicSiteUrl}/?page=${pageSlug}&token=${data.token}`
       
       // Open in new tab
       window.open(previewUrl, '_blank')

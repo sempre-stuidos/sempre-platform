@@ -13,18 +13,18 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { PageSectionV2, Organization } from "@/lib/types"
-import { createPreviewToken } from "@/lib/preview"
 import { toast } from "sonner"
 import { SectionEditorDrawer } from "@/components/section-editor-drawer"
 
 interface PageSectionsTableProps {
   orgId: string
   pageId: string
+  pageSlug: string
   sections: PageSectionV2[]
   organization: Organization | null
 }
 
-export function PageSectionsTable({ orgId, pageId, sections, organization }: PageSectionsTableProps) {
+export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organization }: PageSectionsTableProps) {
   const [editingSectionId, setEditingSectionId] = React.useState<string | null>(null)
   const [previewingSectionId, setPreviewingSectionId] = React.useState<string | null>(null)
 
@@ -32,11 +32,23 @@ export function PageSectionsTable({ orgId, pageId, sections, organization }: Pag
     try {
       setPreviewingSectionId(section.id)
       
-      // Create preview token for this section
-      const result = await createPreviewToken(orgId, pageId, section.id)
-      
-      if (!result.success || !result.token) {
-        toast.error(result.error || 'Failed to create preview token')
+      // Create preview token using API route
+      const response = await fetch('/api/preview/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orgId,
+          pageId,
+          sectionId: section.id,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.token) {
+        toast.error(data.error || 'Failed to create preview token')
         return
       }
 
@@ -44,8 +56,8 @@ export function PageSectionsTable({ orgId, pageId, sections, organization }: Pag
       const orgSlug = organization?.slug || orgId
       const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
-      // Build preview URL
-      const previewUrl = `${publicSiteUrl}/preview?page=${pageId}&section=${section.key}&token=${result.token}`
+      // Build preview URL with section key using page slug
+      const previewUrl = `${publicSiteUrl}/?page=${pageSlug}&section=${section.key}&token=${data.token}`
       
       // Open in new tab
       window.open(previewUrl, '_blank')
