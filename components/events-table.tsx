@@ -4,6 +4,7 @@ import * as React from "react"
 import { IconEdit, IconCopy, IconArchive, IconDotsVertical } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
 import {
   Table,
   TableBody,
@@ -41,9 +42,26 @@ export function EventsTable({ orgId, events }: EventsTableProps) {
     router.push(`/client/${orgId}/events/new?duplicate=${event.id}`)
   }
 
-  const handleArchive = (eventId: string) => {
-    // In a real app, this would call an API to archive the event
-    console.log('Archive event:', eventId)
+  const handleArchive = async (eventId: string) => {
+    try {
+      const response = await fetch(`/api/organizations/${orgId}/events/${eventId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'archived' }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to archive event')
+      }
+
+      toast.success('Event archived successfully')
+      router.refresh()
+    } catch (error) {
+      console.error('Error archiving event:', error)
+      toast.error('Failed to archive event')
+    }
   }
 
   if (events.length === 0) {

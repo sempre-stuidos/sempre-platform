@@ -158,7 +158,7 @@ url = ""
 skip_nonce_check = false
 
 [auth.external.google]
-enabled = true
+enabled = false
 # DO NOT commit your OAuth provider credentials to git. Use environment variable substitution instead:
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"

@@ -3,33 +3,43 @@
 import * as React from "react"
 import { useParams } from "next/navigation"
 import { EventEditorForm } from "@/components/event-editor-form"
-import { getEventById } from "@/lib/events"
+import { Event } from "@/lib/types"
 
 export default function EditEventPage() {
   const params = useParams()
   const orgId = params.orgId as string
   const eventId = params.eventId as string
   
-  const [event, setEvent] = React.useState<any>(null)
+  const [event, setEvent] = React.useState<Event | null>(null)
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
-    const foundEvent = getEventById(orgId, eventId)
-    if (!foundEvent) {
-      // In a real app, we'd use notFound() from next/navigation
-      // For now, just set loading to false
-      setLoading(false)
-      return
+    const fetchEvent = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/organizations/${orgId}/events/${eventId}`)
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setEvent(null)
+            return
+          }
+          throw new Error('Failed to fetch event')
+        }
+
+        const data = await response.json()
+        setEvent(data.event)
+      } catch (error) {
+        console.error('Error fetching event:', error)
+        setEvent(null)
+      } finally {
+        setLoading(false)
+      }
     }
-    
-    // Verify event belongs to this org
-    if (foundEvent.org_id !== orgId) {
-      setLoading(false)
-      return
+
+    if (orgId && eventId) {
+      fetchEvent()
     }
-    
-    setEvent(foundEvent)
-    setLoading(false)
   }, [orgId, eventId])
 
   if (loading) {

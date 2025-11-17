@@ -1,12 +1,19 @@
 import { Event } from './types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Compute event status based on current time and publish dates
+ * Note: If status is explicitly set to 'draft', it will be preserved
  */
 export function computeEventStatus(event: Event | Partial<Event>): Event['status'] {
   // If archived, always return archived
   if (event.status === 'archived') {
     return 'archived';
+  }
+
+  // If explicitly set to draft, preserve it (user saved as draft)
+  if (event.status === 'draft') {
+    return 'draft';
   }
 
   const now = new Date();
@@ -36,6 +43,51 @@ export function computeEventStatus(event: Event | Partial<Event>): Event['status
 
   // Default to draft
   return 'draft';
+}
+
+/**
+ * Transform database record to Event interface
+ */
+function transformEventRecord(record: Record<string, unknown>): Event {
+  return {
+    id: record.id as string,
+    org_id: record.org_id as string,
+    title: record.title as string,
+    short_description: record.short_description as string | undefined,
+    description: record.description as string | undefined,
+    image_url: record.image_url as string | undefined,
+    event_type: record.event_type as string | undefined,
+    starts_at: record.starts_at as string,
+    ends_at: record.ends_at as string,
+    publish_start_at: record.publish_start_at as string | undefined,
+    publish_end_at: record.publish_end_at as string | undefined,
+    status: record.status as Event['status'],
+    is_featured: record.is_featured as boolean,
+    created_at: record.created_at as string,
+    updated_at: record.updated_at as string,
+  };
+}
+
+/**
+ * Transform Event interface to database record
+ */
+function transformEventToRecord(event: Partial<Event>): Record<string, unknown> {
+  const record: Record<string, unknown> = {};
+  
+  if (event.org_id !== undefined) record.org_id = event.org_id;
+  if (event.title !== undefined) record.title = event.title;
+  if (event.short_description !== undefined) record.short_description = event.short_description;
+  if (event.description !== undefined) record.description = event.description;
+  if (event.image_url !== undefined) record.image_url = event.image_url;
+  if (event.event_type !== undefined) record.event_type = event.event_type;
+  if (event.starts_at !== undefined) record.starts_at = event.starts_at;
+  if (event.ends_at !== undefined) record.ends_at = event.ends_at;
+  if (event.publish_start_at !== undefined) record.publish_start_at = event.publish_start_at;
+  if (event.publish_end_at !== undefined) record.publish_end_at = event.publish_end_at;
+  if (event.status !== undefined) record.status = event.status;
+  if (event.is_featured !== undefined) record.is_featured = event.is_featured;
+  
+  return record;
 }
 
 /**
@@ -265,18 +317,242 @@ export function generateMockEvents(orgId: string): Event[] {
 }
 
 /**
- * Get events for an organization
+ * Get events for an organization from Supabase
  */
-export function getEventsForOrg(orgId: string): Event[] {
-  return generateMockEvents(orgId);
+export async function getEventsForOrg(
+  orgId: string,
+  supabaseClient?: SupabaseClient
+): Promise<Event[]> {
+  try {
+    // For client-side, we'll use API routes
+    // This function is kept for server-side usage
+    if (!supabaseClient) {
+      // Return empty array if no client provided (will be fetched via API)
+      return [];
+    }
+
+    const { data, error } = await supabaseClient
+      .from('events')
+      .select('*')
+      .eq('org_id', orgId)
+      .order('starts_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching events:', error);
+      throw error;
+    }
+
+    const events = (data || []).map(transformEventRecord);
+    
+    // Compute status for each event, but preserve draft and archived status
+    return events.map(event => {
+      const finalStatus = (event.status === 'draft' || event.status === 'archived') 
+        ? event.status 
+        : computeEventStatus(event);
+      return {
+        ...event,
+        status: finalStatus,
+      };
+    });
+  } catch (error) {
+    console.error('Error in getEventsForOrg:', error);
+    return [];
+  }
 }
 
 /**
- * Get event by ID
+ * Get event by ID from Supabase
  */
-export function getEventById(orgId: string, eventId: string): Event | null {
-  const events = getEventsForOrg(orgId);
-  return events.find(e => e.id === eventId) || null;
+export async function getEventById(
+  orgId: string,
+  eventId: string,
+  supabaseClient?: SupabaseClient
+): Promise<Event | null> {
+  try {
+    if (!supabaseClient) {
+      return null;
+    }
+
+    const { data, error } = await supabaseClient
+      .from('events')
+      .select('*')
+      .eq('id', eventId)
+      .eq('org_id', orgId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching event:', error);
+      throw error;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    const event = transformEventRecord(data);
+    // Preserve the status from the database if it was explicitly set
+    // Only recompute if status is not explicitly 'draft' or 'archived'
+    const finalStatus = (event.status === 'draft' || event.status === 'archived') 
+      ? event.status 
+      : computeEventStatus(event);
+    return {
+      ...event,
+      status: finalStatus,
+    };
+  } catch (error) {
+    console.error('Error in getEventById:', error);
+    return null;
+  }
+}
+
+/**
+ * Create a new event in Supabase
+ */
+export async function createEvent(
+  orgId: string,
+  eventData: Partial<Event>,
+  supabaseClient?: SupabaseClient
+): Promise<Event | null> {
+  try {
+    if (!supabaseClient) {
+      console.error('No Supabase client provided to createEvent');
+      return null;
+    }
+
+    // Ensure org_id is included
+    const record = transformEventToRecord({
+      ...eventData,
+      org_id: orgId,
+    });
+
+    console.log('Creating event with record:', JSON.stringify(record, null, 2));
+
+    const { data, error } = await supabaseClient
+      .from('events')
+      .insert([record])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating event:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      throw error;
+    }
+
+    if (!data) {
+      console.error('No data returned from insert');
+      return null;
+    }
+
+    const event = transformEventRecord(data);
+    // Preserve the status from the database if it was explicitly set
+    // Only recompute if status is not explicitly 'draft' or 'archived'
+    const finalStatus = (event.status === 'draft' || event.status === 'archived') 
+      ? event.status 
+      : computeEventStatus(event);
+    return {
+      ...event,
+      status: finalStatus,
+    };
+  } catch (error) {
+    console.error('Error in createEvent:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    return null;
+  }
+}
+
+/**
+ * Update an event in Supabase
+ */
+export async function updateEvent(
+  eventId: string,
+  orgId: string,
+  updates: Partial<Event>,
+  supabaseClient?: SupabaseClient
+): Promise<Event | null> {
+  try {
+    if (!supabaseClient) {
+      return null;
+    }
+
+    const record = transformEventToRecord(updates);
+
+    const { data, error } = await supabaseClient
+      .from('events')
+      .update(record)
+      .eq('id', eventId)
+      .eq('org_id', orgId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating event:', error);
+      throw error;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    const event = transformEventRecord(data);
+    // Preserve the status from the database if it was explicitly set
+    // Only recompute if status is not explicitly 'draft' or 'archived'
+    const finalStatus = (event.status === 'draft' || event.status === 'archived') 
+      ? event.status 
+      : computeEventStatus(event);
+    return {
+      ...event,
+      status: finalStatus,
+    };
+  } catch (error) {
+    console.error('Error in updateEvent:', error);
+    return null;
+  }
+}
+
+/**
+ * Archive an event (set status to archived)
+ */
+export async function archiveEvent(
+  eventId: string,
+  orgId: string,
+  supabaseClient?: SupabaseClient
+): Promise<Event | null> {
+  return updateEvent(eventId, orgId, { status: 'archived' }, supabaseClient);
+}
+
+/**
+ * Delete an event from Supabase
+ */
+export async function deleteEvent(
+  eventId: string,
+  orgId: string,
+  supabaseClient?: SupabaseClient
+): Promise<boolean> {
+  try {
+    if (!supabaseClient) {
+      return false;
+    }
+
+    const { error } = await supabaseClient
+      .from('events')
+      .delete()
+      .eq('id', eventId)
+      .eq('org_id', orgId);
+
+    if (error) {
+      console.error('Error deleting event:', error);
+      throw error;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in deleteEvent:', error);
+    return false;
+  }
 }
 
 /**

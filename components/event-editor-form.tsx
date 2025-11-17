@@ -66,7 +66,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
     setImagePreview(value)
   }
 
-  const handleImageFileSelect = (file: File | null) => {
+  const handleImageFileSelect = async (file: File | null) => {
     if (!file) {
       return
     }
@@ -82,22 +82,47 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
     }
 
     setIsUploadingPreview(true)
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      const result = reader.result as string
-      setFormData((prev) => ({ ...prev, image_url: result }))
-      setImagePreview(result)
+    try {
+      const formDataData = new FormData()
+      formDataData.append("file", file)
+
+      const response = await fetch(`/api/organizations/${orgId}/gallery-images/upload`, {
+        method: "POST",
+        body: formDataData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.error || "Failed to upload image")
+      }
+
+      const data = await response.json()
+      if (!data?.imageUrl) {
+        throw new Error("Upload did not return an image URL")
+      }
+
+      setFormData((prev) => ({ ...prev, image_url: data.imageUrl }))
+      setImagePreview(data.imageUrl)
+      toast.success("Image uploaded successfully")
+    } catch (error) {
+      console.error("Error uploading image:", error)
+      toast.error(error instanceof Error ? error.message : "Failed to upload image")
+    } finally {
       setIsUploadingPreview(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
     }
-    reader.onerror = () => {
-      toast.error("Failed to read image file")
-      setIsUploadingPreview(false)
-    }
-    reader.readAsDataURL(file)
   }
 
-  // Compute current status based on form data
+  // Compute current status - use event status from DB if available, otherwise compute from form data
   const computedStatus = React.useMemo(() => {
+    // For existing events, use the status from the database (same as events table)
+    if (event?.status) {
+      return event.status
+    }
+
+    // For new events, compute status from form data
     if (!formData.publish_start_date || !formData.publish_start_time) {
       return 'draft'
     }
@@ -113,7 +138,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
     }
 
     return computeEventStatus(tempEvent)
-  }, [formData.publish_start_date, formData.publish_start_time, formData.publish_end_date, formData.publish_end_time])
+  }, [event?.status, formData.publish_start_date, formData.publish_start_time, formData.publish_end_date, formData.publish_end_time])
 
   const getStatusMessage = () => {
     if (!formData.publish_start_date || !formData.publish_start_time) {
@@ -174,28 +199,42 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
         })()
     const endsAt = endDate.toISOString()
 
+    // Always include visibility scheduling if provided, regardless of action
     let publishStartAt: string | undefined
     let publishEndAt: string | undefined
+    
+    if (formData.publish_start_date && formData.publish_start_time) {
+      publishStartAt = new Date(`${formData.publish_start_date}T${formData.publish_start_time}`).toISOString()
+    }
+    
+    if (formData.publish_end_date && formData.publish_end_time) {
+      publishEndAt = new Date(`${formData.publish_end_date}T${formData.publish_end_time}`).toISOString()
+    }
+
     let status: Event['status'] = 'draft'
 
     if (action === 'publish') {
+      // For "Publish now", always set publish_start to current date and time
       publishStartAt = new Date().toISOString()
-      publishEndAt = formData.publish_end_date && formData.publish_end_time
-        ? new Date(`${formData.publish_end_date}T${formData.publish_end_time}`).toISOString()
-        : endsAt
+      
+      // Use publish_end from form if provided, otherwise default to event end time
+      if (!publishEndAt) {
+        publishEndAt = endsAt
+      }
       status = 'live'
     } else if (action === 'schedule') {
-      if (formData.publish_start_date && formData.publish_start_time) {
-        publishStartAt = new Date(`${formData.publish_start_date}T${formData.publish_start_time}`).toISOString()
-        publishEndAt = formData.publish_end_date && formData.publish_end_time
-          ? new Date(`${formData.publish_end_date}T${formData.publish_end_time}`).toISOString()
-          : undefined
-        
-        const now = new Date()
-        const publishStart = new Date(publishStartAt)
-        status = now >= publishStart ? 'live' : 'scheduled'
+      // Schedule requires publish_start to be set
+      if (!publishStartAt) {
+        // This should be caught by validation, but fallback to current time
+        publishStartAt = new Date().toISOString()
       }
+      
+      // Compute status based on publish_start time
+      const now = new Date()
+      const publishStart = new Date(publishStartAt)
+      status = now >= publishStart ? 'live' : 'scheduled'
     }
+    // For 'draft' action, status remains 'draft' but visibility scheduling is still saved
 
     return {
       title: formData.title,
@@ -230,15 +269,34 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
       if (onSave) {
         await onSave(eventData)
       } else {
-        // In a real app, this would call an API
-        console.log('Saving event:', eventData)
+        // Call API to save event
+        const url = event 
+          ? `/api/organizations/${orgId}/events/${event.id}`
+          : `/api/organizations/${orgId}/events`
+        
+        const method = event ? 'PATCH' : 'POST'
+        
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(eventData),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Failed to save event' }))
+          throw new Error(errorData.error || 'Failed to save event')
+        }
+
         toast.success(`Event ${action === 'draft' ? 'saved as draft' : action === 'schedule' ? 'scheduled' : 'published'}`)
       }
       
-      router.push(`/client/${orgId}/events`)
+      // Use replace to avoid back button issues, and refresh will happen automatically
+      router.replace(`/client/${orgId}/events`)
     } catch (error) {
       console.error('Error saving event:', error)
-      toast.error('Failed to save event')
+      toast.error(error instanceof Error ? error.message : 'Failed to save event')
     } finally {
       setIsSubmitting(false)
     }
@@ -261,8 +319,13 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
         <div className="grid gap-4 md:grid-cols-3">
           <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle>Event Details</CardTitle>
-              <CardDescription>Basic information about your event</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Event Details</CardTitle>
+                  <CardDescription>Basic information about your event</CardDescription>
+                </div>
+                {event && <EventStatusBadge status={computedStatus} />}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">

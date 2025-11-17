@@ -8,27 +8,64 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { IconPlus, IconSearch } from "@tabler/icons-react"
 import Link from "next/link"
 import { EventsTable } from "@/components/events-table"
-import { getEventsForOrg, computeEventStatus } from "@/lib/events"
+import { computeEventStatus } from "@/lib/events"
 import { Event } from "@/lib/types"
+import { toast } from "sonner"
 
 export default function EventsPage() {
   const params = useParams()
   const orgId = params.orgId as string
   
   const [searchQuery, setSearchQuery] = React.useState("")
-  const [activeTab, setActiveTab] = React.useState<"upcoming" | "past" | "drafts" | "all">("upcoming")
-  
-  // Get all events for this org
-  const allEvents = React.useMemo(() => {
-    return getEventsForOrg(orgId)
+  const [activeTab, setActiveTab] = React.useState<"upcoming" | "past" | "drafts" | "all">("all")
+  const [allEvents, setAllEvents] = React.useState<Event[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+  // Fetch events from API
+  const fetchEvents = React.useCallback(async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/organizations/${orgId}/events`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch events')
+      }
+
+      const data = await response.json()
+      console.log('Fetched events:', data.events?.length || 0)
+      setAllEvents(data.events || [])
+    } catch (error) {
+      console.error('Error fetching events:', error)
+      toast.error('Failed to load events')
+      setAllEvents([])
+    } finally {
+      setLoading(false)
+    }
   }, [orgId])
+
+  React.useEffect(() => {
+    if (orgId) {
+      fetchEvents()
+    }
+  }, [orgId, fetchEvents])
+
+  // Refresh events when page becomes visible (e.g., after navigation back)
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && orgId) {
+        fetchEvents()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [orgId, fetchEvents])
 
   // Filter events based on tab and search
   const filteredEvents = React.useMemo(() => {
     let events = allEvents
 
     // Filter by tab
-    const now = new Date()
     switch (activeTab) {
       case "upcoming":
         events = events.filter(event => {
@@ -112,7 +149,13 @@ export default function EventsPage() {
               </div>
 
               <TabsContent value={activeTab} className="mt-6">
-                <EventsTable orgId={orgId} events={filteredEvents} />
+                {loading ? (
+                  <div className="rounded-md border p-8 text-center">
+                    <p className="text-muted-foreground">Loading events...</p>
+                  </div>
+                ) : (
+                  <EventsTable orgId={orgId} events={filteredEvents} />
+                )}
               </TabsContent>
             </Tabs>
           </div>
