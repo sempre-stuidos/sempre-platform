@@ -27,6 +27,8 @@ export function ClientSiteHeader() {
     pageName = "Menu"
   } else if (pathname?.includes("/gallery")) {
     pageName = "Gallery"
+  } else if (pathname?.includes("/events")) {
+    pageName = "Events"
   } else if (pathname?.includes("/sections")) {
     pageName = "Page Sections"
   }

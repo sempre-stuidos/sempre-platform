@@ -1,0 +1,124 @@
+"use client"
+
+import * as React from "react"
+import { useParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { IconPlus, IconSearch } from "@tabler/icons-react"
+import Link from "next/link"
+import { EventsTable } from "@/components/events-table"
+import { getEventsForOrg, computeEventStatus } from "@/lib/events"
+import { Event } from "@/lib/types"
+
+export default function EventsPage() {
+  const params = useParams()
+  const orgId = params.orgId as string
+  
+  const [searchQuery, setSearchQuery] = React.useState("")
+  const [activeTab, setActiveTab] = React.useState<"upcoming" | "past" | "drafts" | "all">("upcoming")
+  
+  // Get all events for this org
+  const allEvents = React.useMemo(() => {
+    return getEventsForOrg(orgId)
+  }, [orgId])
+
+  // Filter events based on tab and search
+  const filteredEvents = React.useMemo(() => {
+    let events = allEvents
+
+    // Filter by tab
+    const now = new Date()
+    switch (activeTab) {
+      case "upcoming":
+        events = events.filter(event => {
+          const status = computeEventStatus(event)
+          return status === 'scheduled' || status === 'live'
+        })
+        break
+      case "past":
+        events = events.filter(event => {
+          const status = computeEventStatus(event)
+          return status === 'past'
+        })
+        break
+      case "drafts":
+        events = events.filter(event => {
+          const status = computeEventStatus(event)
+          return status === 'draft'
+        })
+        break
+      case "all":
+        // Show all events
+        break
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      events = events.filter(event =>
+        event.title.toLowerCase().includes(query) ||
+        event.short_description?.toLowerCase().includes(query) ||
+        event.description?.toLowerCase().includes(query)
+      )
+    }
+
+    // Sort by starts_at (most recent first)
+    return events.sort((a, b) => {
+      return new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime()
+    })
+  }, [allEvents, activeTab, searchQuery])
+
+  return (
+    <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+        <div className="px-4 lg:px-6">
+          {/* Header */}
+          <div className="mb-6 flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Events</h1>
+              <p className="text-muted-foreground mt-2">
+                Manage jazz nights and monthly events.
+              </p>
+            </div>
+            <Link href={`/client/${orgId}/events/new`}>
+              <Button>
+                <IconPlus className="mr-2 h-4 w-4" />
+                New Event
+              </Button>
+            </Link>
+          </div>
+
+          {/* Tabs and Search */}
+          <div className="mb-6 space-y-4">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
+              <div className="flex items-center justify-between">
+                <TabsList>
+                  <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                  <TabsTrigger value="past">Past</TabsTrigger>
+                  <TabsTrigger value="drafts">Drafts</TabsTrigger>
+                  <TabsTrigger value="all">All</TabsTrigger>
+                </TabsList>
+                
+                <div className="relative w-64">
+                  <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search events..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+
+              <TabsContent value={activeTab} className="mt-6">
+                <EventsTable orgId={orgId} events={filteredEvents} />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+

@@ -71,9 +71,9 @@ const getClientNavItems = (orgId: string) => ({
       icon: IconPhoto,
     },
     {
-      title: "Page Sections",
-      url: `/client/${orgId}/restaurant/sections`,
-      icon: IconFileText,
+      title: "Events",
+      url: `/client/${orgId}/events`,
+      icon: IconCalendar,
     },
   ],
 })

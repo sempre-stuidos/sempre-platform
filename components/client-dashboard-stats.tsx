@@ -70,7 +70,7 @@ export function ClientDashboardStats({ stats }: ClientDashboardStatsProps) {
       </Card>
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Page Sections</CardDescription>
+          <CardDescription>Site Pages</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {stats.sectionsCount}
           </CardTitle>
@@ -83,11 +83,11 @@ export function ClientDashboardStats({ stats }: ClientDashboardStatsProps) {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-2 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Manage website content <IconFileText className="size-4" />
+            Manage website pages <IconFileText className="size-4" />
           </div>
           <Button asChild variant="outline" size="sm" className="w-full">
-            <Link href="/restaurant/sections">
-              View Sections <IconArrowRight className="ml-2 size-4" />
+            <Link href="/restaurant/pages">
+              View Pages <IconArrowRight className="ml-2 size-4" />
             </Link>
           </Button>
         </CardFooter>

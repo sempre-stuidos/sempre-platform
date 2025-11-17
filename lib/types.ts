@@ -337,3 +337,21 @@ export interface PageInput {
   template?: string;
   status?: 'published' | 'dirty' | 'draft';
 }
+
+export interface Event {
+  id: string;
+  org_id: string;
+  title: string;
+  short_description?: string;
+  description?: string;
+  image_url?: string;
+  event_type?: string;
+  starts_at: string; // ISO datetime string
+  ends_at: string; // ISO datetime string
+  publish_start_at?: string; // ISO datetime string
+  publish_end_at?: string; // ISO datetime string
+  status: 'draft' | 'scheduled' | 'live' | 'past' | 'archived';
+  is_featured: boolean;
+  created_at: string;
+  updated_at: string;
+}
