@@ -9,13 +9,14 @@ import { getNotesKnowledgeById } from "@/lib/notes-knowledge"
 import { notFound } from "next/navigation"
 
 interface ProposalPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function ProposalPage({ params }: ProposalPageProps) {
-  const proposalId = parseInt(params.id)
+  const { id } = await params
+  const proposalId = parseInt(id)
   
   if (isNaN(proposalId)) {
     notFound()

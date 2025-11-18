@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useCallback } from 'react'
 import { driver } from 'driver.js'
-import 'driver.js/dist/driver.css'
 import { eventCreationTourSteps } from '@/lib/event-creation-tour'
 
 // Global driver instance to persist across route changes
