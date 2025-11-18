@@ -62,7 +62,7 @@ export default function EditEventPage() {
             <div className="rounded-lg border bg-card p-8 text-center">
               <h2 className="text-2xl font-bold mb-4">Event Not Found</h2>
               <p className="text-muted-foreground">
-                The event you're looking for doesn't exist or you don't have access to it.
+                The event you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
               </p>
             </div>
           </div>

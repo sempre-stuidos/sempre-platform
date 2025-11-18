@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserRoleInOrg } from '@/lib/organizations';
-import { getEventById, updateEvent, archiveEvent, deleteEvent, computeEventStatus } from '@/lib/events';
+import { getEventById, updateEvent, deleteEvent, computeEventStatus } from '@/lib/events';
+import { Event } from '@/lib/types';
 
 interface RouteParams {
   params: Promise<{
@@ -113,7 +114,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           publish_end_at: publish_end_at !== undefined ? publish_end_at : currentEvent.publish_end_at,
         });
 
-    const updates: any = {};
+    const updates: Partial<Event> = {};
     if (title !== undefined) updates.title = title;
     if (short_description !== undefined) updates.short_description = short_description;
     if (description !== undefined) updates.description = description;

@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserRoleInOrg } from '@/lib/organizations';
 import { getEventsForOrg, createEvent, computeEventStatus } from '@/lib/events';
+import { Event } from '@/lib/types';
 
 interface RouteParams {
   params: Promise<{
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       status: 'draft',
       publish_start_at,
       publish_end_at,
-    } as any);
+    } as Partial<Event>);
 
     // Clean up empty strings to null for optional fields
     const cleanEventData = {
