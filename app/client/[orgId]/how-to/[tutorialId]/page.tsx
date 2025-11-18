@@ -68,13 +68,18 @@ export default async function TutorialDetailPage({ params }: TutorialDetailPageP
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
             {/* Description */}
-            <div className="mb-6">
-              <p className="text-muted-foreground text-lg">{tutorial.description}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant="outline" className="text-sm">
-                  {tutorial.estimated_time}
-                </Badge>
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div className="max-w-2xl">
+                <p className="text-muted-foreground text-lg">{tutorial.description}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant="outline" className="text-sm">
+                    {tutorial.estimated_time}
+                  </Badge>
+                </div>
               </div>
+              <Button>
+                Take Tour
+              </Button>
             </div>
 
           {/* Tutorial Steps */}
