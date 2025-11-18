@@ -8,28 +8,10 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  IconArrowLeft,
   IconChevronLeft,
   IconChevronRight,
-  IconPlus,
-  IconEdit,
-  IconCalendar,
-  IconArchive,
-  IconMenu2,
-  IconTrash,
-  IconBook,
 } from '@tabler/icons-react';
-
-// Map icon names to actual icon components
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  IconPlus,
-  IconEdit,
-  IconCalendar,
-  IconArchive,
-  IconMenu2,
-  IconTrash,
-  IconBook,
-};
+import { SetTutorialBreadcrumb } from '@/components/set-tutorial-breadcrumb';
 
 interface TutorialDetailPageProps {
   params: Promise<{
@@ -79,40 +61,21 @@ export default async function TutorialDetailPage({ params }: TutorialDetailPageP
   const previousTutorial = currentIndex > 0 ? allTutorials[currentIndex - 1] : null;
   const nextTutorial = currentIndex < allTutorials.length - 1 ? allTutorials[currentIndex + 1] : null;
 
-  const IconComponent = iconMap[tutorial.icon] || IconBook;
-
   return (
-    <div className="@container/main flex flex-1 flex-col gap-2">
-      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-        <div className="px-4 lg:px-6">
-          {/* Back Button */}
-          <Link href={`/client/${orgId}/how-to`}>
-            <Button variant="ghost" className="mb-6">
-              <IconArrowLeft className="mr-2 h-4 w-4" />
-              Back to How To
-            </Button>
-          </Link>
-
-          {/* Header */}
-          <div className="mb-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="rounded-lg bg-primary/10 p-2">
-                    <IconComponent className="h-6 w-6 text-primary" />
-                  </div>
-                  <Badge variant="outline">{tutorial.category}</Badge>
-                </div>
-                <h1 className="text-3xl font-bold tracking-tight mb-2">{tutorial.title}</h1>
-                <p className="text-muted-foreground text-lg">{tutorial.description}</p>
-              </div>
-              <div className="flex items-center gap-2">
+    <>
+      <SetTutorialBreadcrumb tutorialTitle={tutorial.title} />
+      <div className="@container/main flex flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+          <div className="px-4 lg:px-6">
+            {/* Description */}
+            <div className="mb-6">
+              <p className="text-muted-foreground text-lg">{tutorial.description}</p>
+              <div className="flex items-center gap-2 mt-2">
                 <Badge variant="outline" className="text-sm">
                   {tutorial.estimated_time}
                 </Badge>
               </div>
             </div>
-          </div>
 
           {/* Tutorial Steps */}
           <div className="space-y-4 mb-8">
@@ -175,7 +138,8 @@ export default async function TutorialDetailPage({ params }: TutorialDetailPageP
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

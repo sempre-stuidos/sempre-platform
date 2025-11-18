@@ -31,6 +31,8 @@ export function ClientSiteHeader() {
     pageName = "Events"
   } else if (pathname?.includes("/sections")) {
     pageName = "Page Sections"
+  } else if (pathname?.includes("/how-to")) {
+    pageName = "How To"
   }
   
   return <SiteHeader clientName={pageName} />
