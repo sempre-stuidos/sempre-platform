@@ -66,14 +66,14 @@ export function useEventCreationTour() {
           const stepElement = step?.element || (element ? element.getAttribute('data-tour') : null)
           console.log('Tour highlighting step:', stepIndex, 'Element:', stepElement)
           
-          // Check if element exists
-          if (step?.element && typeof window !== 'undefined') {
+          // Check if element exists (only if it's a string selector)
+          if (step?.element && typeof window !== 'undefined' && typeof step.element === 'string') {
             const foundElement = document.querySelector(step.element)
             if (!foundElement) {
               console.error('Tour element not found:', step.element)
               // Try to find it with a delay (for dynamically loaded content)
               setTimeout(() => {
-                const retryElement = document.querySelector(step.element)
+                const retryElement = document.querySelector(step.element as string)
                 if (!retryElement) {
                   console.error('Tour element still not found after retry:', step.element)
                 } else {
@@ -134,14 +134,6 @@ export function useEventCreationTour() {
             }, 0)
           }
           return false // Prevent default (we're manually advancing)
-        },
-        onHighlightedElementClick: (element, step, options) => {
-          // Get current step index from global driver instance
-          const stepIndex = globalDriverInstance?.getActiveIndex?.() ?? -1
-          // If user clicks the highlighted "New Event" button, mark to continue
-          if (stepIndex === 1 && typeof window !== 'undefined') {
-            sessionStorage.setItem('event-creation-tour-continue', '2')
-          }
         },
       })
       isInitializedRef.current = true

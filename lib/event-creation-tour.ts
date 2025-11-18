@@ -1,4 +1,13 @@
-import type { Step } from 'driver.js';
+// Define Step type based on Driver.js structure
+interface Step {
+  element?: string | Element | (() => Element);
+  popover?: {
+    title?: string;
+    description?: string;
+    side?: 'top' | 'right' | 'bottom' | 'left';
+    align?: 'start' | 'center' | 'end';
+  };
+}
 
 export const eventCreationTourSteps: Step[] = [
   {
