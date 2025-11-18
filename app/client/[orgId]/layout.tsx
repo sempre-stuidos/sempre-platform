@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { ClientSidebar } from '@/components/client-sidebar';
 import { ClientSiteHeader } from '@/components/client-site-header';
 import { BreadcrumbProvider } from '@/components/breadcrumb-context';
+import { EventCreationTourProvider } from '@/components/event-creation-tour-provider';
 import {
   SidebarInset,
   SidebarProvider,
@@ -63,6 +64,7 @@ export default async function ClientLayout({ children, params }: ClientLayoutPro
 
   return (
     <BreadcrumbProvider>
+      <EventCreationTourProvider />
       <SidebarProvider
         style={
           {

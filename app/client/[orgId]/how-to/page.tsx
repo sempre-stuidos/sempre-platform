@@ -83,8 +83,7 @@ export default async function HowToPage({ params }: HowToPageProps) {
         <div className="px-4 lg:px-6">
           {/* Header */}
           <div className="mb-6">
-            <h1 className="text-3xl font-bold tracking-tight">How To</h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground">
               Step-by-step tutorials to help you manage your restaurant dashboard.
             </p>
           </div>

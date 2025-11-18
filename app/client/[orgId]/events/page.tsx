@@ -107,7 +107,7 @@ export default function EventsPage() {
   }, [allEvents, activeTab, searchQuery])
 
   return (
-    <div className="@container/main flex flex-1 flex-col gap-2">
+    <div className="@container/main flex flex-1 flex-col gap-2" data-tour="events-page">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="px-4 lg:px-6">
           {/* Header */}
@@ -118,8 +118,16 @@ export default function EventsPage() {
                 Manage jazz nights and monthly events.
               </p>
             </div>
-            <Link href={`/client/${orgId}/events/new`}>
-              <Button>
+            <Link 
+              href={`/client/${orgId}/events/new`}
+              onClick={() => {
+                // If tour is active, mark to continue after navigation
+                if (typeof window !== 'undefined' && sessionStorage.getItem('event-creation-tour-active') === 'true') {
+                  sessionStorage.setItem('event-creation-tour-continue', '2')
+                }
+              }}
+            >
+              <Button data-tour="new-event-button">
                 <IconPlus className="mr-2 h-4 w-4" />
                 New Event
               </Button>

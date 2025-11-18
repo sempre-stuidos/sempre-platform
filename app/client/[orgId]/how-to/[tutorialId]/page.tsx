@@ -12,6 +12,7 @@ import {
   IconChevronRight,
 } from '@tabler/icons-react';
 import { SetTutorialBreadcrumb } from '@/components/set-tutorial-breadcrumb';
+import { TakeTourButton } from '@/components/take-tour-button';
 
 interface TutorialDetailPageProps {
   params: Promise<{
@@ -77,9 +78,10 @@ export default async function TutorialDetailPage({ params }: TutorialDetailPageP
                   </Badge>
                 </div>
               </div>
-              <Button>
-                Take Tour
-              </Button>
+              <TakeTourButton 
+                tutorialTitle={tutorial.title}
+                orgId={orgId}
+              />
             </div>
 
           {/* Tutorial Steps */}

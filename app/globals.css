@@ -215,3 +215,150 @@
   border: 2px solid hsl(var(--background));
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+/* Driver.js theme to match shadcn */
+.driverjs-theme {
+  --driver-popover-color: hsl(var(--card));
+  --driver-popover-text-color: hsl(var(--card-foreground));
+  --driver-popover-title-color: hsl(var(--card-foreground));
+  --driver-popover-description-color: hsl(var(--muted-foreground));
+  --driver-popover-footer-button-color: hsl(var(--primary));
+  --driver-popover-footer-button-text-color: hsl(var(--primary-foreground));
+  --driver-popover-footer-button-hover-color: hsl(var(--primary) / 0.9);
+  --driver-popover-footer-button-active-color: hsl(var(--primary) / 0.8);
+  --driver-popover-close-button-color: hsl(var(--muted-foreground));
+  --driver-popover-close-button-hover-color: hsl(var(--foreground));
+  --driver-popover-border-radius: var(--radius);
+  --driver-popover-padding: 1.5rem;
+  --driver-popover-shadow: var(--shadow-lg);
+  --driver-popover-border: 1px solid hsl(var(--border));
+  --driver-overlay-color: rgba(0, 0, 0, 0.5);
+  --driver-popover-arrow-size: 10px;
+  --driver-popover-arrow-border-color: hsl(var(--border));
+  --driver-popover-progress-color: hsl(var(--primary));
+  --driver-popover-progress-text-color: hsl(var(--muted-foreground));
+  --driver-popover-progress-background-color: hsl(var(--muted));
+  --driver-popover-progress-bar-height: 4px;
+  --driver-popover-progress-bar-border-radius: 2px;
+  --driver-popover-button-border-radius: var(--radius);
+  --driver-popover-button-padding: 0.5rem 1rem;
+  --driver-popover-button-font-size: 0.875rem;
+  --driver-popover-button-font-weight: 500;
+  --driver-popover-title-font-size: 1.125rem;
+  --driver-popover-title-font-weight: 600;
+  --driver-popover-description-font-size: 0.875rem;
+  --driver-popover-description-line-height: 1.5;
+  --driver-popover-z-index: 10000;
+}
+
+.driverjs-theme .driver-popover {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 1.5rem;
+  font-family: var(--font-sans);
+}
+
+.driverjs-theme .driver-popover-title {
+  color: hsl(var(--card-foreground));
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.driverjs-theme .driver-popover-description {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.driverjs-theme .driver-popover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.driverjs-theme .driver-popover-progress-text {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+  margin-right: auto;
+}
+
+.driverjs-theme .driver-popover-footer-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.driverjs-theme .driver-popover-btn {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-family: var(--font-sans);
+}
+
+.driverjs-theme .driver-popover-btn:hover {
+  background: hsl(var(--primary) / 0.9);
+}
+
+.driverjs-theme .driver-popover-btn:active {
+  background: hsl(var(--primary) / 0.8);
+}
+
+.driverjs-theme .driver-popover-btn.driver-popover-btn-secondary {
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+}
+
+.driverjs-theme .driver-popover-btn.driver-popover-btn-secondary:hover {
+  background: hsl(var(--secondary) / 0.9);
+}
+
+.driverjs-theme .driver-popover-close-btn {
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.driverjs-theme .driver-popover-close-btn:hover {
+  color: hsl(var(--foreground));
+  background: hsl(var(--muted));
+}
+
+.driverjs-theme .driver-popover-progress {
+  background: hsl(var(--muted));
+  border-radius: 2px;
+  height: 4px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.driverjs-theme .driver-popover-progress-bar {
+  background: hsl(var(--primary));
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
+.driverjs-theme .driver-highlighted-element {
+  z-index: 9999;
+}
+
+.driverjs-theme .driver-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+}

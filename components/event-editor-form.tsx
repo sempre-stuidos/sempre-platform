@@ -328,7 +328,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-2" data-tour="title">
                 <Label htmlFor="title">Title *</Label>
                 <Input
                   id="title"
@@ -340,7 +340,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
                 {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2" data-tour="short-description">
                 <Label htmlFor="short_description">Short Description</Label>
                 <Input
                   id="short_description"
@@ -350,7 +350,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2" data-tour="description">
                 <Label htmlFor="description">Full Description</Label>
                 <Textarea
                   id="description"
@@ -361,7 +361,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2" data-tour="event-type">
                 <Label htmlFor="event_type">Event Type</Label>
                 <Select
                   value={formData.event_type || "none"}
@@ -391,7 +391,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
             </CardContent>
           </Card>
 
-          <Card>
+          <Card data-tour="image-upload">
             <CardHeader>
               <CardTitle>Event Image</CardTitle>
               <CardDescription>Upload or link your poster/hero image</CardDescription>
@@ -469,7 +469,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
+                <div className="space-y-2" data-tour="start-date">
                   <Label htmlFor="start_date">Start Date *</Label>
                   <Input
                     id="start_date"
@@ -481,7 +481,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
                   {errors.start_date && <p className="text-sm text-red-500">{errors.start_date}</p>}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2" data-tour="start-time">
                   <Label htmlFor="start_time">Start Time *</Label>
                   <Input
                     id="start_time"
@@ -493,7 +493,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
                   {errors.start_time && <p className="text-sm text-red-500">{errors.start_time}</p>}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2" data-tour="end-date">
                   <Label htmlFor="end_date">End Date *</Label>
                   <Input
                     id="end_date"
@@ -505,7 +505,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
                   {errors.end_date && <p className="text-sm text-red-500">{errors.end_date}</p>}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2" data-tour="end-time">
                   <Label htmlFor="end_time">End Time *</Label>
                   <Input
                     id="end_time"
@@ -527,7 +527,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
+                <div className="space-y-2" data-tour="publish-start">
                   <Label htmlFor="publish_start_date">Publish Start</Label>
                   <Input
                     id="publish_start_date"
@@ -547,7 +547,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2" data-tour="publish-end">
                   <Label htmlFor="publish_end_date">Publish End</Label>
                   <Input
                     id="publish_end_date"
@@ -604,7 +604,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
         <Separator />
 
         {/* Footer Actions */}
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-3" data-tour="save-button">
           <Button
             type="button"
             variant="outline"
