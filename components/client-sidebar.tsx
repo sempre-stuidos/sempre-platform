@@ -10,6 +10,7 @@ import {
   IconChartBar,
   IconCalendar,
   IconBook,
+  IconTools,
 } from "@tabler/icons-react"
 import { useParams, usePathname } from "next/navigation"
 import { NavUser } from "@/components/nav-user"
@@ -46,6 +47,11 @@ const getClientNavItems = (orgId: string) => ({
       title: "How To",
       url: `/client/${orgId}/how-to`,
       icon: IconBook,
+    },
+    {
+      title: "Maintenance",
+      url: `/client/${orgId}/maintenance`,
+      icon: IconTools,
     },
   ],
   restaurant: [

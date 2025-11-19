@@ -33,6 +33,8 @@ export function ClientSiteHeader() {
     pageName = "Page Sections"
   } else if (pathname?.includes("/how-to")) {
     pageName = "How To"
+  } else if (pathname?.includes("/maintenance")) {
+    pageName = "Maintenance"
   }
   
   return <SiteHeader clientName={pageName} />
