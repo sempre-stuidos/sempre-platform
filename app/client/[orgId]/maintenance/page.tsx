@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { IconTools, IconCheck } from '@tabler/icons-react'
 
 const plans = [
@@ -115,23 +116,37 @@ export default function MaintenancePage() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 rounded-full border px-3 py-1 text-sm">
-                <span className={billingCycle === 'monthly' ? 'font-semibold' : 'text-muted-foreground'}>
-                  Monthly
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="rounded-full border px-3 py-1"
-                  onClick={() => setBillingCycle((prev) => (prev === 'monthly' ? 'annually' : 'monthly'))}
+              <div className="flex items-center gap-2">
+                <ToggleGroup
+                  type="single"
+                  value={billingCycle}
+                  onValueChange={(value) => {
+                    if (value) setBillingCycle(value as 'monthly' | 'annually')
+                  }}
+                  variant="outline"
+                  className="rounded-lg border"
                 >
-                  <span className="text-xs uppercase tracking-wide">
-                    {billingCycle === 'monthly' ? 'Switch to annually' : 'Switch to monthly'}
-                  </span>
-                </Button>
-                <span className={billingCycle === 'annually' ? 'font-semibold text-primary' : 'text-muted-foreground'}>
-                  Annually <Badge variant="outline" className="ml-1 text-[10px]">Save 20%</Badge>
-                </span>
+                  <ToggleGroupItem
+                    value="monthly"
+                    aria-label="Monthly billing"
+                    className="min-w-[100px] px-6 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    Monthly
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="annually"
+                    aria-label="Annually billing"
+                    className="relative min-w-[140px] px-6 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    Annually
+                    <Badge 
+                      variant="outline" 
+                      className="absolute -top-2 -right-2 z-10 text-[10px] border-primary/20 bg-background data-[state=on]:border-primary-foreground/30 data-[state=on]:text-primary-foreground data-[state=on]:bg-primary"
+                    >
+                      Save 20%
+                    </Badge>
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
             </div>
 
