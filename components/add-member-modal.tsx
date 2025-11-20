@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -28,50 +28,29 @@ interface AddMemberModalProps {
   onSuccess?: () => void
 }
 
-interface User {
-  id: string
-  email: string
-  name: string
-  avatar?: string
-}
-
 export function AddMemberModal({ open, onOpenChange, orgId, onSuccess }: AddMemberModalProps) {
-  const [userId, setUserId] = useState("")
+  const [email, setEmail] = useState("")
+  const [name, setName] = useState("")
   const [role, setRole] = useState<"owner" | "admin" | "staff">("staff")
   const [isLoading, setIsLoading] = useState(false)
-  const [users, setUsers] = useState<User[]>([])
-  const [loadingUsers, setLoadingUsers] = useState(false)
-
-  // Fetch available users when modal opens
-  useEffect(() => {
-    if (open) {
-      fetchAvailableUsers()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, orgId])
-
-  const fetchAvailableUsers = async () => {
-    setLoadingUsers(true)
-    try {
-      const response = await fetch(`/api/users/available?orgId=${orgId}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch users')
-      }
-      const { users: usersData } = await response.json()
-      setUsers(usersData || [])
-    } catch (error) {
-      console.error('Error fetching users:', error)
-      toast.error('Failed to load users')
-    } finally {
-      setLoadingUsers(false)
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!userId.trim()) {
-      toast.error("Please select a user")
+    if (!email.trim()) {
+      toast.error("Email is required")
+      return
+    }
+
+    if (!name.trim()) {
+      toast.error("Name is required")
+      return
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.trim())) {
+      toast.error("Please enter a valid email address")
       return
     }
 
@@ -83,7 +62,8 @@ export function AddMemberModal({ open, onOpenChange, orgId, onSuccess }: AddMemb
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId: userId.trim(),
+          email: email.trim(),
+          name: name.trim(),
           role,
         }),
       })
@@ -94,8 +74,9 @@ export function AddMemberModal({ open, onOpenChange, orgId, onSuccess }: AddMemb
         throw new Error(errorMessage)
       }
 
-      toast.success("Member added successfully")
-      setUserId("")
+      toast.success("Member added successfully. They will receive an email with login instructions.")
+      setEmail("")
+      setName("")
       setRole("staff")
       onOpenChange(false)
       onSuccess?.()
@@ -113,34 +94,31 @@ export function AddMemberModal({ open, onOpenChange, orgId, onSuccess }: AddMemb
         <DialogHeader>
           <DialogTitle>Add Member</DialogTitle>
           <DialogDescription>
-            Add a user to this organization. They will be able to access the organization dashboard.
+            Add a new member to this business. A user account will be created and they will receive login instructions via email.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="user">User *</Label>
-              <Select 
-                value={userId} 
-                onValueChange={setUserId}
-                disabled={loadingUsers}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={loadingUsers ? "Loading users..." : "Select a user"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      <div className="flex items-center gap-2">
-                        {user.name} ({user.email})
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Select a user from the system to add to this organization.
-              </p>
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="member@example.com"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Full name"
+                required
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="role">Role *</Label>

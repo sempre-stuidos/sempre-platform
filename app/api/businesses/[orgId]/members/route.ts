@@ -5,6 +5,7 @@ import {
   getBusinessMembers,
   addUserToBusiness,
   getUserRoleInOrg,
+  createBusinessMember,
 } from '@/lib/businesses';
 import { supabaseAdmin } from '@/lib/supabase';
 import { getUserRole } from '@/lib/invitations';
@@ -119,11 +120,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { userId, role: memberRole } = body;
+    const { email, name, role: memberRole } = body;
 
-    if (!userId) {
+    // Validate input
+    if (!email || !name) {
       return NextResponse.json(
-        { error: 'User ID is required' },
+        { error: 'Email and name are required' },
         { status: 400 }
       );
     }
@@ -135,17 +137,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Verify the user exists
-    const { data: targetUser, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
-    
-    if (userError || !targetUser) {
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.trim())) {
       return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
+        { error: 'Invalid email address' },
+        { status: 400 }
       );
     }
 
-    const result = await addUserToBusiness(orgId, userId, memberRole);
+    // Create business member (creates user account if needed, assigns Client role, creates membership)
+    const result = await createBusinessMember(orgId, email.trim(), name.trim(), memberRole);
 
     if (!result.success) {
       return NextResponse.json(
@@ -154,7 +156,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({ membership: result.membership }, { status: 201 });
+    return NextResponse.json({ 
+      success: true,
+      userId: result.userId,
+      message: 'Member added successfully. They will receive login instructions via email.'
+    }, { status: 201 });
   } catch (error) {
     console.error('Error in POST /api/businesses/[orgId]/members:', error);
     return NextResponse.json(

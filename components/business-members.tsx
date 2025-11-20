@@ -122,7 +122,7 @@ export function BusinessMembers({ orgId, canManage, isAdmin = false }: BusinessM
         <CardHeader>
           <CardTitle>No Members</CardTitle>
           <CardDescription>
-            This business doesn&apos;t have any members yet.
+            This business doesn&apos;t have any members, staff, or clients yet. Add members to give them access to the client dashboard.
           </CardDescription>
         </CardHeader>
       </Card>

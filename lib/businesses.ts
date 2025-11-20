@@ -259,7 +259,7 @@ export async function getUserRoleInOrg(
 }
 
 /**
- * Create a new business and add creator as owner
+ * Create a new business and add creator as owner (unless creator is super admin)
  */
 export async function createBusiness(
   name: string,
@@ -275,6 +275,15 @@ export async function createBusiness(
 ): Promise<{ success: boolean; business?: Business; error?: string }> {
   try {
     console.log('Creating business:', { name, type, creatorId, description, address, phone, email, website, logo_url, status });
+    
+    // Check if creator is super admin (has Admin role)
+    const { data: userRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', creatorId)
+      .maybeSingle();
+    
+    const isSuperAdmin = userRole?.role === 'Admin';
     
     // Create business
     const { data: org, error: orgError } = await supabaseAdmin
@@ -313,33 +322,39 @@ export async function createBusiness(
 
     console.log('Business created successfully:', org.id);
 
-    // Add creator as owner
-    const { error: membershipError } = await supabaseAdmin
-      .from('memberships')
-      .insert({
-        org_id: org.id,
-        user_id: creatorId,
-        role: 'owner',
-      });
+    // Only add creator as owner if they are NOT a super admin
+    // Super admins can create businesses without becoming members
+    if (!isSuperAdmin) {
+      const { error: membershipError } = await supabaseAdmin
+        .from('memberships')
+        .insert({
+          org_id: org.id,
+          user_id: creatorId,
+          role: 'owner',
+        });
 
-    if (membershipError) {
-      console.error('Error creating membership:', membershipError);
-      console.error('Membership error details:', JSON.stringify(membershipError, null, 2));
-      // Rollback: delete business if membership creation fails
-      await supabaseAdmin.from('businesses').delete().eq('id', org.id);
-      
-      // Check if it's a table not found error
-      if (membershipError.message?.includes('relation') || membershipError.message?.includes('does not exist')) {
-        return { 
-          success: false, 
-          error: 'Database tables not found. Please run the migrations first.' 
-        };
+      if (membershipError) {
+        console.error('Error creating membership:', membershipError);
+        console.error('Membership error details:', JSON.stringify(membershipError, null, 2));
+        // Rollback: delete business if membership creation fails
+        await supabaseAdmin.from('businesses').delete().eq('id', org.id);
+        
+        // Check if it's a table not found error
+        if (membershipError.message?.includes('relation') || membershipError.message?.includes('does not exist')) {
+          return { 
+            success: false, 
+            error: 'Database tables not found. Please run the migrations first.' 
+          };
+        }
+        
+        return { success: false, error: membershipError.message || 'Failed to create membership' };
       }
-      
-      return { success: false, error: membershipError.message || 'Failed to create membership' };
-    }
 
-    console.log('Membership created successfully for user:', creatorId);
+      console.log('Membership created successfully for user:', creatorId);
+    } else {
+      console.log('Super admin created business without membership');
+    }
+    
     return { success: true, business: org };
   } catch (error) {
     console.error('Error in createBusiness:', error);
@@ -387,6 +402,179 @@ export async function addUserToBusiness(
   } catch (error) {
     console.error('Error in addUserToBusiness:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * Generate a secure temporary password
+ */
+function generateTemporaryPassword(): string {
+  const length = 16
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
+  let password = ''
+  
+  // Ensure at least one of each type
+  password += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)] // uppercase
+  password += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)] // lowercase
+  password += '0123456789'[Math.floor(Math.random() * 10)] // number
+  password += '!@#$%^&*'[Math.floor(Math.random() * 8)] // symbol
+  
+  // Fill the rest randomly
+  for (let i = password.length; i < length; i++) {
+    password += charset[Math.floor(Math.random() * charset.length)]
+  }
+  
+  // Shuffle the password
+  return password.split('').sort(() => Math.random() - 0.5).join('')
+}
+
+/**
+ * Create a business member (new user account)
+ * Creates user account with temporary password, assigns Client role, and creates membership
+ */
+export async function createBusinessMember(
+  orgId: string,
+  email: string,
+  name: string,
+  role: 'owner' | 'admin' | 'staff'
+): Promise<{ success: boolean; userId?: string; error?: string }> {
+  try {
+    const lowerEmail = email.toLowerCase().trim()
+    
+    // Check if user already exists
+    const { data: usersData } = await supabaseAdmin.auth.admin.listUsers()
+    const existingUser = usersData?.users?.find(user => 
+      user.email?.toLowerCase() === lowerEmail
+    )
+    
+    let userId: string
+    
+    if (existingUser) {
+      // User exists - check if already a member
+      userId = existingUser.id
+      
+      const { data: existingMembership } = await supabaseAdmin
+        .from('memberships')
+        .select('id')
+        .eq('org_id', orgId)
+        .eq('user_id', userId)
+        .single()
+      
+      if (existingMembership) {
+        return { success: false, error: 'User is already a member of this business' }
+      }
+      
+      // User exists but not a member - ensure profile exists
+      const { ensureProfileExists } = await import('@/lib/profiles')
+      await ensureProfileExists(userId)
+      
+      // Check if user has Client role, if not assign it
+      const { data: existingRole } = await supabaseAdmin
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle()
+      
+      if (!existingRole) {
+        const { error: roleError } = await supabaseAdmin
+          .from('user_roles')
+          .insert({
+            user_id: userId,
+            role: 'Client',
+            invited_email: lowerEmail,
+          })
+        
+        if (roleError) {
+          console.error('Error assigning Client role:', roleError)
+          return { success: false, error: 'Failed to assign Client role' }
+        }
+      }
+    } else {
+      // User doesn't exist - create new user account
+      const temporaryPassword = generateTemporaryPassword()
+      
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: lowerEmail,
+        password: temporaryPassword,
+        email_confirm: true, // Auto-confirm email
+        user_metadata: {
+          full_name: name,
+        },
+      })
+      
+      if (createError || !newUser.user) {
+        console.error('Error creating user:', createError)
+        return { success: false, error: createError?.message || 'Failed to create user account' }
+      }
+      
+      userId = newUser.user.id
+      
+      // Create profile
+      const { ensureProfileExists } = await import('@/lib/profiles')
+      const profile = await ensureProfileExists(userId)
+      
+      if (profile) {
+        // Update profile with name
+        await supabaseAdmin
+          .from('profiles')
+          .update({ full_name: name })
+          .eq('id', userId)
+      }
+      
+      // Assign Client role
+      const { error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .insert({
+          user_id: userId,
+          role: 'Client',
+          invited_email: lowerEmail,
+        })
+      
+      if (roleError) {
+        console.error('Error assigning Client role:', roleError)
+        // Don't fail here - user is created, we can try to fix role later
+      }
+      
+      // Send password reset email (forces password change on first login)
+      // Use generateLink to create a recovery link, then the user can use it to set their password
+      const { getBaseUrl } = await import('@/lib/supabase')
+      const baseUrl = getBaseUrl()
+      const { data: linkData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email: lowerEmail,
+        options: {
+          redirectTo: `${baseUrl}/client/login?reset=true`,
+        },
+      })
+      
+      if (resetError) {
+        console.error('Error generating password reset link:', resetError)
+        // Don't fail - user is created, they can request password reset manually
+      } else if (linkData?.properties?.action_link) {
+        // The link is generated - Supabase should send the email automatically
+        // If email sending is not configured, the link is in linkData.properties.action_link
+        console.log('Password reset link generated for:', lowerEmail)
+      }
+    }
+    
+    // Create membership (for both existing and new users)
+    const { error: membershipError } = await supabaseAdmin
+      .from('memberships')
+      .insert({
+        org_id: orgId,
+        user_id: userId,
+        role,
+      })
+    
+    if (membershipError) {
+      console.error('Error creating membership:', membershipError)
+      return { success: false, error: membershipError.message || 'Failed to create membership' }
+    }
+    
+    return { success: true, userId }
+  } catch (error) {
+    console.error('Error in createBusinessMember:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }
 

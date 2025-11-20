@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { IconPlus } from "@tabler/icons-react"
 import { Business } from "@/lib/businesses"
 import { BusinessMembers } from "@/components/business-members"
-import { BusinessClients } from "@/components/business-clients"
 import { BusinessSite } from "@/components/business-site"
 import { BusinessSectionCards } from "@/components/business-section-cards"
 import { AddMemberModal } from "@/components/add-member-modal"
@@ -43,7 +42,6 @@ export function BusinessDetails({ orgId, business, userRole, isAdmin = false, st
           <div className="flex items-center justify-between mb-4">
             <TabsList>
               <TabsTrigger value="members">Staff & Members</TabsTrigger>
-              <TabsTrigger value="clients">Clients</TabsTrigger>
               <TabsTrigger value="site">Site</TabsTrigger>
             </TabsList>
             {canManage && (
@@ -56,10 +54,6 @@ export function BusinessDetails({ orgId, business, userRole, isAdmin = false, st
           
           <TabsContent value="members" className="mt-6">
             <BusinessMembers orgId={orgId} canManage={canManage} isAdmin={isAdmin} />
-          </TabsContent>
-          
-          <TabsContent value="clients" className="mt-6">
-            <BusinessClients orgId={orgId} canManage={canManage} />
           </TabsContent>
           
           <TabsContent value="site" className="mt-6">

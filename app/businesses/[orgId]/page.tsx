@@ -61,13 +61,14 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
   console.log('Business page - User role in org:', role);
   console.log('Business page - Is Admin:', isAdmin);
   
-  // Allow access if user is a member OR is Admin
+  // Allow access if user is a member OR is Admin (super admin)
   if (!role && !isAdmin) {
     console.log('Business page - No role found and not Admin, redirecting to /businesses');
     redirect('/businesses');
   }
   
   // Use 'admin' role for Admins if they're not already a member
+  // Super admins can access any business even without membership
   const effectiveRole = role || (isAdmin ? 'admin' : null);
 
   // Get business details

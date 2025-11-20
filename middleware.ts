@@ -148,6 +148,47 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
+  // If user is authenticated and trying to access admin routes, check if they're a Client
+  // Client users should be redirected to their client dashboard
+  if (user && !isClientRoute && !isPublicRoute) {
+    try {
+      const { data: userRole } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      let finalRole = userRole?.role
+      if (!finalRole && user.email) {
+        const { data: roleByEmail } = await supabaseAdmin
+          .from('user_roles')
+          .select('role')
+          .eq('invited_email', user.email.toLowerCase())
+          .maybeSingle()
+        finalRole = roleByEmail?.role
+      }
+
+      if (finalRole === 'Client') {
+        // Get user's organizations
+        const organizations = await getUserBusinesses(user.id, supabase)
+        
+        if (organizations && organizations.length > 0) {
+          const redirectUrl = request.nextUrl.clone()
+          if (organizations.length === 1) {
+            redirectUrl.pathname = `/client/${organizations[0].id}/dashboard`
+          } else {
+            redirectUrl.pathname = '/client/select-org'
+          }
+          redirectUrl.search = ''
+          return NextResponse.redirect(redirectUrl)
+        }
+      }
+    } catch (error) {
+      console.error('Error checking user role in middleware for admin routes:', error)
+      // Continue with normal flow if error
+    }
+  }
+
   return supabaseResponse
 }
 

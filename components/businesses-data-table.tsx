@@ -95,7 +95,7 @@ export function BusinessesDataTable({ data: initialData, isAdmin = false }: Busi
         {isAdmin && (
           <Button onClick={() => setShowCreateModal(true)}>
             <IconPlus className="mr-2 h-4 w-4" />
-            Create Business
+            Add Business
           </Button>
         )}
       </div>
@@ -113,7 +113,7 @@ export function BusinessesDataTable({ data: initialData, isAdmin = false }: Busi
               {isAdmin && (
                 <Button onClick={() => setShowCreateModal(true)}>
                   <IconPlus className="mr-2 h-4 w-4" />
-                  Create Business
+                  Add Business
                 </Button>
               )}
             </CardContent>
