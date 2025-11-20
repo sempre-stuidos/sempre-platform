@@ -214,6 +214,7 @@ export function BusinessesDataTable({ data: initialData, isAdmin = false }: Busi
         onOpenChange={setShowEditModal}
         business={selectedBusiness}
         onSuccess={handleEditSuccess}
+        isAdmin={isAdmin}
       />
     </div>
   )

@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import { Business } from "@/lib/businesses"
 
@@ -28,13 +29,15 @@ interface EditBusinessModalProps {
   onOpenChange: (open: boolean) => void
   business: Business | null
   onSuccess?: (business: Business) => void
+  isAdmin?: boolean
 }
 
 export function EditBusinessModal({ 
   open, 
   onOpenChange, 
   business,
-  onSuccess 
+  onSuccess,
+  isAdmin = false
 }: EditBusinessModalProps) {
   const [name, setName] = useState("")
   const [type, setType] = useState<"agency" | "restaurant" | "hotel" | "retail" | "service" | "other">("restaurant")
@@ -83,6 +86,7 @@ export function EditBusinessModal({
         },
         body: JSON.stringify({
           name: name.trim(),
+          type: isAdmin ? type : undefined, // Only allow type change for admins
           description: description.trim() || undefined,
           address: address.trim() || undefined,
           phone: phone.trim() || undefined,
@@ -120,114 +124,131 @@ export function EditBusinessModal({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="edit-name">Name *</Label>
-              <Input
-                id="edit-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Restaurant Name, Hotel Name"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-type">Type *</Label>
-              <Select 
-                value={type} 
-                onValueChange={(value) => setType(value as typeof type)}
-                disabled
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="restaurant">Restaurant</SelectItem>
-                  <SelectItem value="agency">Agency</SelectItem>
-                  <SelectItem value="hotel">Hotel</SelectItem>
-                  <SelectItem value="retail">Retail</SelectItem>
-                  <SelectItem value="service">Service</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Business type cannot be changed after creation.
-              </p>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional description"
-                rows={3}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-address">Address</Label>
-              <Input
-                id="edit-address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Street address"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="contact">Contact Info</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="basic" className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-phone">Phone</Label>
+                <Label htmlFor="edit-name">Name *</Label>
                 <Input
-                  id="edit-phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Phone number"
+                  id="edit-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., Restaurant Name, Hotel Name"
+                  required
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-email">Email</Label>
-                <Input
-                  id="edit-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email address"
+                <Label htmlFor="edit-type">Type *</Label>
+                <Select 
+                  value={type} 
+                  onValueChange={(value) => setType(value as typeof type)}
+                  disabled={!isAdmin}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="restaurant">Restaurant</SelectItem>
+                    <SelectItem value="agency">Agency</SelectItem>
+                    <SelectItem value="hotel">Hotel</SelectItem>
+                    <SelectItem value="retail">Retail</SelectItem>
+                    <SelectItem value="service">Service</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                {!isAdmin && (
+                  <p className="text-xs text-muted-foreground">
+                    Business type cannot be changed. Only super admins can modify this.
+                  </p>
+                )}
+                {isAdmin && (
+                  <p className="text-xs text-muted-foreground">
+                    You can change the business type as a super admin.
+                  </p>
+                )}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Optional description"
+                  rows={3}
                 />
               </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-website">Website</Label>
-              <Input
-                id="edit-website"
-                type="url"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                placeholder="https://example.com"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-logo_url">Logo URL</Label>
-              <Input
-                id="edit-logo_url"
-                type="url"
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                placeholder="https://example.com/logo.png"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-status">Status *</Label>
-              <Select value={status} onValueChange={(value) => setStatus(value as typeof status)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-status">Status *</Label>
+                <Select value={status} onValueChange={(value) => setStatus(value as typeof status)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="contact" className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-address">Address</Label>
+                <Input
+                  id="edit-address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Street address"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-phone">Phone</Label>
+                  <Input
+                    id="edit-phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Phone number"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-email">Email</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email address"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-website">Website</Label>
+                <Input
+                  id="edit-website"
+                  type="url"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://example.com"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-logo_url">Logo URL</Label>
+                <Input
+                  id="edit-logo_url"
+                  type="url"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  placeholder="https://example.com/logo.png"
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

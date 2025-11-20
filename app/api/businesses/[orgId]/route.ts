@@ -112,9 +112,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { name, description, address, phone, email, website, logo_url, status } = body;
+    const { name, type, description, address, phone, email, website, logo_url, status } = body;
 
-    const result = await updateBusiness(orgId, { 
+    // Only allow type updates for super admins
+    const updates: any = { 
       name, 
       description, 
       address, 
@@ -123,7 +124,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       website, 
       logo_url, 
       status 
-    });
+    };
+    
+    if (isAdmin && type) {
+      updates.type = type;
+    }
+
+    const result = await updateBusiness(orgId, updates);
 
     if (!result.success) {
       return NextResponse.json(

@@ -772,7 +772,7 @@ export async function unlinkClientFromBusiness(
  */
 export async function updateBusiness(
   orgId: string,
-  updates: Partial<Pick<Business, 'name' | 'description' | 'address' | 'phone' | 'email' | 'website' | 'logo_url' | 'status'>>
+  updates: Partial<Pick<Business, 'name' | 'type' | 'description' | 'address' | 'phone' | 'email' | 'website' | 'logo_url' | 'status'>>
 ): Promise<{ success: boolean; business?: Business; error?: string }> {
   try {
     const { data, error } = await supabaseAdmin
