@@ -34,7 +34,8 @@ export function ClientLoginForm({
           // Check if user has organizations and redirect accordingly
           const response = await fetch('/api/businesses')
           if (response.ok) {
-            const { organizations } = await response.json()
+            const data = await response.json()
+            const organizations = data.businesses || data.organizations || []
             if (organizations.length === 1) {
               router.push(`/client/${organizations[0].id}/dashboard`)
             } else if (organizations.length > 1) {
@@ -60,7 +61,8 @@ export function ClientLoginForm({
         try {
           const response = await fetch('/api/businesses')
           if (response.ok) {
-            const { organizations } = await response.json()
+            const data = await response.json()
+            const organizations = data.businesses || data.organizations || []
             if (organizations.length === 1) {
               router.push(`/client/${organizations[0].id}/dashboard`)
             } else if (organizations.length > 1) {
