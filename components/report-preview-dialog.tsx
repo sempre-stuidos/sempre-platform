@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Report } from "@/lib/reports"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 
 interface ReportPreviewDialogProps {
   report: Report
@@ -53,7 +52,7 @@ export function ReportPreviewDialog({ report, children }: ReportPreviewDialogPro
   }
 
   // Extract report content from metadata
-  const reportContent = report.metadata || {}
+  const reportContent: Record<string, unknown> = (report.metadata || {}) as Record<string, unknown>
   const hasAnalytics = reportContent.analytics !== undefined
   const hasReservations = reportContent.reservations !== undefined
   const hasMenuStats = reportContent.menu_stats !== undefined
@@ -101,15 +100,15 @@ export function ReportPreviewDialog({ report, children }: ReportPreviewDialogPro
             )}
           </div>
 
-          <Separator />
+          <div className="my-4 h-px bg-border" />
 
           {/* Analytics Section */}
-          {hasAnalytics && reportContent.analytics && (
+          {hasAnalytics && reportContent.analytics !== undefined ? (
             <div className="space-y-3 print:break-inside-avoid">
               <h2 className="text-xl font-semibold">Analytics</h2>
               {typeof reportContent.analytics === "object" && reportContent.analytics !== null ? (
                 <div className="space-y-2 text-sm">
-                  {Object.entries(reportContent.analytics).map(([key, value]) => (
+                  {Object.entries(reportContent.analytics as Record<string, unknown>).map(([key, value]) => (
                     <div key={key} className="flex justify-between">
                       <span className="text-muted-foreground capitalize">
                         {key.replace(/_/g, " ")}:
@@ -122,15 +121,15 @@ export function ReportPreviewDialog({ report, children }: ReportPreviewDialogPro
                 <p>{String(reportContent.analytics)}</p>
               )}
             </div>
-          )}
+          ) : null}
 
           {/* Reservations Section */}
-          {hasReservations && reportContent.reservations && (
+          {hasReservations && reportContent.reservations !== undefined ? (
             <div className="space-y-3 print:break-inside-avoid">
               <h2 className="text-xl font-semibold">Reservations</h2>
               {typeof reportContent.reservations === "object" && reportContent.reservations !== null ? (
                 <div className="space-y-2 text-sm">
-                  {Object.entries(reportContent.reservations).map(([key, value]) => (
+                  {Object.entries(reportContent.reservations as Record<string, unknown>).map(([key, value]) => (
                     <div key={key} className="flex justify-between">
                       <span className="text-muted-foreground capitalize">
                         {key.replace(/_/g, " ")}:
@@ -143,15 +142,15 @@ export function ReportPreviewDialog({ report, children }: ReportPreviewDialogPro
                 <p>{String(reportContent.reservations)}</p>
               )}
             </div>
-          )}
+          ) : null}
 
           {/* Menu Stats Section */}
-          {hasMenuStats && reportContent.menu_stats && (
+          {hasMenuStats && reportContent.menu_stats !== undefined ? (
             <div className="space-y-3 print:break-inside-avoid">
               <h2 className="text-xl font-semibold">Menu Statistics</h2>
               {typeof reportContent.menu_stats === "object" && reportContent.menu_stats !== null ? (
                 <div className="space-y-2 text-sm">
-                  {Object.entries(reportContent.menu_stats).map(([key, value]) => (
+                  {Object.entries(reportContent.menu_stats as Record<string, unknown>).map(([key, value]) => (
                     <div key={key} className="flex justify-between">
                       <span className="text-muted-foreground capitalize">
                         {key.replace(/_/g, " ")}:
@@ -164,15 +163,15 @@ export function ReportPreviewDialog({ report, children }: ReportPreviewDialogPro
                 <p>{String(reportContent.menu_stats)}</p>
               )}
             </div>
-          )}
+          ) : null}
 
           {/* Gallery Stats Section */}
-          {hasGalleryStats && reportContent.gallery_stats && (
+          {hasGalleryStats && reportContent.gallery_stats !== undefined ? (
             <div className="space-y-3 print:break-inside-avoid">
               <h2 className="text-xl font-semibold">Gallery Statistics</h2>
               {typeof reportContent.gallery_stats === "object" && reportContent.gallery_stats !== null ? (
                 <div className="space-y-2 text-sm">
-                  {Object.entries(reportContent.gallery_stats).map(([key, value]) => (
+                  {Object.entries(reportContent.gallery_stats as Record<string, unknown>).map(([key, value]) => (
                     <div key={key} className="flex justify-between">
                       <span className="text-muted-foreground capitalize">
                         {key.replace(/_/g, " ")}:
@@ -185,15 +184,15 @@ export function ReportPreviewDialog({ report, children }: ReportPreviewDialogPro
                 <p>{String(reportContent.gallery_stats)}</p>
               )}
             </div>
-          )}
+          ) : null}
 
           {/* Performance Section */}
-          {hasPerformance && reportContent.performance && (
+          {hasPerformance && reportContent.performance !== undefined ? (
             <div className="space-y-3 print:break-inside-avoid">
               <h2 className="text-xl font-semibold">Performance Metrics</h2>
               {typeof reportContent.performance === "object" && reportContent.performance !== null ? (
                 <div className="space-y-2 text-sm">
-                  {Object.entries(reportContent.performance).map(([key, value]) => (
+                  {Object.entries(reportContent.performance as Record<string, unknown>).map(([key, value]) => (
                     <div key={key} className="flex justify-between">
                       <span className="text-muted-foreground capitalize">
                         {key.replace(/_/g, " ")}:
@@ -206,15 +205,15 @@ export function ReportPreviewDialog({ report, children }: ReportPreviewDialogPro
                 <p>{String(reportContent.performance)}</p>
               )}
             </div>
-          )}
+          ) : null}
 
           {/* Events Section */}
-          {hasEvents && reportContent.events && (
+          {hasEvents && reportContent.events !== undefined ? (
             <div className="space-y-3 print:break-inside-avoid">
               <h2 className="text-xl font-semibold">Events</h2>
               {typeof reportContent.events === "object" && reportContent.events !== null ? (
                 <div className="space-y-2 text-sm">
-                  {Object.entries(reportContent.events).map(([key, value]) => (
+                  {Object.entries(reportContent.events as Record<string, unknown>).map(([key, value]) => (
                     <div key={key} className="flex justify-between">
                       <span className="text-muted-foreground capitalize">
                         {key.replace(/_/g, " ")}:
@@ -227,14 +226,14 @@ export function ReportPreviewDialog({ report, children }: ReportPreviewDialogPro
                 <p>{String(reportContent.events)}</p>
               )}
             </div>
-          )}
+          ) : null}
 
           {/* Empty state if no content */}
-          {!hasAnalytics && !hasReservations && !hasMenuStats && !hasGalleryStats && !hasPerformance && !hasEvents && (
+          {!hasAnalytics && !hasReservations && !hasMenuStats && !hasGalleryStats && !hasPerformance && !hasEvents ? (
             <div className="text-center text-muted-foreground py-8">
               <p>No report content available.</p>
             </div>
-          )}
+          ) : null}
         </div>
       </DialogContent>
 

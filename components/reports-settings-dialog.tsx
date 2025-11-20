@@ -34,7 +34,6 @@ interface ReportsSettingsDialogProps {
 export function ReportsSettingsDialog({ orgId, children }: ReportsSettingsDialogProps) {
   const [open, setOpen] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
-  const [settings, setSettings] = React.useState<ReportSettings | null>(null)
   const [formData, setFormData] = React.useState({
     frequency: "Monthly" as ReportSettings["frequency"],
     email_enabled: false,
@@ -54,13 +53,13 @@ export function ReportsSettingsDialog({ orgId, children }: ReportsSettingsDialog
     if (open) {
       loadSettings()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, orgId])
 
   const loadSettings = async () => {
     try {
       const currentSettings = await getReportSettings(orgId)
       if (currentSettings) {
-        setSettings(currentSettings)
         setFormData({
           frequency: currentSettings.frequency,
           email_enabled: currentSettings.email_enabled,
@@ -106,7 +105,6 @@ export function ReportsSettingsDialog({ orgId, children }: ReportsSettingsDialog
       const result = await updateReportSettings(orgId, formData)
       if (result) {
         toast.success("Report settings saved successfully")
-        setSettings(result)
         setOpen(false)
       } else {
         toast.error("Failed to save report settings")

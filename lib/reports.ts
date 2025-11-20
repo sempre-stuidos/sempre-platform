@@ -45,8 +45,6 @@ export interface CreateReportData {
   metadata?: Record<string, unknown>;
 }
 
-type SupabaseQueryClient = SupabaseClient<any> | ReturnType<typeof supabase.from>;
-
 /**
  * Get all reports for an organization
  */

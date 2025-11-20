@@ -77,7 +77,7 @@ export default async function ReportsPage({ params }: ReportsPageProps) {
 
         {/* Reports Table */}
         <div className="px-4 lg:px-6">
-          <ReportsDataTable data={reports} orgId={orgId} />
+          <ReportsDataTable data={reports} />
         </div>
       </div>
     </div>

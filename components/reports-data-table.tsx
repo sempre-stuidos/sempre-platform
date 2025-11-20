@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import {
-  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
   IconChevronsLeft,
@@ -148,10 +147,8 @@ const createColumns = (): ColumnDef<Report>[] => [
 
 export function ReportsDataTable({
   data: initialData,
-  orgId,
 }: {
   data: Report[]
-  orgId: string
 }) {
   const [data] = React.useState(() => initialData)
   const [sorting, setSorting] = React.useState<SortingState>([])
