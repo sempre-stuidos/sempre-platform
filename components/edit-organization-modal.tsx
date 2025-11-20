@@ -37,16 +37,30 @@ export function EditOrganizationModal({
   onSuccess 
 }: EditOrganizationModalProps) {
   const [name, setName] = useState("")
-  const [type, setType] = useState<"agency" | "client">("client")
+  const [type, setType] = useState<"agency" | "restaurant" | "hotel" | "retail" | "service" | "other">("restaurant")
   const [description, setDescription] = useState("")
+  const [address, setAddress] = useState("")
+  const [phone, setPhone] = useState("")
+  const [email, setEmail] = useState("")
+  const [website, setWebsite] = useState("")
+  const [logoUrl, setLogoUrl] = useState("")
+  const [status, setStatus] = useState<"active" | "inactive" | "suspended">("active")
   const [isLoading, setIsLoading] = useState(false)
 
   // Update form when organization changes
   useEffect(() => {
     if (organization) {
       setName(organization.name || "")
-      setType(organization.type || "client")
+      // Handle legacy 'client' type by converting to 'restaurant'
+      const orgType = organization.type === 'client' ? 'restaurant' : (organization.type || "restaurant")
+      setType(orgType)
       setDescription(organization.description || "")
+      setAddress(organization.address || "")
+      setPhone(organization.phone || "")
+      setEmail(organization.email || "")
+      setWebsite(organization.website || "")
+      setLogoUrl(organization.logo_url || "")
+      setStatus(organization.status || "active")
     }
   }, [organization])
 
@@ -70,6 +84,12 @@ export function EditOrganizationModal({
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || undefined,
+          address: address.trim() || undefined,
+          phone: phone.trim() || undefined,
+          email: email.trim() || undefined,
+          website: website.trim() || undefined,
+          logo_url: logoUrl.trim() || undefined,
+          status,
         }),
       })
 
@@ -115,15 +135,19 @@ export function EditOrganizationModal({
               <Label htmlFor="edit-type">Type *</Label>
               <Select 
                 value={type} 
-                onValueChange={(value) => setType(value as "agency" | "client")}
+                onValueChange={(value) => setType(value as typeof type)}
                 disabled
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="client">Client</SelectItem>
+                  <SelectItem value="restaurant">Restaurant</SelectItem>
                   <SelectItem value="agency">Agency</SelectItem>
+                  <SelectItem value="hotel">Hotel</SelectItem>
+                  <SelectItem value="retail">Retail</SelectItem>
+                  <SelectItem value="service">Service</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
@@ -139,6 +163,69 @@ export function EditOrganizationModal({
                 placeholder="Optional description"
                 rows={3}
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-address">Address</Label>
+              <Input
+                id="edit-address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Street address"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-phone">Phone</Label>
+                <Input
+                  id="edit-phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Phone number"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email address"
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-website">Website</Label>
+              <Input
+                id="edit-website"
+                type="url"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="https://example.com"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-logo_url">Logo URL</Label>
+              <Input
+                id="edit-logo_url"
+                type="url"
+                value={logoUrl}
+                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="https://example.com/logo.png"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-status">Status *</Label>
+              <Select value={status} onValueChange={(value) => setStatus(value as typeof status)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getUserOrganizations, createOrganization } from '@/lib/organizations';
+import { getUserOrganizations, getAllOrganizations, createOrganization } from '@/lib/organizations';
 import { ensureProfileExists } from '@/lib/profiles';
+import { getUserRole } from '@/lib/invitations';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,10 +35,20 @@ export async function GET(request: NextRequest) {
     // Ensure profile exists
     await ensureProfileExists(user.id);
 
-    // Get user's organizations (pass the server client with session)
-    const organizations = await getUserOrganizations(user.id, supabase);
+    // Check if user is Admin
+    const userRole = await getUserRole(user.id, supabaseAdmin);
+    const isAdmin = userRole === 'Admin';
+
+    // If admin, return all organizations; otherwise return user's organizations
+    let organizations;
+    if (isAdmin) {
+      organizations = await getAllOrganizations();
+    } else {
+      organizations = await getUserOrganizations(user.id, supabase);
+    }
 
     console.log('GET /api/organizations - User ID:', user.id);
+    console.log('GET /api/organizations - Is Admin:', isAdmin);
     console.log('GET /api/organizations - Found organizations:', organizations.length);
 
     return NextResponse.json({ organizations });
@@ -76,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, type, description } = body;
+    const { name, type, description, address, phone, email, website, logo_url, status } = body;
 
     if (!name || !type) {
       return NextResponse.json(
@@ -85,9 +97,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (type !== 'agency' && type !== 'client') {
+    const validTypes = ['agency', 'restaurant', 'hotel', 'retail', 'service', 'other'];
+    if (!validTypes.includes(type)) {
       return NextResponse.json(
-        { error: 'Type must be "agency" or "client"' },
+        { error: `Type must be one of: ${validTypes.join(', ')}` },
         { status: 400 }
       );
     }
@@ -96,7 +109,18 @@ export async function POST(request: NextRequest) {
     await ensureProfileExists(user.id);
 
     // Create organization
-    const result = await createOrganization(name, type, user.id, description);
+    const result = await createOrganization(
+      name, 
+      type, 
+      user.id, 
+      description, 
+      address, 
+      phone, 
+      email, 
+      website, 
+      logo_url, 
+      status
+    );
 
     if (!result.success) {
       console.error('Failed to create organization:', result.error);

@@ -6,7 +6,7 @@
 -- Reports table
 CREATE TABLE IF NOT EXISTS reports (
     id BIGSERIAL PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
+    organization_id UUID NOT NULL,
     title TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('Analytics', 'Performance', 'Summary', 'Custom')),
     status TEXT NOT NULL CHECK (status IN ('Generated', 'Pending', 'Failed')) DEFAULT 'Pending',
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS reports (
 -- Report settings table
 CREATE TABLE IF NOT EXISTS report_settings (
     id BIGSERIAL PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE UNIQUE NOT NULL,
+    organization_id UUID UNIQUE NOT NULL,
     frequency TEXT NOT NULL CHECK (frequency IN ('Daily', 'Weekly', 'Monthly', 'Quarterly', 'Never')) DEFAULT 'Monthly',
     email_enabled BOOLEAN DEFAULT false,
     email_recipients TEXT[] DEFAULT ARRAY[]::TEXT[],
@@ -59,75 +59,6 @@ CREATE TRIGGER update_report_settings_updated_at
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE report_settings ENABLE ROW LEVEL SECURITY;
 
--- RLS policies for reports
--- Organization members can view reports for their organization
-CREATE POLICY "Organization members can view reports" ON reports
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM memberships m
-            WHERE m.org_id = reports.organization_id
-            AND m.user_id = auth.uid()
-        )
-    );
-
--- Organization members can insert reports for their organization
-CREATE POLICY "Organization members can insert reports" ON reports
-    FOR INSERT WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM memberships m
-            WHERE m.org_id = reports.organization_id
-            AND m.user_id = auth.uid()
-        )
-    );
-
--- Organization members can update reports for their organization
-CREATE POLICY "Organization members can update reports" ON reports
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM memberships m
-            WHERE m.org_id = reports.organization_id
-            AND m.user_id = auth.uid()
-        )
-    );
-
--- Organization members can delete reports for their organization
-CREATE POLICY "Organization members can delete reports" ON reports
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM memberships m
-            WHERE m.org_id = reports.organization_id
-            AND m.user_id = auth.uid()
-        )
-    );
-
--- RLS policies for report_settings
--- Organization members can view report settings for their organization
-CREATE POLICY "Organization members can view report settings" ON report_settings
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM memberships m
-            WHERE m.org_id = report_settings.organization_id
-            AND m.user_id = auth.uid()
-        )
-    );
-
--- Organization members can insert report settings for their organization
-CREATE POLICY "Organization members can insert report settings" ON report_settings
-    FOR INSERT WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM memberships m
-            WHERE m.org_id = report_settings.organization_id
-            AND m.user_id = auth.uid()
-        )
-    );
-
--- Organization members can update report settings for their organization
-CREATE POLICY "Organization members can update report settings" ON report_settings
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM memberships m
-            WHERE m.org_id = report_settings.organization_id
-            AND m.user_id = auth.uid()
-        )
-    );
+-- RLS policies will be added after memberships table is created
+-- This is handled in the organizations migration
 

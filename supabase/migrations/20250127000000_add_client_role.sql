@@ -21,8 +21,11 @@ BEGIN
     END IF;
 END $$;
 
--- Add the new CHECK constraint with 'Client' included
-ALTER TABLE user_roles 
-ADD CONSTRAINT user_roles_role_check 
+-- Drop existing constraint if it exists, then add the new CHECK constraint with 'Client' included
+ALTER TABLE user_roles
+DROP CONSTRAINT IF EXISTS user_roles_role_check;
+
+ALTER TABLE user_roles
+ADD CONSTRAINT user_roles_role_check
 CHECK (role IN ('Admin', 'Manager', 'Member', 'Developer', 'Designer', 'Client'));
 

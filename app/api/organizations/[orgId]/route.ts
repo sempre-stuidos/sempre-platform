@@ -53,7 +53,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const organization = await getOrganizationById(orgId, supabase);
+    // Use supabaseAdmin for Admins to bypass RLS
+    const organization = await getOrganizationById(orgId, isAdmin ? supabaseAdmin : supabase);
 
     if (!organization) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
@@ -107,9 +108,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { name, description } = body;
+    const { name, description, address, phone, email, website, logo_url, status } = body;
 
-    const result = await updateOrganization(orgId, { name, description });
+    const result = await updateOrganization(orgId, { 
+      name, 
+      description, 
+      address, 
+      phone, 
+      email, 
+      website, 
+      logo_url, 
+      status 
+    });
 
     if (!result.success) {
       return NextResponse.json(

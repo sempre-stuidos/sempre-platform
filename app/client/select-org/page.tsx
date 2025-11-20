@@ -17,7 +17,7 @@ import { IconBuilding, IconArrowRight } from "@tabler/icons-react"
 interface Organization {
   id: string
   name: string
-  type: 'agency' | 'client'
+  type: 'agency' | 'restaurant' | 'hotel' | 'retail' | 'service' | 'other'
   description?: string
   role?: 'owner' | 'admin' | 'staff' | 'client'
 }

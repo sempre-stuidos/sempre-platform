@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserRoleInOrg } from '@/lib/organizations';
+import { getUserRole } from '@/lib/invitations';
+import { supabaseAdmin } from '@/lib/supabase';
 
 interface RouteParams {
   params: Promise<{
@@ -36,14 +38,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify user has access to this organization
+    // Check if user is Admin
+    const userRole = await getUserRole(user.id, supabaseAdmin);
+    const isAdmin = userRole === 'Admin';
+    
+    // Verify user has access to this organization (or is Admin)
     const role = await getUserRoleInOrg(user.id, orgId, supabase);
-    if (!role) {
+    if (!role && !isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Get all clients linked to this organization
-    const { data: clients, error } = await supabase
+    // Use supabaseAdmin for Admins to bypass RLS
+    const client = isAdmin ? supabaseAdmin : supabase;
+    const { data: clients, error } = await client
       .from('clients')
       .select('*')
       .eq('organization_id', orgId)

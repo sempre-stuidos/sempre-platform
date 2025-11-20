@@ -125,6 +125,9 @@ export function OrganizationsDataTable({ data: initialData, isAdmin = false }: O
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -144,6 +147,17 @@ export function OrganizationsDataTable({ data: initialData, isAdmin = false }: O
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{org.type}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={org.status === 'active' ? 'default' : org.status === 'inactive' ? 'secondary' : 'destructive'}>
+                        {org.status || 'active'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      {org.email || '-'}
+                    </TableCell>
+                    <TableCell>
+                      {org.phone || '-'}
                     </TableCell>
                     <TableCell className="max-w-md truncate">
                       {org.description || '-'}

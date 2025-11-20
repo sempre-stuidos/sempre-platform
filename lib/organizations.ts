@@ -17,8 +17,15 @@ type MembershipRecord = {
 export interface Organization {
   id: string;
   name: string;
-  type: 'agency' | 'client';
+  type: 'agency' | 'restaurant' | 'hotel' | 'retail' | 'service' | 'other';
   description?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  logo_url?: string;
+  status?: 'active' | 'inactive' | 'suspended';
+  slug?: string;
   created_at: string;
   updated_at: string;
 }
@@ -246,12 +253,18 @@ export async function getUserRoleInOrg(
  */
 export async function createOrganization(
   name: string,
-  type: 'agency' | 'client',
+  type: 'agency' | 'restaurant' | 'hotel' | 'retail' | 'service' | 'other',
   creatorId: string,
-  description?: string
+  description?: string,
+  address?: string,
+  phone?: string,
+  email?: string,
+  website?: string,
+  logo_url?: string,
+  status?: 'active' | 'inactive' | 'suspended'
 ): Promise<{ success: boolean; organization?: Organization; error?: string }> {
   try {
-    console.log('Creating organization:', { name, type, creatorId, description });
+    console.log('Creating organization:', { name, type, creatorId, description, address, phone, email, website, logo_url, status });
     
     // Create organization
     const { data: org, error: orgError } = await supabaseAdmin
@@ -260,6 +273,12 @@ export async function createOrganization(
         name,
         type,
         description: description || null,
+        address: address || null,
+        phone: phone || null,
+        email: email || null,
+        website: website || null,
+        logo_url: logo_url || null,
+        status: status || 'active',
       })
       .select()
       .single();
@@ -513,7 +532,7 @@ export async function unlinkClientFromOrganization(
  */
 export async function updateOrganization(
   orgId: string,
-  updates: Partial<Pick<Organization, 'name' | 'description'>>
+  updates: Partial<Pick<Organization, 'name' | 'description' | 'address' | 'phone' | 'email' | 'website' | 'logo_url' | 'status'>>
 ): Promise<{ success: boolean; organization?: Organization; error?: string }> {
   try {
     const { data, error } = await supabaseAdmin

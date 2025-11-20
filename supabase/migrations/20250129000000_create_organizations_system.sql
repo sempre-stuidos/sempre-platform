@@ -71,42 +71,8 @@ CREATE TRIGGER update_organizations_updated_at
 -- Enable Row Level Security (RLS)
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for organizations
--- Members can view their organizations
-CREATE POLICY "Members can view their organizations" ON organizations
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM memberships m
-            WHERE m.org_id = organizations.id
-            AND m.user_id = auth.uid()
-        )
-    );
-
--- Owners and admins can update their organizations
-CREATE POLICY "Owners and admins can update organizations" ON organizations
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM memberships m
-            WHERE m.org_id = organizations.id
-            AND m.user_id = auth.uid()
-            AND m.role IN ('owner', 'admin')
-        )
-    );
-
--- Owners can delete their organizations
-CREATE POLICY "Owners can delete organizations" ON organizations
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM memberships m
-            WHERE m.org_id = organizations.id
-            AND m.user_id = auth.uid()
-            AND m.role = 'owner'
-        )
-    );
-
--- Authenticated users can create organizations
-CREATE POLICY "Authenticated users can create organizations" ON organizations
-    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+-- RLS Policies for organizations will be created after memberships table
+-- (See end of file)
 
 -- ============================================================================
 -- Memberships Table
@@ -199,4 +165,191 @@ ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DE
 
 -- Create index for organization_id
 CREATE INDEX IF NOT EXISTS idx_clients_organization_id ON clients(organization_id);
+
+-- ============================================================================
+-- Organizations RLS Policies (created after memberships table exists)
+-- ============================================================================
+
+-- Members can view their organizations
+CREATE POLICY "Members can view their organizations" ON organizations
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM memberships m
+            WHERE m.org_id = organizations.id
+            AND m.user_id = auth.uid()
+        )
+    );
+
+-- Owners and admins can update their organizations
+CREATE POLICY "Owners and admins can update organizations" ON organizations
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM memberships m
+            WHERE m.org_id = organizations.id
+            AND m.user_id = auth.uid()
+            AND m.role IN ('owner', 'admin')
+        )
+    );
+
+-- Owners can delete their organizations
+CREATE POLICY "Owners can delete organizations" ON organizations
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM memberships m
+            WHERE m.org_id = organizations.id
+            AND m.user_id = auth.uid()
+            AND m.role = 'owner'
+        )
+    );
+
+-- Authenticated users can create organizations
+CREATE POLICY "Authenticated users can create organizations" ON organizations
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- ============================================================================
+-- Add foreign key constraint to events table (if it exists)
+-- ============================================================================
+
+-- Add foreign key constraint to events.org_id if events table exists
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'events') THEN
+        -- Drop existing constraint if it exists (in case it was added without proper reference)
+        ALTER TABLE public.events DROP CONSTRAINT IF EXISTS events_org_id_fkey;
+        
+        -- Add proper foreign key constraint
+        ALTER TABLE public.events 
+        ADD CONSTRAINT events_org_id_fkey 
+        FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE;
+        
+        -- Add RLS policies for events table (now that memberships exists)
+        DROP POLICY IF EXISTS "Members can view organization events" ON public.events;
+        DROP POLICY IF EXISTS "Members can insert organization events" ON public.events;
+        DROP POLICY IF EXISTS "Members can update organization events" ON public.events;
+        DROP POLICY IF EXISTS "Members can delete organization events" ON public.events;
+        
+        CREATE POLICY "Members can view organization events" ON public.events
+            FOR SELECT USING (
+                EXISTS (
+                    SELECT 1 FROM public.memberships m
+                    WHERE m.org_id = events.org_id
+                    AND m.user_id = auth.uid()
+                )
+            );
+        
+        CREATE POLICY "Members can insert organization events" ON public.events
+            FOR INSERT WITH CHECK (
+                EXISTS (
+                    SELECT 1 FROM public.memberships m
+                    WHERE m.org_id = events.org_id
+                    AND m.user_id = auth.uid()
+                )
+            );
+        
+        CREATE POLICY "Members can update organization events" ON public.events
+            FOR UPDATE USING (
+                EXISTS (
+                    SELECT 1 FROM public.memberships m
+                    WHERE m.org_id = events.org_id
+                    AND m.user_id = auth.uid()
+                )
+            );
+        
+        CREATE POLICY "Members can delete organization events" ON public.events
+            FOR DELETE USING (
+                EXISTS (
+                    SELECT 1 FROM public.memberships m
+                    WHERE m.org_id = events.org_id
+                    AND m.user_id = auth.uid()
+                )
+            );
+        
+        -- Add foreign key constraints and RLS policies for reports tables (if they exist)
+        IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'reports') THEN
+            ALTER TABLE public.reports DROP CONSTRAINT IF EXISTS reports_organization_id_fkey;
+            ALTER TABLE public.reports 
+            ADD CONSTRAINT reports_organization_id_fkey 
+            FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE;
+            
+            DROP POLICY IF EXISTS "Organization members can view reports" ON public.reports;
+            DROP POLICY IF EXISTS "Organization members can insert reports" ON public.reports;
+            DROP POLICY IF EXISTS "Organization members can update reports" ON public.reports;
+            DROP POLICY IF EXISTS "Organization members can delete reports" ON public.reports;
+            
+            CREATE POLICY "Organization members can view reports" ON public.reports
+                FOR SELECT USING (
+                    EXISTS (
+                        SELECT 1 FROM public.memberships m
+                        WHERE m.org_id = reports.organization_id
+                        AND m.user_id = auth.uid()
+                    )
+                );
+            
+            CREATE POLICY "Organization members can insert reports" ON public.reports
+                FOR INSERT WITH CHECK (
+                    EXISTS (
+                        SELECT 1 FROM public.memberships m
+                        WHERE m.org_id = reports.organization_id
+                        AND m.user_id = auth.uid()
+                    )
+                );
+            
+            CREATE POLICY "Organization members can update reports" ON public.reports
+                FOR UPDATE USING (
+                    EXISTS (
+                        SELECT 1 FROM public.memberships m
+                        WHERE m.org_id = reports.organization_id
+                        AND m.user_id = auth.uid()
+                    )
+                );
+            
+            CREATE POLICY "Organization members can delete reports" ON public.reports
+                FOR DELETE USING (
+                    EXISTS (
+                        SELECT 1 FROM public.memberships m
+                        WHERE m.org_id = reports.organization_id
+                        AND m.user_id = auth.uid()
+                    )
+                );
+        END IF;
+        
+        IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'report_settings') THEN
+            ALTER TABLE public.report_settings DROP CONSTRAINT IF EXISTS report_settings_organization_id_fkey;
+            ALTER TABLE public.report_settings 
+            ADD CONSTRAINT report_settings_organization_id_fkey 
+            FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE;
+            
+            DROP POLICY IF EXISTS "Organization members can view report settings" ON public.report_settings;
+            DROP POLICY IF EXISTS "Organization members can insert report settings" ON public.report_settings;
+            DROP POLICY IF EXISTS "Organization members can update report settings" ON public.report_settings;
+            
+            CREATE POLICY "Organization members can view report settings" ON public.report_settings
+                FOR SELECT USING (
+                    EXISTS (
+                        SELECT 1 FROM public.memberships m
+                        WHERE m.org_id = report_settings.organization_id
+                        AND m.user_id = auth.uid()
+                    )
+                );
+            
+            CREATE POLICY "Organization members can insert report settings" ON public.report_settings
+                FOR INSERT WITH CHECK (
+                    EXISTS (
+                        SELECT 1 FROM public.memberships m
+                        WHERE m.org_id = report_settings.organization_id
+                        AND m.user_id = auth.uid()
+                    )
+                );
+            
+            CREATE POLICY "Organization members can update report settings" ON public.report_settings
+                FOR UPDATE USING (
+                    EXISTS (
+                        SELECT 1 FROM public.memberships m
+                        WHERE m.org_id = report_settings.organization_id
+                        AND m.user_id = auth.uid()
+                    )
+                );
+        END IF;
+    END IF;
+END $$;
 

@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { IconPlus } from "@tabler/icons-react"
 import { Organization } from "@/lib/organizations"
 import { OrganizationMembers } from "@/components/organization-members"
+import { OrganizationClients } from "@/components/organization-clients"
 import { OrganizationSite } from "@/components/organization-site"
 import { OrganizationSectionCards } from "@/components/organization-section-cards"
 import { AddMemberModal } from "@/components/add-member-modal"
@@ -16,7 +17,7 @@ interface OrganizationStats {
   totalSitePages: number
   publishedPages: number
   activeMembers: number
-  organizationType: 'agency' | 'client'
+  organizationType: 'agency' | 'restaurant' | 'hotel' | 'retail' | 'service' | 'other'
 }
 
 interface OrganizationDetailsProps {
@@ -41,7 +42,8 @@ export function OrganizationDetails({ orgId, organization, userRole, isAdmin = f
         <Tabs defaultValue="members" className="w-full">
           <div className="flex items-center justify-between mb-4">
             <TabsList>
-              <TabsTrigger value="members">Members</TabsTrigger>
+              <TabsTrigger value="members">Staff & Members</TabsTrigger>
+              <TabsTrigger value="clients">Clients</TabsTrigger>
               <TabsTrigger value="site">Site</TabsTrigger>
             </TabsList>
             {canManage && (
@@ -54,6 +56,10 @@ export function OrganizationDetails({ orgId, organization, userRole, isAdmin = f
           
           <TabsContent value="members" className="mt-6">
             <OrganizationMembers orgId={orgId} canManage={canManage} isAdmin={isAdmin} />
+          </TabsContent>
+          
+          <TabsContent value="clients" className="mt-6">
+            <OrganizationClients orgId={orgId} canManage={canManage} />
           </TabsContent>
           
           <TabsContent value="site" className="mt-6">

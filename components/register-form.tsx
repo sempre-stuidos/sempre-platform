@@ -30,9 +30,23 @@ export function RegisterForm({
           redirectTo: `${baseUrl}/dashboard`
         }
       })
-      if (error) throw error
+      if (error) {
+        // Check if it's a provider not enabled error
+        if (error.message?.includes('provider is not enabled') || error.message?.includes('Unsupported provider')) {
+          toast.error("Google sign-up is not configured. Please use email/password registration.")
+          setIsLoading(false)
+          return
+        } else {
+          throw error
+        }
+      }
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Failed to sign up with Google")
+      const errorMessage = error instanceof Error ? error.message : "Failed to sign up with Google"
+      if (errorMessage.includes('provider is not enabled') || errorMessage.includes('Unsupported provider')) {
+        toast.error("Google sign-up is not configured. Please use email/password registration.")
+      } else {
+        toast.error(errorMessage)
+      }
     } finally {
       setIsLoading(false)
     }

@@ -15,7 +15,7 @@ interface OrganizationStats {
   totalSitePages: number
   publishedPages: number
   activeMembers: number
-  organizationType: 'agency' | 'client'
+  organizationType: 'agency' | 'restaurant' | 'hotel' | 'retail' | 'service' | 'other'
 }
 
 interface OrganizationSectionCardsProps {

@@ -95,10 +95,24 @@ export function ClientLoginForm({
           redirectTo: callbackUrl,
         }
       })
-      if (error) throw error
+      if (error) {
+        // Check if it's a provider not enabled error
+        if (error.message?.includes('provider is not enabled') || error.message?.includes('Unsupported provider')) {
+          toast.error("Google sign-in is not configured. Please use email/password authentication.")
+        } else {
+          throw error
+        }
+        setIsLoading(false)
+        return
+      }
     } catch (error: unknown) {
       console.error('Google sign-in error:', error)
-      toast.error(error instanceof Error ? error.message : "Failed to sign in with Google")
+      const errorMessage = error instanceof Error ? error.message : "Failed to sign in with Google"
+      if (errorMessage.includes('provider is not enabled') || errorMessage.includes('Unsupported provider')) {
+        toast.error("Google sign-in is not configured. Please use email/password authentication.")
+      } else {
+        toast.error(errorMessage)
+      }
       setIsLoading(false)
     }
     // Note: Don't set loading to false here - user is being redirected

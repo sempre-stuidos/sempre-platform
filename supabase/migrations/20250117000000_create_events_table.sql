@@ -4,7 +4,7 @@
 
 create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),
-  org_id uuid not null references public.organizations(id) on delete cascade,
+  org_id uuid not null,
   title text not null,
   short_description text,
   description text,
@@ -35,43 +35,5 @@ create trigger update_events_updated_at
 -- Enable Row Level Security (RLS)
 alter table public.events enable row level security;
 
--- RLS Policies for events
--- Members can view events in their organizations
-create policy "Members can view organization events" on public.events
-    for select using (
-        exists (
-            select 1 from public.memberships m
-            where m.org_id = events.org_id
-            and m.user_id = auth.uid()
-        )
-    );
-
--- Members can insert events in their organizations
-create policy "Members can insert organization events" on public.events
-    for insert with check (
-        exists (
-            select 1 from public.memberships m
-            where m.org_id = events.org_id
-            and m.user_id = auth.uid()
-        )
-    );
-
--- Members can update events in their organizations
-create policy "Members can update organization events" on public.events
-    for update using (
-        exists (
-            select 1 from public.memberships m
-            where m.org_id = events.org_id
-            and m.user_id = auth.uid()
-        )
-    );
-
--- Members can delete events in their organizations
-create policy "Members can delete organization events" on public.events
-    for delete using (
-        exists (
-            select 1 from public.memberships m
-            where m.org_id = events.org_id
-            and m.user_id = auth.uid()
-        )
-    );
+-- RLS Policies for events will be added after memberships table is created
+-- This is handled in the organizations migration

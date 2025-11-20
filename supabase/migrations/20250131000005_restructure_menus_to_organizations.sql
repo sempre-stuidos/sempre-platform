@@ -223,6 +223,12 @@ DROP POLICY IF EXISTS "Clients can update their own menu items" ON menu_items;
 DROP POLICY IF EXISTS "Clients can delete their own menu items" ON menu_items;
 DROP POLICY IF EXISTS "Authenticated users can view all menu items" ON menu_items;
 
+-- Drop old policies if they exist
+DROP POLICY IF EXISTS "Organization members can view menu items" ON menu_items;
+DROP POLICY IF EXISTS "Organization members can insert menu items" ON menu_items;
+DROP POLICY IF EXISTS "Organization members can update menu items" ON menu_items;
+DROP POLICY IF EXISTS "Organization members can delete menu items" ON menu_items;
+
 -- Create new policies based on menus
 CREATE POLICY "Organization members can view menu items" ON menu_items
     FOR SELECT USING (
