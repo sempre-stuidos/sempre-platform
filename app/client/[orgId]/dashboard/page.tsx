@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getOrganizationById, getUserRoleInOrg } from '@/lib/businesses';
 import { getOrganizationByClientId } from '@/lib/businesses';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction, CardFooter } from '@/components/ui/card';
 import { IconMenu2, IconPhoto, IconFileText, IconTrendingUp } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +36,7 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
   );
 
   const { data: { user } } = await supabaseServer.auth.getUser();
-  const organization = await getOrganizationById(orgId, supabaseServer);
+  const organization = await getOrganizationById(orgId, supabaseAdmin);
   
   // Get client linked to this organization
   let clientId: number | null = null;

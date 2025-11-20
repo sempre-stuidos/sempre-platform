@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getOrganizationById } from '@/lib/businesses';
 import { getTutorials } from '@/lib/tutorials';
+import { supabaseAdmin } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -54,7 +55,7 @@ export default async function HowToPage({ params }: HowToPageProps) {
   );
 
   const { data: { user } } = await supabaseServer.auth.getUser();
-  const organization = await getOrganizationById(orgId, supabaseServer);
+  const organization = await getOrganizationById(orgId, supabaseAdmin);
   
   // Fetch tutorials from database
   const { tutorials, error: tutorialsError } = await getTutorials(supabaseServer);

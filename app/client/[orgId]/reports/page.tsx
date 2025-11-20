@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getOrganizationById, getUserRoleInOrg } from '@/lib/businesses';
 import { getReportsByOrgId } from '@/lib/reports';
+import { supabaseAdmin } from '@/lib/supabase';
 import { ReportsDataTable } from '@/components/reports-data-table';
 import { Button } from '@/components/ui/button';
 import { IconSettings } from '@tabler/icons-react';
@@ -43,12 +44,12 @@ export default async function ReportsPage({ params }: ReportsPageProps) {
     redirect('/client/login');
   }
 
-  const role = await getUserRoleInOrg(user.id, orgId, supabaseServer);
+  const role = await getUserRoleInOrg(user.id, orgId, supabaseAdmin);
   if (!role) {
     redirect('/client/select-org');
   }
 
-  const organization = await getOrganizationById(orgId, supabaseServer);
+  const organization = await getOrganizationById(orgId, supabaseAdmin);
   if (!organization) {
     redirect('/client/select-org');
   }

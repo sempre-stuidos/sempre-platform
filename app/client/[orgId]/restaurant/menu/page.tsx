@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { getOrganizationById, getUserRoleInOrg } from '@/lib/businesses';
 import { getMenuItems } from '@/lib/menu';
 import { getMenuCategories } from '@/lib/menu-categories';
+import { supabaseAdmin } from '@/lib/supabase';
 import { MenuManagement } from '@/components/menu-management';
 
 interface MenuPageProps {
@@ -33,7 +34,7 @@ export default async function MenuPage({ params }: MenuPageProps) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  const organization = await getOrganizationById(orgId, supabase);
+  const organization = await getOrganizationById(orgId, supabaseAdmin);
   
   // Get client linked to this organization
   let clientId: number | null = null;

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 
 import { ReservationsAnalyticsDashboard } from '@/components/reservations-analytics';
 import { getOrganizationById, getUserRoleInOrg } from '@/lib/businesses';
+import { supabaseAdmin } from '@/lib/supabase';
 
 interface AnalyticsPageProps {
   params: Promise<{
@@ -40,12 +41,12 @@ export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
     redirect('/client/login');
   }
 
-  const role = await getUserRoleInOrg(user.id, orgId, supabaseServer);
+  const role = await getUserRoleInOrg(user.id, orgId, supabaseAdmin);
   if (!role) {
     redirect('/client/select-org');
   }
 
-  const organization = await getOrganizationById(orgId, supabaseServer);
+  const organization = await getOrganizationById(orgId, supabaseAdmin);
   if (!organization) {
     redirect('/client/select-org');
   }

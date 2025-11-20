@@ -29,9 +29,15 @@ declare global {
   }
 }
 
+// Client-side singleton instance - use window object to persist across HMR
+if (typeof window !== 'undefined' && !window.__supabaseClient) {
+  window.__supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey);
+}
+
+// Export the client - reuse window instance on client, create new on server
 export const supabase = (() => {
   if (typeof window !== 'undefined') {
-    // Client-side: use window object for true singleton
+    // Ensure we have a client instance (should always exist after the check above)
     if (!window.__supabaseClient) {
       window.__supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey);
     }
@@ -40,7 +46,7 @@ export const supabase = (() => {
     // Server-side: create new instance per request (SSR context)
     return createClient(supabaseUrl, supabaseAnonKey);
   }
-})()
+})();
 
 // For server-side operations that require elevated permissions
 export const supabaseAdmin = createClient(

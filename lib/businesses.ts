@@ -649,21 +649,51 @@ export async function getBusinessById(
   supabaseClient?: SupabaseQueryClient
 ): Promise<Business | null> {
   try {
+    // Validate orgId format (should be UUID)
+    if (!orgId || typeof orgId !== 'string') {
+      console.error('getBusinessById - Invalid orgId:', orgId);
+      return null;
+    }
+
     const client = supabaseClient || supabase;
+    // Check if we're using the admin client (by reference comparison)
+    const isAdminClient = supabaseClient === supabaseAdmin;
+    
     const { data, error } = await client
       .from('businesses')
       .select('*')
       .eq('id', orgId)
       .single();
 
-    if (error || !data) {
-      console.log('getBusinessById - Error or no data:', error, data);
+    if (error) {
+      // Log full error details for debugging
+      const errorDetails = {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        orgId,
+        usingAdminClient: isAdminClient,
+      };
+      console.error('getBusinessById - Error details:', JSON.stringify(errorDetails, null, 2));
+      return null;
+    }
+
+    if (!data) {
+      console.error('getBusinessById - No data returned:', {
+        orgId,
+        usingAdminClient: isAdminClient,
+      });
       return null;
     }
 
     return data;
   } catch (error) {
-    console.error('Error in getBusinessById:', error);
+    console.error('getBusinessById - Exception:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      orgId,
+    });
     return null;
   }
 }

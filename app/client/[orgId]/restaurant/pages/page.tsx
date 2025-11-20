@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { getOrganizationById } from '@/lib/businesses';
 import { getPagesForOrg } from '@/lib/pages';
 import { getSectionsForPage } from '@/lib/page-sections-v2';
+import { supabaseAdmin } from '@/lib/supabase';
 import { PagesListTable } from '@/components/pages-list-table';
 
 interface PagesPageProps {
@@ -33,7 +34,7 @@ export default async function PagesPage({ params }: PagesPageProps) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  const organization = await getOrganizationById(orgId, supabase);
+  const organization = await getOrganizationById(orgId, supabaseAdmin);
   
   // Get pages for this organization
   const pages = await getPagesForOrg(orgId, supabase);

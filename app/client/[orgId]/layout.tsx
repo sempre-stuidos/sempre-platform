@@ -57,7 +57,7 @@ export default async function ClientLayout({ children, params }: ClientLayoutPro
   const isAdmin = userRole === 'Admin';
 
   // Verify organization membership
-  // Use supabaseAdmin for Client users to bypass RLS
+  // Use supabaseAdmin for Client users to bypass RLS (avoids infinite recursion in RLS policies)
   const clientToUse = userRole === 'Client' ? supabaseAdmin : supabase;
   const role = await getUserRoleInOrg(user.id, orgId, clientToUse);
   
@@ -68,8 +68,9 @@ export default async function ClientLayout({ children, params }: ClientLayoutPro
   }
 
   // Get organization details
-  // Use supabaseAdmin for Client users to bypass RLS
-  const organization = await getOrganizationById(orgId, clientToUse);
+  // Always use supabaseAdmin to bypass RLS and avoid infinite recursion
+  // We've already verified access above, so it's safe to bypass RLS here
+  const organization = await getOrganizationById(orgId, supabaseAdmin);
   if (!organization) {
     console.log('Client layout - Organization not found, redirecting to select-org');
     redirect('/client/select-org');

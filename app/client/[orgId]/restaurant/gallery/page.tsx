@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getOrganizationById } from '@/lib/businesses';
 import { getGalleryImages } from '@/lib/gallery';
+import { supabaseAdmin } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { IconPlus } from '@tabler/icons-react';
@@ -36,7 +37,7 @@ export default async function GalleryPage({ params }: GalleryPageProps) {
     }
   );
 
-  const organization = await getOrganizationById(orgId, supabase);
+  const organization = await getOrganizationById(orgId, supabaseAdmin);
   
   // Get client linked to this organization
   let clientId: number | null = null;

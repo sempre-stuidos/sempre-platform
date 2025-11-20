@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getOrganizationById, getUserRoleInOrg } from '@/lib/businesses';
 import { redirect } from 'next/navigation';
+import { supabaseAdmin } from '@/lib/supabase';
 import { ReservationsList } from '@/components/reservations-list';
 
 interface ReservationsPageProps {
@@ -38,13 +39,13 @@ export default async function ReservationsPage({ params }: ReservationsPageProps
   }
 
   // Verify organization membership
-  const role = await getUserRoleInOrg(user.id, orgId, supabaseServer);
+  const role = await getUserRoleInOrg(user.id, orgId, supabaseAdmin);
   if (!role) {
     redirect('/client/select-org');
   }
 
   // Get organization details
-  const organization = await getOrganizationById(orgId, supabaseServer);
+  const organization = await getOrganizationById(orgId, supabaseAdmin);
   if (!organization) {
     redirect('/client/select-org');
   }

@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getOrganizationById } from '@/lib/businesses';
 import { getPageWithSections } from '@/lib/pages';
+import { supabaseAdmin } from '@/lib/supabase';
 import { PageSectionsTable } from '@/components/page-sections-table';
 import { PageActionsBar } from '@/components/page-actions-bar';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +37,7 @@ export default async function EditPage({ params }: EditPageProps) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  const organization = await getOrganizationById(orgId, supabase);
+  const organization = await getOrganizationById(orgId, supabaseAdmin);
   
   // Get page with sections
   let pageWithSections;
