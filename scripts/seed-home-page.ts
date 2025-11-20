@@ -32,7 +32,7 @@ async function seedHomePage(orgIdentifier: string | null) {
       
       if (isUUID) {
         const { data: org, error } = await supabase
-          .from('organizations')
+          .from('businesses')
           .select('id, slug, name')
           .eq('id', orgIdentifier)
           .single()
@@ -47,7 +47,7 @@ async function seedHomePage(orgIdentifier: string | null) {
         console.log(`✅ Found organization: ${org.name} (${org.id})`)
       } else {
         const { data: org, error } = await supabase
-          .from('organizations')
+          .from('businesses')
           .select('id, slug, name')
           .eq('slug', orgIdentifier)
           .single()
@@ -64,7 +64,7 @@ async function seedHomePage(orgIdentifier: string | null) {
     } else {
       // Get first organization
       const { data: orgs, error } = await supabase
-        .from('organizations')
+        .from('businesses')
         .select('id, slug, name')
         .limit(1)
 
@@ -88,7 +88,7 @@ async function seedHomePage(orgIdentifier: string | null) {
     if (!orgSlug) {
       // Generate a slug from the organization name
       const { data: org } = await supabase
-        .from('organizations')
+        .from('businesses')
         .select('name')
         .eq('id', orgId)
         .single()
@@ -100,7 +100,7 @@ async function seedHomePage(orgIdentifier: string | null) {
           .replace(/^-+|-+$/g, '')
         
         const { error: updateError } = await supabase
-          .from('organizations')
+          .from('businesses')
           .update({ slug: generatedSlug })
           .eq('id', orgId)
 

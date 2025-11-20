@@ -74,7 +74,7 @@ export function ManageMenusModal({
   const fetchMenus = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/organizations/${orgId}/menus`)
+      const response = await fetch(`/api/businesses/${orgId}/menus`)
       if (response.ok) {
         const { menus: fetchedMenus } = await response.json()
         setMenus(fetchedMenus || [])
@@ -112,8 +112,8 @@ export function ManageMenusModal({
     setIsSaving(true)
     try {
       const url = editingMenu
-        ? `/api/organizations/${orgId}/menus/${editingMenu.id}`
-        : `/api/organizations/${orgId}/menus`
+        ? `/api/businesses/${orgId}/menus/${editingMenu.id}`
+        : `/api/businesses/${orgId}/menus`
 
       const method = editingMenu ? 'PATCH' : 'POST'
 
@@ -175,7 +175,7 @@ export function ManageMenusModal({
     }
 
     try {
-      const response = await fetch(`/api/organizations/${orgId}/menus/${menu.id}`, {
+      const response = await fetch(`/api/businesses/${orgId}/menus/${menu.id}`, {
         method: 'DELETE',
       })
 

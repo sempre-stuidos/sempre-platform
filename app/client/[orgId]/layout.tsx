@@ -9,7 +9,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from '@/components/ui/sidebar';
-import { getUserRoleInOrg, getOrganizationById } from '@/lib/organizations';
+import { getUserRoleInOrg, getOrganizationById } from '@/lib/businesses';
 import { ensureProfileExists } from '@/lib/profiles';
 
 interface ClientLayoutProps {

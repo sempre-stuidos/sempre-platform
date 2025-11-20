@@ -33,7 +33,7 @@ export default function EditGalleryImagePage() {
   const fetchImage = useCallback(async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/organizations/${orgId}/gallery-images/${imageId}`)
+      const response = await fetch(`/api/businesses/${orgId}/gallery-images/${imageId}`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch image')
@@ -91,7 +91,7 @@ export default function EditGalleryImagePage() {
       const formData = new FormData()
       formData.append('file', imageFile)
 
-      const response = await fetch(`/api/organizations/${orgId}/gallery-images/upload`, {
+      const response = await fetch(`/api/businesses/${orgId}/gallery-images/upload`, {
         method: 'POST',
         body: formData,
       })
@@ -126,7 +126,7 @@ export default function EditGalleryImagePage() {
         imageUrl = uploadedUrl
       }
 
-      const response = await fetch(`/api/organizations/${orgId}/gallery-images/${imageId}`, {
+      const response = await fetch(`/api/businesses/${orgId}/gallery-images/${imageId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

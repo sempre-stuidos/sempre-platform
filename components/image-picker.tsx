@@ -50,7 +50,7 @@ export function ImagePicker({ value, onChange, label = "Image", placeholder = "/
         return
       }
 
-      const response = await fetch(`/api/organizations/${orgId}/gallery-images`)
+      const response = await fetch(`/api/businesses/${orgId}/gallery-images`)
       if (response.ok) {
         const data = await response.json()
         setGalleryImages((data.images || []).map((img: Record<string, unknown>) => ({

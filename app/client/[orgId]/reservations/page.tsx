@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getOrganizationById, getUserRoleInOrg } from '@/lib/organizations';
+import { getOrganizationById, getUserRoleInOrg } from '@/lib/businesses';
 import { redirect } from 'next/navigation';
 import { ReservationsList } from '@/components/reservations-list';
 

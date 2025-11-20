@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { PageSectionV2 } from "@/lib/types"
-import type { Organization } from "@/lib/organizations"
+import type { Business } from "@/lib/businesses"
 import { toast } from "sonner"
 
 interface PageSectionsTableProps {
@@ -22,7 +22,7 @@ interface PageSectionsTableProps {
   pageId: string
   pageSlug: string
   sections: PageSectionV2[]
-  organization: Organization | null
+  organization: Business | null
 }
 
 export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organization }: PageSectionsTableProps) {
@@ -53,7 +53,7 @@ export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organizat
         return
       }
 
-      // Use orgId for public site URL (Organization type doesn't have slug)
+      // Use orgId for public site URL (Business type doesn't have slug)
       const orgSlug = orgId
       const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       

@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getOrganizationById, getUserRoleInOrg } from '@/lib/organizations';
+import { getOrganizationById, getUserRoleInOrg } from '@/lib/businesses';
 import { getMenuItems } from '@/lib/menu';
 import { getMenuCategories } from '@/lib/menu-categories';
 import { MenuManagement } from '@/components/menu-management';

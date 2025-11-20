@@ -34,7 +34,7 @@ export default function NewGalleryImagePage() {
   const fetchMenuImages = async () => {
     try {
       setIsLoadingMenuImages(true)
-      const response = await fetch(`/api/organizations/${orgId}/menu-item-images`)
+      const response = await fetch(`/api/businesses/${orgId}/menu-item-images`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch menu images')
@@ -99,7 +99,7 @@ export default function NewGalleryImagePage() {
       const formData = new FormData()
       formData.append('file', imageFile)
 
-      const response = await fetch(`/api/organizations/${orgId}/gallery-images/upload`, {
+      const response = await fetch(`/api/businesses/${orgId}/gallery-images/upload`, {
         method: 'POST',
         body: formData,
       })
@@ -146,7 +146,7 @@ export default function NewGalleryImagePage() {
         return
       }
 
-      const response = await fetch(`/api/organizations/${orgId}/gallery-images`, {
+      const response = await fetch(`/api/businesses/${orgId}/gallery-images`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

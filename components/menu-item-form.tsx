@@ -128,7 +128,7 @@ export function MenuItemForm({
       const formData = new FormData()
       formData.append('file', imageFile)
 
-      const response = await fetch(`/api/organizations/${orgId}/menu-items/upload`, {
+      const response = await fetch(`/api/businesses/${orgId}/menu-items/upload`, {
         method: 'POST',
         body: formData,
       })

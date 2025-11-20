@@ -29,31 +29,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get all clients (with organization_id included)
+    // Get all clients (with business_id included)
     const clients = await getAllClients();
     
-    // Transform to include organization_id
+    // Transform to include business_id
     const clientsWithOrg = clients.map(client => ({
       id: client.id,
       name: client.name,
       business_type: client.businessType,
       status: client.status,
       contact_email: client.contactEmail,
-      organization_id: null, // We'll need to fetch this separately
+      business_id: null, // We'll need to fetch this separately
     }));
 
-    // Fetch organization_id for each client
+    // Fetch business_id for each client
     const { data: clientsData, error } = await supabase
       .from('clients')
-      .select('id, organization_id')
+      .select('id, business_id')
       .in('id', clients.map(c => c.id));
 
     if (!error && clientsData) {
-      // Merge organization_id
+      // Merge business_id
       clientsWithOrg.forEach(client => {
         const dbClient = clientsData.find(c => c.id === client.id);
         if (dbClient) {
-          client.organization_id = dbClient.organization_id;
+          client.business_id = dbClient.business_id;
         }
       });
     }

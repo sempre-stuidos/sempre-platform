@@ -77,7 +77,7 @@ export function AddMemberModal({ open, onOpenChange, orgId, onSuccess }: AddMemb
 
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/organizations/${orgId}/members`, {
+      const response = await fetch(`/api/businesses/${orgId}/members`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

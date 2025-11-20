@@ -35,7 +35,7 @@ export function GalleryImagesTable({ orgId, clientId, initialImages, viewMode: e
   const fetchImages = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/organizations/${orgId}/gallery-images`)
+      const response = await fetch(`/api/businesses/${orgId}/gallery-images`)
       if (response.ok) {
         const data = await response.json()
         setImages(data.images || [])
@@ -64,7 +64,7 @@ export function GalleryImagesTable({ orgId, clientId, initialImages, viewMode: e
 
     setIsDeleting(id)
     try {
-      const response = await fetch(`/api/organizations/${orgId}/gallery-images/${id}`, {
+      const response = await fetch(`/api/businesses/${orgId}/gallery-images/${id}`, {
         method: 'DELETE',
       })
 

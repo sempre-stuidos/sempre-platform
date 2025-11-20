@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getOrganizationById } from '@/lib/organizations';
+import { getOrganizationById } from '@/lib/businesses';
 import { getGalleryImages } from '@/lib/gallery';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { createPreviewToken } from '@/lib/preview';
 import { getPageById } from '@/lib/pages';
 import { getSectionById } from '@/lib/page-sections-v2';
-import { getUserRoleInOrg } from '@/lib/organizations';
+import { getUserRoleInOrg } from '@/lib/businesses';
 
 export async function POST(request: NextRequest) {
   try {

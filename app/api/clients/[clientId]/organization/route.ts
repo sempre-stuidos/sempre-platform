@@ -5,7 +5,7 @@ import {
   linkClientToOrganization,
   unlinkClientFromOrganization,
   getOrganizationByClientId,
-} from '@/lib/organizations';
+} from '@/lib/businesses';
 
 interface RouteParams {
   params: Promise<{

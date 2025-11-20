@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getPageById } from '@/lib/pages';
-import { getUserRoleInOrg } from '@/lib/organizations';
+import { getUserRoleInOrg } from '@/lib/businesses';
 
 interface RouteParams {
   params: Promise<{

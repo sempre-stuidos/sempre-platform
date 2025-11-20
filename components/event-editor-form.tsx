@@ -86,7 +86,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
       const formDataData = new FormData()
       formDataData.append("file", file)
 
-      const response = await fetch(`/api/organizations/${orgId}/gallery-images/upload`, {
+      const response = await fetch(`/api/businesses/${orgId}/gallery-images/upload`, {
         method: "POST",
         body: formDataData,
       })
@@ -271,8 +271,8 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
       } else {
         // Call API to save event
         const url = event 
-          ? `/api/organizations/${orgId}/events/${event.id}`
-          : `/api/organizations/${orgId}/events`
+          ? `/api/businesses/${orgId}/events/${event.id}`
+          : `/api/businesses/${orgId}/events`
         
         const method = event ? 'PATCH' : 'POST'
         

@@ -32,7 +32,7 @@ interface Client {
   id: number
   name: string
   business_type: string
-  organization_id: string | null
+  business_id: string | null
 }
 
 export function LinkClientModal({ open, onOpenChange, orgId, onSuccess }: LinkClientModalProps) {
@@ -57,7 +57,7 @@ export function LinkClientModal({ open, onOpenChange, orgId, onSuccess }: LinkCl
       const { clients: clientsData } = await response.json()
       // Filter out clients already linked to this org or another org
       const available = clientsData.filter((c: Client) => 
-        !c.organization_id || c.organization_id === orgId
+        !c.business_id || c.business_id === orgId
       )
       setClients(available)
     } catch (error) {

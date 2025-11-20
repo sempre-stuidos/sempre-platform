@@ -44,7 +44,7 @@ export function EventsTable({ orgId, events }: EventsTableProps) {
 
   const handleArchive = async (eventId: string) => {
     try {
-      const response = await fetch(`/api/organizations/${orgId}/events/${eventId}`, {
+      const response = await fetch(`/api/businesses/${orgId}/events/${eventId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

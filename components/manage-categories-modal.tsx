@@ -84,7 +84,7 @@ export function ManageCategoriesModal({
   const fetchCategories = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/organizations/${orgId}/menu-categories`)
+      const response = await fetch(`/api/businesses/${orgId}/menu-categories`)
       if (response.ok) {
         const { categories: fetchedCategories } = await response.json()
         setCategories(fetchedCategories || [])
@@ -149,8 +149,8 @@ export function ManageCategoriesModal({
     setIsSaving(true)
     try {
       const url = editingCategory
-        ? `/api/organizations/${orgId}/menu-categories/${editingCategory.id}`
-        : `/api/organizations/${orgId}/menu-categories`
+        ? `/api/businesses/${orgId}/menu-categories/${editingCategory.id}`
+        : `/api/businesses/${orgId}/menu-categories`
 
       const method = editingCategory ? 'PATCH' : 'POST'
 
@@ -215,7 +215,7 @@ export function ManageCategoriesModal({
     }
 
     try {
-      const response = await fetch(`/api/organizations/${orgId}/menu-categories/${category.id}`, {
+      const response = await fetch(`/api/businesses/${orgId}/menu-categories/${category.id}`, {
         method: 'DELETE',
       })
 

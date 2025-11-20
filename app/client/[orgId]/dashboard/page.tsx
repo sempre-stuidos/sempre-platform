@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getOrganizationById, getUserRoleInOrg } from '@/lib/organizations';
-import { getOrganizationByClientId } from '@/lib/organizations';
+import { getOrganizationById, getUserRoleInOrg } from '@/lib/businesses';
+import { getOrganizationByClientId } from '@/lib/businesses';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction, CardFooter } from '@/components/ui/card';
 import { IconMenu2, IconPhoto, IconFileText, IconTrendingUp } from '@tabler/icons-react';

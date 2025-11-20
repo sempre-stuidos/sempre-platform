@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { getUserOrganizations } from '@/lib/organizations'
+import { getUserBusinesses } from '@/lib/businesses'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -99,7 +99,7 @@ export async function middleware(request: NextRequest) {
 
       if (finalRole === 'Client') {
         // Get user's organizations
-        const organizations = await getUserOrganizations(user.id, supabase)
+        const organizations = await getUserBusinesses(user.id, supabase)
         
         console.log('Middleware - Client user organizations:', organizations.length)
         

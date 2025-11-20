@@ -4,7 +4,7 @@ import * as React from "react"
 import { IconEye, IconCheck } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import type { Organization } from "@/lib/organizations"
+import type { Business } from "@/lib/businesses"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
@@ -13,10 +13,10 @@ interface PageActionsBarProps {
   pageId: string
   pageSlug: string
   hasDirtySections: boolean
-  organization: Organization | null
+  business: Business | null
 }
 
-export function PageActionsBar({ orgId, pageId, pageSlug, hasDirtySections, organization }: PageActionsBarProps) {
+export function PageActionsBar({ orgId, pageId, pageSlug, hasDirtySections, business }: PageActionsBarProps) {
   const router = useRouter()
   const [isPublishing, setIsPublishing] = React.useState(false)
   const [isPreviewing, setIsPreviewing] = React.useState(false)
@@ -70,7 +70,7 @@ export function PageActionsBar({ orgId, pageId, pageSlug, hasDirtySections, orga
       }
 
       // Get organization slug for public site URL
-      // Use orgId for public site URL (Organization type doesn't have slug)
+      // Use orgId for public site URL (Business type doesn't have slug)
       const orgSlug = orgId
       const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       

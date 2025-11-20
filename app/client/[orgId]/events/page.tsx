@@ -25,7 +25,7 @@ export default function EventsPage() {
   const fetchEvents = React.useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/organizations/${orgId}/events`)
+      const response = await fetch(`/api/businesses/${orgId}/events`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch events')

@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 function transformMenuRecord(record: Record<string, unknown>): Menu {
   return {
     id: record.id as number,
-    organizationId: record.organization_id as string,
+    organizationId: record.business_id as string,
     name: record.name as string,
     description: record.description as string | undefined,
     isActive: record.is_active !== undefined ? (record.is_active as boolean) : true,
@@ -24,7 +24,7 @@ function transformMenuToRecord(menu: Partial<Menu>): Record<string, unknown> {
   };
 
   if (menu.organizationId) {
-    record.organization_id = menu.organizationId;
+    record.business_id = menu.organizationId;
   }
 
   return record;
@@ -42,7 +42,7 @@ export async function getMenus(
     const { data, error } = await client
       .from('menus')
       .select('*')
-      .eq('organization_id', organizationId)
+      .eq('business_id', organizationId)
       .eq('is_active', true)
       .order('name', { ascending: true });
 
@@ -95,7 +95,7 @@ export async function getOrCreateDefaultMenu(
     const { data: existingMenus, error: fetchError } = await client
       .from('menus')
       .select('*')
-      .eq('organization_id', organizationId)
+      .eq('business_id', organizationId)
       .eq('is_active', true)
       .order('name', { ascending: true })
       .limit(1);
@@ -113,7 +113,7 @@ export async function getOrCreateDefaultMenu(
     const { data, error } = await client
       .from('menus')
       .insert([{
-        organization_id: organizationId,
+        business_id: organizationId,
         name: 'Main Menu',
         description: 'Default menu',
         is_active: true,

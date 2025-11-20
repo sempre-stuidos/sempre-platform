@@ -17,7 +17,7 @@ export default function EditEventPage() {
     const fetchEvent = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`/api/organizations/${orgId}/events/${eventId}`)
+        const response = await fetch(`/api/businesses/${orgId}/events/${eventId}`)
         
         if (!response.ok) {
           if (response.status === 404) {

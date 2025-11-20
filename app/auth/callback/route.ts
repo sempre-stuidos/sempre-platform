@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { linkUserToRole } from '@/lib/invitations'
 import { linkTeamMemberToAuthUser } from '@/lib/team'
 import { supabaseAdmin } from '@/lib/supabase'
-import { getUserOrganizations } from '@/lib/organizations'
+import { getUserBusinesses } from '@/lib/businesses'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
 
     if (finalRole === 'Client') {
       // Get user's organizations
-      const organizations = await getUserOrganizations(user.id, supabase)
+      const organizations = await getUserBusinesses(user.id, supabase)
       
       console.log('Auth callback - Client user organizations:', organizations.length)
       

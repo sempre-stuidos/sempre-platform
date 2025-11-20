@@ -55,7 +55,7 @@ export function EditMemberModal({ open, onOpenChange, orgId, member, onSuccess }
 
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/organizations/${orgId}/members/${member.user_id}`, {
+      const response = await fetch(`/api/businesses/${orgId}/members/${member.user_id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

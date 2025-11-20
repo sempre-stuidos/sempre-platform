@@ -32,7 +32,7 @@ export function ClientLoginForm({
         if (session) {
           setIsAuthenticated(true)
           // Check if user has organizations and redirect accordingly
-          const response = await fetch('/api/organizations')
+          const response = await fetch('/api/businesses')
           if (response.ok) {
             const { organizations } = await response.json()
             if (organizations.length === 1) {
@@ -58,7 +58,7 @@ export function ClientLoginForm({
         setIsAuthenticated(true)
         // Check organizations and redirect
         try {
-          const response = await fetch('/api/organizations')
+          const response = await fetch('/api/businesses')
           if (response.ok) {
             const { organizations } = await response.json()
             if (organizations.length === 1) {

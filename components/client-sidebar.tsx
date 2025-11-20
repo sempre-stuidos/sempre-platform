@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/sidebar"
 import { supabase } from "@/lib/supabase"
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js"
-import { useOrganizationContext } from "@/hooks/use-organization-context"
+import { useBusinessContext } from "@/hooks/use-business-context"
 
 const defaultUser = {
   name: "User",
@@ -100,7 +100,7 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
   const params = useParams()
   const pathname = usePathname()
   const orgId = params.orgId as string
-  const { organization, isLoading: orgLoading } = useOrganizationContext()
+  const { business, isLoading: orgLoading } = useBusinessContext()
   const [user, setUser] = React.useState(defaultUser)
 
   React.useEffect(() => {

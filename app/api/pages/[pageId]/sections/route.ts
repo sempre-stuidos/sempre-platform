@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSectionsForPage } from '@/lib/page-sections-v2';
 import { getPageById } from '@/lib/pages';
-import { getUserRoleInOrg } from '@/lib/organizations';
+import { getUserRoleInOrg } from '@/lib/businesses';
 
 interface RouteParams {
   params: Promise<{

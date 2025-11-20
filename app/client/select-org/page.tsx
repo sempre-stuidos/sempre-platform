@@ -37,7 +37,7 @@ export default function SelectOrgPage() {
           return
         }
 
-        const response = await fetch('/api/organizations')
+        const response = await fetch('/api/businesses')
         if (!response.ok) {
           throw new Error('Failed to fetch organizations')
         }

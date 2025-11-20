@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getOrganizationById } from '@/lib/organizations';
+import { getOrganizationById } from '@/lib/businesses';
 import { getPagesForOrg } from '@/lib/pages';
 import { getSectionsForPage } from '@/lib/page-sections-v2';
 import { PagesListTable } from '@/components/pages-list-table';

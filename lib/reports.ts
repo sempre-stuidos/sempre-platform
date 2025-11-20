@@ -6,7 +6,7 @@ type SupabaseQueryClient = {
 
 export interface Report {
   id: number;
-  organization_id: string;
+  business_id: string;
   title: string;
   type: 'Analytics' | 'Performance' | 'Summary' | 'Custom';
   status: 'Generated' | 'Pending' | 'Failed';
@@ -22,7 +22,7 @@ export interface Report {
 
 export interface ReportSettings {
   id: number;
-  organization_id: string;
+  business_id: string;
   frequency: 'Daily' | 'Weekly' | 'Monthly' | 'Quarterly' | 'Never';
   email_enabled: boolean;
   email_recipients: string[];
@@ -58,7 +58,7 @@ export async function getReportsByOrgId(
     const { data, error } = await client
       .from('reports')
       .select('*')
-      .eq('organization_id', orgId)
+      .eq('business_id', orgId)
       .order('generated_at', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false });
 
@@ -115,7 +115,7 @@ export async function getReportSettings(
     const { data, error } = await client
       .from('report_settings')
       .select('*')
-      .eq('organization_id', orgId)
+      .eq('business_id', orgId)
       .single();
 
     if (error) {
@@ -139,7 +139,7 @@ export async function getReportSettings(
  */
 export async function updateReportSettings(
   orgId: string,
-  settings: Partial<Omit<ReportSettings, 'id' | 'organization_id' | 'created_at' | 'updated_at'>>,
+  settings: Partial<Omit<ReportSettings, 'id' | 'business_id' | 'created_at' | 'updated_at'>>,
   supabaseClient?: SupabaseQueryClient
 ): Promise<ReportSettings | null> {
   try {
@@ -156,7 +156,7 @@ export async function updateReportSettings(
           ...settings,
           updated_at: new Date().toISOString(),
         })
-        .eq('organization_id', orgId)
+        .eq('business_id', orgId)
         .select()
         .single();
 
@@ -171,7 +171,7 @@ export async function updateReportSettings(
       const { data, error } = await client
         .from('report_settings')
         .insert({
-          organization_id: orgId,
+          business_id: orgId,
           ...settings,
         })
         .select()
@@ -204,7 +204,7 @@ export async function createReport(
     const { data, error } = await client
       .from('reports')
       .insert({
-        organization_id: orgId,
+        business_id: orgId,
         ...reportData,
         status: 'Pending',
       })

@@ -35,7 +35,7 @@ import {
 import { supabase } from "@/lib/supabase"
 import { User, type AuthChangeEvent, type Session } from "@supabase/supabase-js"
 import { getUserRole } from "@/lib/invitations"
-import { getUserOrganizations } from "@/lib/organizations"
+import { getUserBusinesses } from "@/lib/businesses"
 import { usePathname } from "next/navigation"
 
 const defaultUser = {
@@ -47,8 +47,8 @@ const defaultUser = {
 const staticData = {
   navMain: [
     {
-      title: "Organizations",
-      url: "/organizations",
+      title: "Businesses",
+      url: "/businesses",
       icon: IconBuilding,
     },
     {
@@ -147,7 +147,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             const clientRouteMatch = initialPathnameRef.current?.match(/^\/client\/([^/]+)/)
             const orgIdFromPath = clientRouteMatch?.[1]
 
-            const organizations = await getUserOrganizations(authUser.id)
+            const organizations = await getUserBusinesses(authUser.id)
             if (organizations && organizations.length > 0) {
               // Use orgId from path if available, otherwise use first organization
               const selectedOrg = orgIdFromPath 
@@ -193,7 +193,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             const clientRouteMatch = currentPath?.match(/^\/client\/([^/]+)/)
             const orgIdFromPath = clientRouteMatch?.[1]
 
-            const organizations = await getUserOrganizations(session.user.id)
+            const organizations = await getUserBusinesses(session.user.id)
             if (organizations && organizations.length > 0) {
               // Use orgId from path if available, otherwise use first organization
               const selectedOrg = orgIdFromPath 
@@ -228,7 +228,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           const orgIdFromPath = clientRouteMatch?.[1]
 
           if (orgIdFromPath) {
-            const organizations = await getUserOrganizations(currentUser.id)
+            const organizations = await getUserBusinesses(currentUser.id)
             if (organizations && organizations.length > 0) {
               const selectedOrg = organizations.find(org => org.id === orgIdFromPath) || organizations[0]
               setOrgName(selectedOrg.name)

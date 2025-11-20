@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getOrganizationById, getUserRoleInOrg } from '@/lib/organizations';
+import { getOrganizationById, getUserRoleInOrg } from '@/lib/businesses';
 import { getReportsByOrgId } from '@/lib/reports';
 import { ReportsDataTable } from '@/components/reports-data-table';
 import { Button } from '@/components/ui/button';

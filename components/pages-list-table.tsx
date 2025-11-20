@@ -14,13 +14,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { Page } from "@/lib/types"
-import type { Organization } from "@/lib/organizations"
+import type { Business } from "@/lib/businesses"
 import { toast } from "sonner"
 
 interface PagesListTableProps {
   orgId: string
   pages: (Page & { hasUnpublishedChanges?: boolean })[]
-  organization: Organization | null
+  organization: Business | null
 }
 
 export function PagesListTable({ orgId, pages, organization }: PagesListTableProps) {
@@ -51,7 +51,7 @@ export function PagesListTable({ orgId, pages, organization }: PagesListTablePro
       }
 
       // Get organization slug for public site URL
-      // Use orgId for public site URL (Organization type doesn't have slug)
+      // Use orgId for public site URL (Business type doesn't have slug)
       const orgSlug = orgId
       const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       

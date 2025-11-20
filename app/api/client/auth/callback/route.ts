@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getUserOrganizations } from '@/lib/organizations';
+import { getUserBusinesses } from '@/lib/businesses';
 import { ensureProfileExists, syncProfileWithAuthUser } from '@/lib/profiles';
 
 export async function GET(request: NextRequest) {
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     await syncProfileWithAuthUser(user.id);
 
     // Get user's organizations
-    const organizations = await getUserOrganizations(user.id);
+    const organizations = await getUserBusinesses(user.id);
 
     if (organizations.length === 0) {
       // User has no organizations - redirect to login with error

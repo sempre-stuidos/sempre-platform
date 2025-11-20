@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { ReservationsAnalyticsDashboard } from '@/components/reservations-analytics';
-import { getOrganizationById, getUserRoleInOrg } from '@/lib/organizations';
+import { getOrganizationById, getUserRoleInOrg } from '@/lib/businesses';
 
 interface AnalyticsPageProps {
   params: Promise<{

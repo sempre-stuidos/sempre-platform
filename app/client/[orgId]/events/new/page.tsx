@@ -19,7 +19,7 @@ export default function NewEventPage() {
       const fetchEvent = async () => {
         try {
           setLoading(true)
-          const response = await fetch(`/api/organizations/${orgId}/events/${duplicateId}`)
+          const response = await fetch(`/api/businesses/${orgId}/events/${duplicateId}`)
           
           if (response.ok) {
             const data = await response.json()

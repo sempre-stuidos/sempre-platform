@@ -64,15 +64,15 @@ export function MenuManagement({
     setIsLoading(true)
     try {
       const [menusRes, itemsRes, categoriesRes] = await Promise.all([
-        fetch(`/api/organizations/${orgId}/menus`),
-        fetch(`/api/organizations/${orgId}/menu-items?${new URLSearchParams({
+        fetch(`/api/businesses/${orgId}/menus`),
+        fetch(`/api/businesses/${orgId}/menu-items?${new URLSearchParams({
           ...(menuFilter !== "all" && { menuId: menuFilter }),
           ...(categoryFilter !== "all" && { categoryId: categoryFilter }),
           ...(visibleOnly && { visibleOnly: "true" }),
           ...(showArchived && { includeArchived: "true" }),
           ...(searchQuery && { search: searchQuery }),
         })}`),
-        fetch(`/api/organizations/${orgId}/menu-categories?${new URLSearchParams({
+        fetch(`/api/businesses/${orgId}/menu-categories?${new URLSearchParams({
           ...(menuFilter !== "all" && { menuId: menuFilter }),
         })}`),
       ])
@@ -163,8 +163,8 @@ export function MenuManagement({
   const handleSave = async (itemData: Partial<MenuItem>) => {
     try {
       const url = editingItem
-        ? `/api/organizations/${orgId}/menu-items/${editingItem.id}`
-        : `/api/organizations/${orgId}/menu-items`
+        ? `/api/businesses/${orgId}/menu-items/${editingItem.id}`
+        : `/api/businesses/${orgId}/menu-items`
 
       const method = editingItem ? 'PATCH' : 'POST'
 
@@ -211,7 +211,7 @@ export function MenuManagement({
     }
 
     try {
-      const response = await fetch(`/api/organizations/${orgId}/menu-items/${item.id}/archive`, {
+      const response = await fetch(`/api/businesses/${orgId}/menu-items/${item.id}/archive`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: item.isArchived ? 'unarchive' : 'archive' }),
@@ -236,7 +236,7 @@ export function MenuManagement({
   const handleToggleVisibility = async (item: MenuItem) => {
     const newVisibility = !item.isVisible
     try {
-      const response = await fetch(`/api/organizations/${orgId}/menu-items/${item.id}/visibility`, {
+      const response = await fetch(`/api/businesses/${orgId}/menu-items/${item.id}/visibility`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isVisible: newVisibility }),
@@ -264,7 +264,7 @@ export function MenuManagement({
     }
 
     try {
-      const response = await fetch(`/api/organizations/${orgId}/menu-items/${item.id}`, {
+      const response = await fetch(`/api/businesses/${orgId}/menu-items/${item.id}`, {
         method: 'DELETE',
       })
 
