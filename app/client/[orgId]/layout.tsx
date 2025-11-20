@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/sidebar';
 import { getUserRoleInOrg, getOrganizationById } from '@/lib/businesses';
 import { ensureProfileExists } from '@/lib/profiles';
+import { getUserRole } from '@/lib/invitations';
+import { supabaseAdmin } from '@/lib/supabase';
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -50,15 +52,26 @@ export default async function ClientLayout({ children, params }: ClientLayoutPro
   // Ensure profile exists
   await ensureProfileExists(user.id);
 
+  // Check if user is Admin (super admin can access any business)
+  const userRole = await getUserRole(user.id, supabaseAdmin);
+  const isAdmin = userRole === 'Admin';
+
   // Verify organization membership
-  const role = await getUserRoleInOrg(user.id, orgId, supabase);
-  if (!role) {
+  // Use supabaseAdmin for Client users to bypass RLS
+  const clientToUse = userRole === 'Client' ? supabaseAdmin : supabase;
+  const role = await getUserRoleInOrg(user.id, orgId, clientToUse);
+  
+  // Allow access if user is a member OR is Admin
+  if (!role && !isAdmin) {
+    console.log('Client layout - No role found and not Admin, redirecting to select-org');
     redirect('/client/select-org');
   }
 
   // Get organization details
-  const organization = await getOrganizationById(orgId, supabase);
+  // Use supabaseAdmin for Client users to bypass RLS
+  const organization = await getOrganizationById(orgId, clientToUse);
   if (!organization) {
+    console.log('Client layout - Organization not found, redirecting to select-org');
     redirect('/client/select-org');
   }
 
@@ -73,7 +86,7 @@ export default async function ClientLayout({ children, params }: ClientLayoutPro
           } as React.CSSProperties
         }
       >
-        <ClientSidebar variant="inset" />
+        <ClientSidebar variant="inset" initialBusiness={organization} />
         <SidebarInset>
           <ClientSiteHeader />
           <div className="flex flex-1 flex-col">

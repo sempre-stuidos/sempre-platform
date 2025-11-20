@@ -98,27 +98,28 @@ export async function middleware(request: NextRequest) {
       console.log('Middleware - User role check:', { userId: user.id, email: user.email, role: finalRole, roleError })
 
       if (finalRole === 'Client') {
-        // Get user's organizations
-        const organizations = await getUserBusinesses(user.id, supabase)
+        // Get user's organizations - use supabaseAdmin to bypass RLS
+        const organizations = await getUserBusinesses(user.id, supabaseAdmin)
         
         console.log('Middleware - Client user organizations:', organizations.length)
         
         if (organizations && organizations.length > 0) {
-          // Redirect to first organization's client dashboard
-          // If multiple orgs, user can select from client/select-org
-          if (organizations.length === 1) {
-            redirectUrl.pathname = `/client/${organizations[0].id}/dashboard`
-          } else {
-            // Multiple organizations - redirect to select-org
-            redirectUrl.pathname = '/client/select-org'
+          // Only redirect if we're on a public route (login/register)
+          // Don't redirect if already on client routes to avoid loops
+          if (isPublicRoute && !pathname.startsWith('/client')) {
+            // Redirect to first organization's client dashboard
+            // If multiple orgs, user can select from client/select-org
+            if (organizations.length === 1) {
+              redirectUrl.pathname = `/client/${organizations[0].id}/dashboard`
+            } else {
+              // Multiple organizations - redirect to select-org
+              redirectUrl.pathname = '/client/select-org'
+            }
+            redirectUrl.search = '' // Clear search params
+            console.log('Middleware - Redirecting Client to:', redirectUrl.pathname)
+            return NextResponse.redirect(redirectUrl)
           }
-        } else {
-          // Client role but no organizations - redirect to select-org
-          redirectUrl.pathname = '/client/select-org'
         }
-        redirectUrl.search = '' // Clear search params
-        console.log('Middleware - Redirecting Client to:', redirectUrl.pathname)
-        return NextResponse.redirect(redirectUrl)
       }
     } catch (error) {
       console.error('Error checking user role in middleware:', error)
@@ -169,8 +170,8 @@ export async function middleware(request: NextRequest) {
       }
 
       if (finalRole === 'Client') {
-        // Get user's organizations
-        const organizations = await getUserBusinesses(user.id, supabase)
+        // Get user's organizations - use supabaseAdmin to bypass RLS
+        const organizations = await getUserBusinesses(user.id, supabaseAdmin)
         
         if (organizations && organizations.length > 0) {
           const redirectUrl = request.nextUrl.clone()

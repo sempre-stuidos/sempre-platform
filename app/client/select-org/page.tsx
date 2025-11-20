@@ -28,6 +28,7 @@ export default function SelectOrgPage() {
   const router = useRouter()
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [hasRedirected, setHasRedirected] = useState(false)
 
   useEffect(() => {
     const fetchOrganizations = async () => {
@@ -41,27 +42,28 @@ export default function SelectOrgPage() {
 
         const response = await fetch('/api/businesses')
         if (!response.ok) {
-          throw new Error('Failed to fetch organizations')
+          throw new Error('Failed to fetch businesses')
         }
 
         const data = await response.json()
         const orgs = data.businesses || data.organizations || []
         setOrganizations(orgs)
 
-        // If only one organization, auto-select it
-        if (orgs && orgs.length === 1) {
+        // If only one business, auto-select it (but only redirect once)
+        if (orgs && orgs.length === 1 && !hasRedirected) {
+          setHasRedirected(true)
           router.push(`/client/${orgs[0].id}/dashboard`)
         }
       } catch (error) {
-        console.error('Error fetching organizations:', error)
-        toast.error('Failed to load organizations')
+        console.error('Error fetching businesses:', error)
+        toast.error('Failed to load businesses')
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchOrganizations()
-  }, [router])
+  }, [router, hasRedirected])
 
   const handleSelectOrg = (orgId: string) => {
     router.push(`/client/${orgId}/dashboard`)
@@ -85,7 +87,7 @@ export default function SelectOrgPage() {
           badge="Sempre Studios"
           title1="Loading"
           title2="Please Wait"
-          description="Fetching your organizations..."
+          description="Fetching your businesses..."
           className="absolute inset-0"
         />
         <div className="relative z-20 flex min-h-screen flex-col items-center justify-center gap-6 p-6 md:p-10">
@@ -103,10 +105,10 @@ export default function SelectOrgPage() {
               <span className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-orbitron)' }}>Sempre Studios</span>
             </a>
             <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
-              <CardContent className="pt-6">
-                <div className="text-center text-white/60">Loading organizations...</div>
-              </CardContent>
-            </Card>
+          <CardContent className="pt-6">
+                <div className="text-center text-white/60">Loading businesses...</div>
+          </CardContent>
+        </Card>
           </div>
         </div>
       </div>
@@ -119,8 +121,8 @@ export default function SelectOrgPage() {
         <HeroGeometric 
           badge="Sempre Studios"
           title1="No Access"
-          title2="No Organizations"
-          description="You don't have access to any organizations yet."
+          title2="No Businesses"
+          description="You don't have access to any businesses yet."
           className="absolute inset-0"
         />
         <div className="relative z-20 flex min-h-screen flex-col items-center justify-center gap-6 p-6 md:p-10">
@@ -138,22 +140,22 @@ export default function SelectOrgPage() {
               <span className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-orbitron)' }}>Sempre Studios</span>
             </a>
             <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
-              <CardHeader>
-                <CardTitle className="text-white">No Organizations</CardTitle>
-                <CardDescription className="text-white/60">
-                  You don&apos;t have access to any organizations yet.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  variant="outline"
-                  className="w-full bg-white/5 border-white/20 text-white hover:bg-white/10"
+          <CardHeader>
+                <CardTitle className="text-white">No Businesses</CardTitle>
+            <CardDescription className="text-white/60">
+                  You don&apos;t have access to any businesses yet.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              className="w-full bg-white/5 border-white/20 text-white hover:bg-white/10"
                   onClick={handleBackToLogin}
-                >
-                  Back to Login
-                </Button>
-              </CardContent>
-            </Card>
+            >
+              Back to Login
+            </Button>
+          </CardContent>
+        </Card>
           </div>
         </div>
       </div>
@@ -164,9 +166,9 @@ export default function SelectOrgPage() {
     <div className="relative min-h-screen">
       <HeroGeometric 
         badge="Sempre Studios"
-        title1="Select Organization"
+        title1="Select Business"
         title2="Choose Your Business"
-        description="Select which organization you want to access."
+        description="Select which business you want to access."
         className="absolute inset-0"
       />
       <div className="relative z-20 flex min-h-screen flex-col items-center justify-center gap-6 p-6 md:p-10">
@@ -180,45 +182,45 @@ export default function SelectOrgPage() {
                 height={40} 
                 className="size-10"
               />
-            </div>
+        </div>
             <span className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-orbitron)' }}>Sempre Studios</span>
           </a>
-          
-          <div className="grid gap-4">
-            {organizations.map((org) => (
-              <Card
-                key={org.id}
-                className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl hover:bg-white/10 transition-colors cursor-pointer"
-                onClick={() => handleSelectOrg(org.id)}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-lg bg-white/10">
-                        <IconBuilding className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">{org.name}</h3>
-                        {org.description && (
-                          <p className="text-sm text-white/60 mt-1">{org.description}</p>
-                        )}
-                        <div className="flex items-center gap-2 mt-2">
+
+        <div className="grid gap-4">
+          {organizations.map((org) => (
+            <Card
+              key={org.id}
+              className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl hover:bg-white/10 transition-colors cursor-pointer"
+              onClick={() => handleSelectOrg(org.id)}
+            >
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-lg bg-white/10">
+                      <IconBuilding className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">{org.name}</h3>
+                      {org.description && (
+                        <p className="text-sm text-white/60 mt-1">{org.description}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs px-2 py-1 rounded bg-white/10 text-white/80">
+                          {org.type}
+                        </span>
+                        {org.role && (
                           <span className="text-xs px-2 py-1 rounded bg-white/10 text-white/80">
-                            {org.type}
+                            {org.role}
                           </span>
-                          {org.role && (
-                            <span className="text-xs px-2 py-1 rounded bg-white/10 text-white/80">
-                              {org.role}
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
-                    <IconArrowRight className="h-5 w-5 text-white/60" />
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <IconArrowRight className="h-5 w-5 text-white/60" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
           </div>
         </div>
       </div>

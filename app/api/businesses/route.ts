@@ -36,20 +36,55 @@ export async function GET(request: NextRequest) {
     await ensureProfileExists(user.id);
 
     // Check if user is Admin
-    const userRole = await getUserRole(user.id, supabaseAdmin);
+    let userRole = await getUserRole(user.id, supabaseAdmin);
     const isAdmin = userRole === 'Admin';
+    
+    // If user has memberships but no role, assign Client role
+    if (!userRole) {
+      const { data: memberships } = await supabaseAdmin
+        .from('memberships')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+      
+      if (memberships && memberships.length > 0) {
+        // User has memberships but no role - assign Client role
+        const { error: roleError } = await supabaseAdmin
+          .from('user_roles')
+          .insert({
+            user_id: user.id,
+            role: 'Client',
+            invited_email: user.email?.toLowerCase() || '',
+          });
+        
+        if (!roleError) {
+          userRole = 'Client';
+          console.log('GET /api/businesses - Assigned Client role to user with memberships');
+        }
+      }
+    }
+    
+    const isClient = userRole === 'Client';
 
     // If admin, return all businesses; otherwise return user's businesses
+    // Use supabaseAdmin for Client role users to bypass RLS and ensure they see their businesses
     let businesses;
     if (isAdmin) {
       businesses = await getAllBusinesses();
     } else {
-      businesses = await getUserBusinesses(user.id, supabase);
+      // Use supabaseAdmin for Client users to ensure RLS doesn't block access
+      const clientToUse = isClient ? supabaseAdmin : supabase;
+      businesses = await getUserBusinesses(user.id, clientToUse);
     }
 
     console.log('GET /api/businesses - User ID:', user.id);
+    console.log('GET /api/businesses - User Email:', user.email);
+    console.log('GET /api/businesses - User Role:', userRole);
     console.log('GET /api/businesses - Is Admin:', isAdmin);
     console.log('GET /api/businesses - Found businesses:', businesses.length);
+    if (businesses.length > 0) {
+      console.log('GET /api/businesses - Business names:', businesses.map(b => b.name));
+    }
 
     return NextResponse.json({ businesses });
   } catch (error) {

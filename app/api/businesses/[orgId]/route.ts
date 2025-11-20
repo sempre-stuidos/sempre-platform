@@ -46,15 +46,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Check if user is Admin (use supabaseAdmin for server-side)
     const userRole = await getUserRole(user.id, supabaseAdmin);
     const isAdmin = userRole === 'Admin';
+    const isClient = userRole === 'Client';
+    
+    // Use supabaseAdmin for Client users to bypass RLS
+    const clientToUse = (isAdmin || isClient) ? supabaseAdmin : supabase;
     
     // Verify user has access to this business (or is Admin)
-    const role = await getUserRoleInOrg(user.id, orgId, supabase);
+    const role = await getUserRoleInOrg(user.id, orgId, clientToUse);
     if (!role && !isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Use supabaseAdmin for Admins to bypass RLS
-    const business = await getBusinessById(orgId, isAdmin ? supabaseAdmin : supabase);
+    // Use supabaseAdmin for Admins and Clients to bypass RLS
+    const business = await getBusinessById(orgId, clientToUse);
 
     if (!business) {
       return NextResponse.json({ error: 'Business not found' }, { status: 404 });

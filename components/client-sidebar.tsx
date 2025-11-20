@@ -30,11 +30,16 @@ import {
 import { supabase } from "@/lib/supabase"
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js"
 import { useBusinessContext } from "@/hooks/use-business-context"
+import type { Business } from "@/lib/businesses"
 
 const defaultUser = {
   name: "User",
   email: "user@example.com",
   avatar: "",
+}
+
+interface ClientSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  initialBusiness?: Business | null
 }
 
 const getClientNavItems = (orgId: string) => ({
@@ -96,11 +101,13 @@ const getClientNavItems = (orgId: string) => ({
   ],
 })
 
-export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps) {
   const params = useParams()
   const pathname = usePathname()
   const orgId = params.orgId as string
-  const { business, isLoading: orgLoading } = useBusinessContext()
+  const { business: contextBusiness, isLoading: orgLoading } = useBusinessContext()
+  // Use initialBusiness if provided (from server), otherwise use context business (from client fetch)
+  const business = initialBusiness || contextBusiness
   const [user, setUser] = React.useState(defaultUser)
 
   React.useEffect(() => {
@@ -162,7 +169,7 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">
-                    {orgLoading ? 'Loading...' : organization?.name || 'Organization'}
+                    {orgLoading ? 'Loading...' : business?.name || 'Business'}
                   </span>
                   <span className="truncate text-xs">Client Portal</span>
                 </div>

@@ -119,8 +119,17 @@ export async function ensureProfileExists(userId: string): Promise<Profile | nul
       .select()
       .single();
 
-    if (error || !data) {
+    if (error) {
+      // If profile already exists (duplicate key), try to fetch it
+      if (error.code === '23505') {
+        console.log('Profile already exists, fetching it:', userId);
+        return await getUserProfile(userId);
+      }
       console.error('Error creating profile:', error);
+      return null;
+    }
+
+    if (!data) {
       return null;
     }
 

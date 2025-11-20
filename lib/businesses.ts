@@ -87,8 +87,12 @@ export async function getUserBusinesses(
 ): Promise<BusinessWithMembership[]> {
   try {
     const client = supabaseClient || supabase;
+    const isUsingAdmin = supabaseClient === supabaseAdmin;
+    
+    console.log('getUserBusinesses - User ID:', userId, 'Using Admin:', isUsingAdmin);
     
     // First get all memberships for the user
+    // Use admin client to bypass RLS if provided
     const { data: memberships, error: membershipsError } = await client
       .from('memberships')
       .select('*')
@@ -96,8 +100,11 @@ export async function getUserBusinesses(
 
     if (membershipsError) {
       console.error('Error fetching memberships:', membershipsError);
+      console.error('Memberships error details:', JSON.stringify(membershipsError, null, 2));
       throw membershipsError;
     }
+
+    console.log('getUserBusinesses - Found memberships:', memberships?.length || 0);
 
     if (!memberships || memberships.length === 0) {
       console.log('No memberships found for user:', userId);
@@ -107,8 +114,10 @@ export async function getUserBusinesses(
     // Get all business IDs
     const membershipRecords = memberships as MembershipRecord[];
     const orgIds = membershipRecords.map(membership => membership.org_id);
+    console.log('getUserBusinesses - Business IDs:', orgIds);
 
     // Fetch businesses
+    // Use admin client to bypass RLS if provided
     const { data: businesses, error: businessesError } = await client
       .from('businesses')
       .select('*')
@@ -116,8 +125,11 @@ export async function getUserBusinesses(
 
     if (businessesError) {
       console.error('Error fetching businesses:', businessesError);
+      console.error('Businesses error details:', JSON.stringify(businessesError, null, 2));
       throw businessesError;
     }
+
+    console.log('getUserBusinesses - Found businesses:', businesses?.length || 0);
 
     if (!businesses) return [];
     const businessRecords = businesses as Business[];
@@ -325,32 +337,32 @@ export async function createBusiness(
     // Only add creator as owner if they are NOT a super admin
     // Super admins can create businesses without becoming members
     if (!isSuperAdmin) {
-      const { error: membershipError } = await supabaseAdmin
-        .from('memberships')
-        .insert({
-          org_id: org.id,
-          user_id: creatorId,
-          role: 'owner',
-        });
+    const { error: membershipError } = await supabaseAdmin
+      .from('memberships')
+      .insert({
+        org_id: org.id,
+        user_id: creatorId,
+        role: 'owner',
+      });
 
-      if (membershipError) {
-        console.error('Error creating membership:', membershipError);
-        console.error('Membership error details:', JSON.stringify(membershipError, null, 2));
-        // Rollback: delete business if membership creation fails
-        await supabaseAdmin.from('businesses').delete().eq('id', org.id);
-        
-        // Check if it's a table not found error
-        if (membershipError.message?.includes('relation') || membershipError.message?.includes('does not exist')) {
-          return { 
-            success: false, 
-            error: 'Database tables not found. Please run the migrations first.' 
-          };
-        }
-        
-        return { success: false, error: membershipError.message || 'Failed to create membership' };
+    if (membershipError) {
+      console.error('Error creating membership:', membershipError);
+      console.error('Membership error details:', JSON.stringify(membershipError, null, 2));
+      // Rollback: delete business if membership creation fails
+      await supabaseAdmin.from('businesses').delete().eq('id', org.id);
+      
+      // Check if it's a table not found error
+      if (membershipError.message?.includes('relation') || membershipError.message?.includes('does not exist')) {
+        return { 
+          success: false, 
+          error: 'Database tables not found. Please run the migrations first.' 
+        };
       }
+      
+      return { success: false, error: membershipError.message || 'Failed to create membership' };
+    }
 
-      console.log('Membership created successfully for user:', creatorId);
+    console.log('Membership created successfully for user:', creatorId);
     } else {
       console.log('Super admin created business without membership');
     }
