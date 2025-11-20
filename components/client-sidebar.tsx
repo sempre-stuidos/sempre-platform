@@ -11,6 +11,7 @@ import {
   IconCalendar,
   IconBook,
   IconTools,
+  IconReport,
 } from "@tabler/icons-react"
 import { useParams, usePathname } from "next/navigation"
 import { NavUser } from "@/components/nav-user"
@@ -42,6 +43,11 @@ const getClientNavItems = (orgId: string) => ({
       title: "Dashboard",
       url: `/client/${orgId}/dashboard`,
       icon: IconDashboard,
+    },
+    {
+      title: "Reports",
+      url: `/client/${orgId}/reports`,
+      icon: IconReport,
     },
     {
       title: "How To",
