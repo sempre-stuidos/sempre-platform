@@ -12,6 +12,8 @@ import {
   IconBook,
   IconTools,
   IconReport,
+  IconShoppingCart,
+  IconPackage,
 } from "@tabler/icons-react"
 import { useParams, usePathname } from "next/navigation"
 import { NavUser } from "@/components/nav-user"
@@ -42,64 +44,85 @@ interface ClientSidebarProps extends React.ComponentProps<typeof Sidebar> {
   initialBusiness?: Business | null
 }
 
-const getClientNavItems = (orgId: string) => ({
-  main: [
-    {
-      title: "Dashboard",
-      url: `/client/${orgId}/dashboard`,
-      icon: IconDashboard,
-    },
-    {
-      title: "Reports",
-      url: `/client/${orgId}/reports`,
-      icon: IconReport,
-    },
-    {
-      title: "How To",
-      url: `/client/${orgId}/how-to`,
-      icon: IconBook,
-    },
-    {
-      title: "Maintenance",
-      url: `/client/${orgId}/maintenance`,
-      icon: IconTools,
-    },
-  ],
-  restaurant: [
-    {
-      title: "Analytics",
-      url: `/client/${orgId}/analytics`,
-      icon: IconChartBar,
-    },
-    {
-      title: "Reservations",
-      url: `/client/${orgId}/reservations`,
-      icon: IconCalendar,
-    },
-  ],
-  site: [
-    {
-      title: "Pages",
-      url: `/client/${orgId}/restaurant/pages`,
-      icon: IconFileText,
-    },
-    {
-      title: "Menu",
-      url: `/client/${orgId}/restaurant/menu`,
-      icon: IconMenu2,
-    },
-    {
-      title: "Gallery",
-      url: `/client/${orgId}/restaurant/gallery`,
-      icon: IconPhoto,
-    },
-    {
-      title: "Events",
-      url: `/client/${orgId}/events`,
-      icon: IconCalendar,
-    },
-  ],
-})
+const getClientNavItems = (orgId: string, businessType?: string) => {
+  // Determine which business-specific items to show
+  // Default to restaurant if type doesn't match
+  const isRetail = businessType === 'retail'
+  const isRestaurant = businessType === 'restaurant' || !isRetail
+
+  return {
+    main: [
+      {
+        title: "Dashboard",
+        url: `/client/${orgId}/dashboard`,
+        icon: IconDashboard,
+      },
+    ],
+    restaurant: isRestaurant ? [
+      {
+        title: "Analytics",
+        url: `/client/${orgId}/analytics`,
+        icon: IconChartBar,
+      },
+      {
+        title: "Reservations",
+        url: `/client/${orgId}/reservations`,
+        icon: IconCalendar,
+      },
+      {
+        title: "Reports",
+        url: `/client/${orgId}/reports`,
+        icon: IconReport,
+      },
+      {
+        title: "Menu",
+        url: `/client/${orgId}/restaurant/menu`,
+        icon: IconMenu2,
+      },
+      {
+        title: "Events",
+        url: `/client/${orgId}/events`,
+        icon: IconCalendar,
+      },
+    ] : [],
+    retail: isRetail ? [
+      {
+        title: "Orders",
+        url: `/client/${orgId}/retail/orders`,
+        icon: IconShoppingCart,
+      },
+      {
+        title: "Products",
+        url: `/client/${orgId}/retail/products`,
+        icon: IconPackage,
+      },
+    ] : [],
+    help: [
+      {
+        title: "How To",
+        url: `/client/${orgId}/how-to`,
+        icon: IconBook,
+      },
+      {
+        title: "Maintenance",
+        url: `/client/${orgId}/maintenance`,
+        icon: IconTools,
+      },
+    ],
+    site: [
+      {
+        title: "Pages",
+        url: `/client/${orgId}/restaurant/pages`,
+        icon: IconFileText,
+      },
+      {
+        title: "Gallery",
+        url: `/client/${orgId}/restaurant/gallery`,
+        icon: IconPhoto,
+      },
+    ],
+  }
+}
 
 export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps) {
   const params = useParams()
@@ -155,7 +178,9 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
     }
   }, [])
 
-  const navItems = orgId ? getClientNavItems(orgId) : { main: [], restaurant: [], site: [] }
+  // Get business type, default to 'restaurant' if not available
+  const businessType = business?.type || 'restaurant'
+  const navItems = orgId ? getClientNavItems(orgId, businessType) : { main: [], restaurant: [], retail: [], help: [], site: [] }
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -204,11 +229,67 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {navItems.restaurant.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Restaurant</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navItems.restaurant.map((item) => {
+                  const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
+                  
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton 
+                        asChild 
+                        tooltip={item.title}
+                        className="hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
+                        data-active={isActive}
+                      >
+                        <a href={item.url}>
+                          {item.icon && <item.icon />}
+                          <span>{item.title}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+        {navItems.retail.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Retail</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navItems.retail.map((item) => {
+                  const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
+                  
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton 
+                        asChild 
+                        tooltip={item.title}
+                        className="hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
+                        data-active={isActive}
+                      >
+                        <a href={item.url}>
+                          {item.icon && <item.icon />}
+                          <span>{item.title}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
         <SidebarGroup>
-          <SidebarGroupLabel>Restaurant</SidebarGroupLabel>
+          <SidebarGroupLabel>Site</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.restaurant.map((item) => {
+              {navItems.site.map((item) => {
                 const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
                 
                 return (
@@ -231,10 +312,10 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Site</SidebarGroupLabel>
+          <SidebarGroupLabel>Help & Support</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.site.map((item) => {
+              {navItems.help.map((item) => {
                 const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
                 
                 return (
