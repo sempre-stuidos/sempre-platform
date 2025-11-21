@@ -104,24 +104,11 @@ export function generateMockEvents(orgId: string): Event[] {
     return date.toISOString();
   };
 
-  // Helper to create date-only string (YYYY-MM-DD)
-  const dateOnly = (days: number) => {
-    const date = new Date(now);
-    date.setDate(date.getDate() + days);
-    return date.toISOString().split('T')[0];
-  };
-
   // Helper to create datetime string with specific time
   const dateTime = (days: number, hours: number, minutes: number = 0) => {
     const date = new Date(now);
     date.setDate(date.getDate() + days);
     date.setHours(hours, minutes, 0, 0);
-    return date.toISOString();
-  };
-
-  const hoursFromNow = (hours: number) => {
-    const date = new Date(now);
-    date.setHours(date.getHours() + hours);
     return date.toISOString();
   };
 

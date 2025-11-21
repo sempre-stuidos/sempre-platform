@@ -54,9 +54,7 @@ export function EditBusinessModal({
   useEffect(() => {
     if (business) {
       setName(business.name || "")
-      // Handle legacy 'client' type by converting to 'restaurant'
-      const orgType = business.type === 'client' ? 'restaurant' : (business.type || "restaurant")
-      setType(orgType)
+      setType(business.type || "restaurant")
       setDescription(business.description || "")
       setAddress(business.address || "")
       setPhone(business.phone || "")

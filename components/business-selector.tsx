@@ -9,16 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { AddBusinessModal } from "@/components/add-business-modal"
+import { AddBusinessModal, type CreatedBusiness } from "@/components/add-business-modal"
 import { IconPlus, IconBuilding } from "@tabler/icons-react"
 import { toast } from "sonner"
-
-interface Business {
-  id: string
-  name: string
-  type: "agency" | "client"
-  description?: string | null
-}
+import type { Business } from "@/lib/businesses"
 
 interface BusinessSelectorProps {
   value?: string
@@ -86,8 +80,24 @@ export function BusinessSelector({
     }
   }
 
-  const handleCreateSuccess = async (business: Business) => {
-    setBusinesses([...businesses, business])
+  const handleCreateSuccess = async (business: CreatedBusiness) => {
+    // Convert CreatedBusiness to Business format for state
+    // Convert null values to undefined to match Business type
+    const businessForState: Business = {
+      id: business.id,
+      name: business.name,
+      type: business.type,
+      description: business.description ?? undefined,
+      address: business.address ?? undefined,
+      phone: business.phone ?? undefined,
+      email: business.email ?? undefined,
+      website: business.website ?? undefined,
+      logo_url: business.logo_url ?? undefined,
+      status: business.status ?? undefined,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    setBusinesses([...businesses, businessForState])
     if (clientId) {
       await handleLinkBusiness(business.id)
     } else {
