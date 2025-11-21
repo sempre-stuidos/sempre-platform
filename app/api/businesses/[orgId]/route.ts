@@ -6,6 +6,7 @@ import {
   updateBusiness,
   deleteBusiness,
   getUserRoleInOrg,
+  type Business,
 } from '@/lib/businesses';
 import { getUserRole } from '@/lib/invitations';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -115,7 +116,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { name, type, description, address, phone, email, website, logo_url, status } = body;
 
     // Only allow type updates for super admins
-    const updates: any = { 
+    const updates: Partial<Pick<Business, 'name' | 'type' | 'description' | 'address' | 'phone' | 'email' | 'website' | 'logo_url' | 'status'>> = { 
       name, 
       description, 
       address, 

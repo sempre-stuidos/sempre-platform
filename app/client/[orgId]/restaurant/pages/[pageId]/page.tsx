@@ -109,7 +109,7 @@ export default async function EditPage({ params }: EditPageProps) {
               pageId={pageId}
               pageSlug={pageWithSections.slug}
               hasDirtySections={hasDirtySections}
-              organization={organization}
+              business={organization}
             />
           </div>
 

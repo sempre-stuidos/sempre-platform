@@ -83,15 +83,15 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
       // For now, we'll use dummy data or check if tables exist
       try {
         const [ordersResult, productsResult, customersResult] = await Promise.all([
-          supabaseServer.from('orders').select('id', { count: 'exact', head: true }).eq('org_id', orgId).catch(() => ({ count: 0 })),
-          supabaseServer.from('products').select('id', { count: 'exact', head: true }).eq('org_id', orgId).catch(() => ({ count: 0 })),
-          supabaseServer.from('customers').select('id', { count: 'exact', head: true }).eq('org_id', orgId).catch(() => ({ count: 0 })),
+          supabaseServer.from('orders').select('id', { count: 'exact', head: true }).eq('org_id', orgId),
+          supabaseServer.from('products').select('id', { count: 'exact', head: true }).eq('org_id', orgId),
+          supabaseServer.from('customers').select('id', { count: 'exact', head: true }).eq('org_id', orgId),
         ]);
 
         ordersCount = ordersResult?.count || 0;
         productsCount = productsResult?.count || 0;
         customersCount = customersResult?.count || 0;
-      } catch (error) {
+      } catch {
         // Tables might not exist yet, use default values
         ordersCount = 0;
         productsCount = 0;
