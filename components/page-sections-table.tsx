@@ -23,6 +23,7 @@ interface PageSectionsTableProps {
   pageSlug: string
   sections: PageSectionV2[]
   organization: Business | null
+  pageBaseUrl?: string | null
 }
 
 export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organization, pageBaseUrl }: PageSectionsTableProps) {

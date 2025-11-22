@@ -107,7 +107,7 @@ export function SiteSettingsModal({
         <DialogHeader>
           <DialogTitle>Site Settings</DialogTitle>
           <DialogDescription>
-            Configure the base URL for your site. This will be used for previews and public links if individual pages don't have their own base URL set.
+            Configure the base URL for your site. This will be used for previews and public links if individual pages don&apos;t have their own base URL set.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { IconEye, IconEyeOff, IconCheck, IconX } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Project } from "@/lib/types"
 import { getProjectById } from "@/lib/projects"
@@ -80,14 +79,7 @@ export function UpdateProjectModal({
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Load current project data when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      loadCurrentProject()
-    }
-  }, [isOpen, projectId])
-
-  const loadCurrentProject = async () => {
+  const loadCurrentProject = useCallback(async () => {
     setLoading(true)
     try {
       const project = await getProjectById(projectId)
@@ -110,7 +102,14 @@ export function UpdateProjectModal({
     } finally {
       setLoading(false)
     }
-  }
+  }, [projectId])
+
+  // Load current project data when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      loadCurrentProject()
+    }
+  }, [isOpen, projectId, loadCurrentProject])
 
   const handleFieldToggle = (field: keyof UpdateFields) => {
     setSelectedFields(prev => ({

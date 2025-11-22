@@ -343,20 +343,20 @@ export function TeamDataTable({
     }
   }
 
-  const openDeleteDialog = (teamMember: TeamMember) => {
+  const openDeleteDialog = React.useCallback((teamMember: TeamMember) => {
     setTeamMemberToDelete(teamMember)
     setDeleteDialogOpen(true)
-  }
+  }, [])
 
-  const handleEditTeamMember = (teamMember: TeamMember) => {
+  const handleEditTeamMember = React.useCallback((teamMember: TeamMember) => {
     setEditingTeamMember(teamMember)
     setIsAddTeamMemberModalOpen(true)
-  }
+  }, [])
 
-  const handleViewProfile = (teamMember: TeamMember) => {
+  const handleViewProfile = React.useCallback((teamMember: TeamMember) => {
     setSelectedMember(teamMember)
     setIsProfileModalOpen(true)
-  }
+  }, [])
 
   const handleDeleteSelected = async () => {
     const selectedRows = table.getFilteredSelectedRowModel().rows
