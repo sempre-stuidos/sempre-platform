@@ -26,6 +26,7 @@ export interface Business {
   logo_url?: string;
   status?: 'active' | 'inactive' | 'suspended';
   slug?: string;
+  site_base_url?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -772,7 +773,7 @@ export async function unlinkClientFromBusiness(
  */
 export async function updateBusiness(
   orgId: string,
-  updates: Partial<Pick<Business, 'name' | 'type' | 'description' | 'address' | 'phone' | 'email' | 'website' | 'logo_url' | 'status'>>
+  updates: Partial<Pick<Business, 'name' | 'type' | 'description' | 'address' | 'phone' | 'email' | 'website' | 'logo_url' | 'status' | 'site_base_url'>>
 ): Promise<{ success: boolean; business?: Business; error?: string }> {
   try {
     const { data, error } = await supabaseAdmin

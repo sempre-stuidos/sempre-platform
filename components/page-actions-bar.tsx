@@ -1,12 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { IconEye, IconCheck } from "@tabler/icons-react"
+import { IconEye, IconCheck, IconSettings } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import type { Business } from "@/lib/businesses"
+import type { Page } from "@/lib/types"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { EditPageModal } from "@/components/edit-page-modal"
 
 interface PageActionsBarProps {
   orgId: string
@@ -14,12 +16,14 @@ interface PageActionsBarProps {
   pageSlug: string
   hasDirtySections: boolean
   business: Business | null
+  page: Page | null
 }
 
-export function PageActionsBar({ orgId, pageId, pageSlug, hasDirtySections, business }: PageActionsBarProps) {
+export function PageActionsBar({ orgId, pageId, pageSlug, hasDirtySections, business, page }: PageActionsBarProps) {
   const router = useRouter()
   const [isPublishing, setIsPublishing] = React.useState(false)
   const [isPreviewing, setIsPreviewing] = React.useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false)
 
   const handlePublishAll = async () => {
     try {
@@ -72,7 +76,8 @@ export function PageActionsBar({ orgId, pageId, pageSlug, hasDirtySections, busi
       // Get organization slug for public site URL
       // Use orgId for public site URL (Business type doesn't have slug)
       const orgSlug = orgId
-      const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
+      // Use page's base_url if available, then business site_base_url, then env var
+      const publicSiteUrl = page?.base_url || business?.site_base_url || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
       // Build preview URL using page slug
       const previewUrl = `${publicSiteUrl}/?page=${pageSlug}&token=${data.token}`
@@ -104,6 +109,14 @@ export function PageActionsBar({ orgId, pageId, pageSlug, hasDirtySections, busi
       </div>
       
       <div className="flex gap-2">
+        {/* Page Settings button hidden for now */}
+        {/* <Button
+          variant="outline"
+          onClick={() => setIsEditModalOpen(true)}
+        >
+          <IconSettings className="h-4 w-4 mr-2" />
+          Page Settings
+        </Button> */}
         {hasDirtySections && (
           <Button
             onClick={handlePublishAll}
@@ -123,6 +136,16 @@ export function PageActionsBar({ orgId, pageId, pageSlug, hasDirtySections, busi
           {isPreviewing ? 'Opening...' : 'Preview Page'}
         </Button>
       </div>
+      
+      <EditPageModal
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        page={page}
+        orgId={orgId}
+        onSuccess={() => {
+          router.refresh()
+        }}
+      />
     </div>
   )
 }

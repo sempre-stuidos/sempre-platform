@@ -25,7 +25,7 @@ interface PageSectionsTableProps {
   organization: Business | null
 }
 
-export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organization }: PageSectionsTableProps) {
+export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organization, pageBaseUrl }: PageSectionsTableProps) {
   const router = useRouter()
   const [previewingSectionId, setPreviewingSectionId] = React.useState<string | null>(null)
 
@@ -55,7 +55,8 @@ export function PageSectionsTable({ orgId, pageId, pageSlug, sections, organizat
 
       // Use orgId for public site URL (Business type doesn't have slug)
       const orgSlug = orgId
-      const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
+      // Use page's base_url if available, then business site_base_url, then env var
+      const publicSiteUrl = pageBaseUrl || organization?.site_base_url || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
       // Build preview URL with section key using page slug
       const previewUrl = `${publicSiteUrl}/?page=${pageSlug}&section=${section.key}&token=${data.token}`

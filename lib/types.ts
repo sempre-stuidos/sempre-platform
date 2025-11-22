@@ -298,6 +298,7 @@ export interface Page {
   slug: string;
   template?: string;
   status: 'published' | 'dirty' | 'draft';
+  base_url?: string | null;
   created_at: string;
   updated_at: string;
 }

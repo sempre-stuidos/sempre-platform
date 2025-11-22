@@ -13,11 +13,12 @@ interface SectionEditorDrawerProps {
   orgId: string
   pageId: string
   pageSlug: string
+  pageBaseUrl?: string | null
   isOpen: boolean
   onClose: () => void
 }
 
-export function SectionEditorDrawer({ sectionId, orgId, pageId, pageSlug, isOpen, onClose }: SectionEditorDrawerProps) {
+export function SectionEditorDrawer({ sectionId, orgId, pageId, pageSlug, pageBaseUrl, isOpen, onClose }: SectionEditorDrawerProps) {
   const [section, setSection] = React.useState<PageSectionV2 | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const [draftContent, setDraftContent] = React.useState<Record<string, unknown>>({})
@@ -108,6 +109,7 @@ export function SectionEditorDrawer({ sectionId, orgId, pageId, pageSlug, isOpen
                 pageId={pageId}
                 pageSlug={pageSlug}
                 sectionKey={section.key}
+                pageBaseUrl={pageBaseUrl}
                 onSave={() => {
                   loadSection()
                   // Trigger refresh in parent

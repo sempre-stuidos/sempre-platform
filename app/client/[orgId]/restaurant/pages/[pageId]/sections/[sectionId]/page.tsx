@@ -31,6 +31,7 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
   const [draftContent, setDraftContent] = React.useState<Record<string, unknown>>({})
   const [pageSlug, setPageSlug] = React.useState<string>('')
   const [pageName, setPageName] = React.useState<string>('')
+  const [pageBaseUrl, setPageBaseUrl] = React.useState<string | null>(null)
   const [previewToken, setPreviewToken] = React.useState<string | null>(null)
   const [isLoadingPreview, setIsLoadingPreview] = React.useState(false)
   const [previewError, setPreviewError] = React.useState<string | null>(null)
@@ -117,6 +118,7 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
         const pageData = await pageResponse.json()
         if (pageData.page) {
           setPageSlug(pageData.page.slug)
+          setPageBaseUrl(pageData.page.base_url || null)
           setPageName(pageData.page.name)
         }
       }
@@ -273,6 +275,7 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
                     pageId={resolvedParams.pageId}
                     pageSlug={pageSlug}
                     sectionKey={section.key}
+                    pageBaseUrl={pageBaseUrl}
                     onSave={handleSave}
                   />
                 </div>

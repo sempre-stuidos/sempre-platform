@@ -113,10 +113,22 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { name, type, description, address, phone, email, website, logo_url, status } = body;
+    const { name, type, description, address, phone, email, website, logo_url, status, site_base_url } = body;
+
+    // Validate site_base_url if provided
+    if (site_base_url && site_base_url.trim()) {
+      try {
+        new URL(site_base_url);
+      } catch {
+        return NextResponse.json(
+          { error: 'Invalid site base URL format' },
+          { status: 400 }
+        );
+      }
+    }
 
     // Only allow type updates for super admins
-    const updates: Partial<Pick<Business, 'name' | 'type' | 'description' | 'address' | 'phone' | 'email' | 'website' | 'logo_url' | 'status'>> = { 
+    const updates: Partial<Pick<Business, 'name' | 'type' | 'description' | 'address' | 'phone' | 'email' | 'website' | 'logo_url' | 'status' | 'site_base_url'>> = { 
       name, 
       description, 
       address, 
@@ -124,7 +136,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       email, 
       website, 
       logo_url, 
-      status 
+      status,
+      site_base_url: site_base_url?.trim() || null
     };
     
     if (isAdmin && type) {

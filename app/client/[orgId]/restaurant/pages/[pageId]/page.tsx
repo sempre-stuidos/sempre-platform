@@ -110,6 +110,7 @@ export default async function EditPage({ params }: EditPageProps) {
               pageSlug={pageWithSections.slug}
               hasDirtySections={hasDirtySections}
               business={organization}
+              page={pageWithSections}
             />
           </div>
 
@@ -119,6 +120,7 @@ export default async function EditPage({ params }: EditPageProps) {
             pageSlug={pageWithSections.slug}
             sections={pageWithSections.sections}
             organization={organization}
+            pageBaseUrl={pageWithSections.base_url}
           />
         </div>
       </div>

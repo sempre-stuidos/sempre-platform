@@ -53,7 +53,8 @@ export function PagesListTable({ orgId, pages, organization }: PagesListTablePro
       // Get organization slug for public site URL
       // Use orgId for public site URL (Business type doesn't have slug)
       const orgSlug = orgId
-      const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
+      // Use page's base_url if available, then business site_base_url, then env var
+      const publicSiteUrl = page.base_url || organization?.site_base_url || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
       // Build preview URL using page slug
       const previewUrl = `${publicSiteUrl}/?page=${page.slug}&token=${data.token}`

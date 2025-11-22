@@ -19,10 +19,11 @@ interface SectionFormProps {
   pageId: string
   pageSlug: string
   sectionKey: string
+  pageBaseUrl?: string | null
   onSave?: () => void
 }
 
-export function SectionForm({ component, draftContent, onContentChange, sectionId, orgId, pageId, pageSlug, sectionKey, onSave }: SectionFormProps) {
+export function SectionForm({ component, draftContent, onContentChange, sectionId, orgId, pageId, pageSlug, sectionKey, pageBaseUrl, onSave }: SectionFormProps) {
   const router = useRouter()
   const [isSaving, setIsSaving] = React.useState(false)
   const [isPublishing, setIsPublishing] = React.useState(false)
@@ -147,7 +148,8 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
         return
       }
 
-      const publicSiteUrl = process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
+      // Use page's base_url if available, otherwise fall back to env var
+      const publicSiteUrl = pageBaseUrl || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
       // Build preview URL with section key
       const previewUrl = `${publicSiteUrl}/?page=${pageSlug}&section=${sectionKey}&token=${data.token}`
