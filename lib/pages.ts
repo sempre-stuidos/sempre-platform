@@ -22,13 +22,19 @@ export async function getPagesForOrg(
       .order('name', { ascending: true });
 
     if (error) {
-      console.error('Error fetching pages for org:', error);
+      console.error('Error fetching pages for org:', JSON.stringify(error, null, 2));
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      console.error('Error details:', error.details);
+      console.error('Error hint:', error.hint);
+      console.error('Org ID:', orgId);
       throw error;
     }
 
     return (data || []) as Page[];
   } catch (error) {
-    console.error('Error in getPagesForOrg:', error);
+    console.error('Error in getPagesForOrg:', error instanceof Error ? error.message : JSON.stringify(error, null, 2));
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return [];
   }
 }

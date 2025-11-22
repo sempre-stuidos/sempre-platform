@@ -33,7 +33,33 @@ export default async function PagesPage({ params }: PagesPageProps) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  
+  if (userError) {
+    console.error('Error getting user:', JSON.stringify(userError, null, 2));
+  }
+  
+  if (!user) {
+    console.error('No user found in session');
+    // Return empty pages if no user
+    return (
+      <div className="@container/main flex flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+          <div className="px-4 lg:px-6">
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold tracking-tight">Pages</h1>
+              <p className="text-muted-foreground mt-2">
+                Please log in to view pages.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  console.log('User authenticated:', user.email, 'User ID:', user.id);
+  
   const organization = await getOrganizationById(orgId, supabaseAdmin);
   
   // Get pages for this organization
