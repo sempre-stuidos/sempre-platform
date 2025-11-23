@@ -1,24 +1,19 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import Link from 'next/link';
 import { getOrganizationById } from '@/lib/businesses';
 import { getPageWithSections } from '@/lib/pages';
 import { supabaseAdmin } from '@/lib/supabase';
-import { PageSectionsTable } from '@/components/page-sections-table';
-import { PageActionsBar } from '@/components/page-actions-bar';
-import { Button } from '@/components/ui/button';
-import { IconArrowLeft } from '@tabler/icons-react';
 import { notFound } from 'next/navigation';
-import { PageDetailsClient } from '@/components/page-details-client';
+import { PageCanvasEditor } from '@/components/page-canvas-editor';
 
-interface EditPageProps {
+interface CanvasPageProps {
   params: Promise<{
     orgId: string;
     pageId: string;
   }>;
 }
 
-export default async function EditPage({ params }: EditPageProps) {
+export default async function CanvasPage({ params }: CanvasPageProps) {
   const { orgId, pageId } = await params;
   const cookieStore = await cookies();
   
@@ -47,10 +42,9 @@ export default async function EditPage({ params }: EditPageProps) {
     pageWithSections = await getPageWithSections(pageId, supabase);
   } catch (error) {
     console.error('Error fetching page:', error);
-    // Check if it's a table not found error
     if (error instanceof Error && (error.message.includes('relation') || error.message.includes('does not exist'))) {
       return (
-        <div className="@container/main flex flex-1 flex-col gap-2">
+        <div className="flex flex-1 flex-col">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             <div className="px-4 lg:px-6">
               <div className="rounded-lg border bg-card p-8 text-center">
@@ -81,52 +75,16 @@ export default async function EditPage({ params }: EditPageProps) {
     notFound();
   }
 
-  const hasDirtySections = pageWithSections.sections.some(s => s.status === 'dirty');
-
   return (
-    <PageDetailsClient pageName={pageWithSections.name}>
-    <div className="@container/main flex flex-1 flex-col gap-2">
-      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-        <div className="px-4 lg:px-6">
-          <div className="mb-6 flex items-start justify-between">
-            <div>
-                <Link href={`/client/${orgId}/restaurant/pages`}>
-                  <Button variant="ghost" size="sm" className="mt-2">
-                    <IconArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Pages
-                  </Button>
-                </Link>
-              </div>
-          </div>
-          
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <PageActionsBar 
-              orgId={orgId}
-              pageId={pageId}
-              pageSlug={pageWithSections.slug}
-              hasDirtySections={hasDirtySections}
-              business={organization}
-              page={pageWithSections}
-            />
-            <Link href={`/client/${orgId}/restaurant/pages/${pageId}/canvas`}>
-              <Button className="bg-primary text-primary-foreground">
-                Edit in Canvas
-              </Button>
-            </Link>
-          </div>
-
-          <PageSectionsTable 
-            orgId={orgId}
-            pageId={pageId}
-            pageSlug={pageWithSections.slug}
-            sections={pageWithSections.sections}
-            organization={organization}
-            pageBaseUrl={pageWithSections.base_url}
-          />
-        </div>
-      </div>
-    </div>
-    </PageDetailsClient>
+    <PageCanvasEditor
+      orgId={orgId}
+      pageId={pageId}
+      pageSlug={pageWithSections.slug}
+      pageName={pageWithSections.name}
+      sections={pageWithSections.sections}
+      organization={organization}
+      pageBaseUrl={pageWithSections.base_url}
+    />
   );
 }
 
