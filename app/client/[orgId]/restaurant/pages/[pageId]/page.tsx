@@ -1,12 +1,15 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import Link from 'next/link';
 import { getOrganizationById } from '@/lib/businesses';
 import { getPageWithSections } from '@/lib/pages';
 import { supabaseAdmin } from '@/lib/supabase';
 import { PageSectionsTable } from '@/components/page-sections-table';
 import { PageActionsBar } from '@/components/page-actions-bar';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { IconArrowLeft } from '@tabler/icons-react';
 import { notFound } from 'next/navigation';
+import { PageDetailsClient } from '@/components/page-details-client';
 
 interface EditPageProps {
   params: Promise<{
@@ -36,7 +39,6 @@ export default async function EditPage({ params }: EditPageProps) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
   const organization = await getOrganizationById(orgId, supabaseAdmin);
   
   // Get page with sections
@@ -82,25 +84,19 @@ export default async function EditPage({ params }: EditPageProps) {
   const hasDirtySections = pageWithSections.sections.some(s => s.status === 'dirty');
 
   return (
+    <PageDetailsClient pageName={pageWithSections.name}>
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="px-4 lg:px-6">
           <div className="mb-6 flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">{pageWithSections.name}</h1>
-              <p className="text-muted-foreground mt-2">
-                Template: {pageWithSections.template ? pageWithSections.template.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Default'}
-              </p>
-            </div>
-            {hasDirtySections ? (
-              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                Has Unpublished Changes
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                Published
-              </Badge>
-            )}
+                <Link href={`/client/${orgId}/restaurant/pages`}>
+                  <Button variant="ghost" size="sm" className="mt-2">
+                    <IconArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Pages
+                  </Button>
+                </Link>
+              </div>
           </div>
           
           <div className="mb-4">
@@ -125,6 +121,7 @@ export default async function EditPage({ params }: EditPageProps) {
         </div>
       </div>
     </div>
+    </PageDetailsClient>
   );
 }
 

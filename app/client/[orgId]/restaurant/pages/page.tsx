@@ -6,6 +6,7 @@ import { getSectionsForPage } from '@/lib/page-sections-v2';
 import { supabaseAdmin } from '@/lib/supabase';
 import { PagesListTable } from '@/components/pages-list-table';
 import { SiteSettingsButton } from '@/components/site-settings-button';
+import { PagesListClient } from '@/components/pages-list-client';
 
 interface PagesPageProps {
   params: Promise<{
@@ -81,13 +82,13 @@ export default async function PagesPage({ params }: PagesPageProps) {
   );
 
   return (
+    <PagesListClient>
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="px-4 lg:px-6">
           <div className="mb-6 flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Pages</h1>
-              <p className="text-muted-foreground mt-2">
+                <p className="text-muted-foreground">
                 Manage your restaurant site pages
               </p>
             </div>
@@ -97,6 +98,7 @@ export default async function PagesPage({ params }: PagesPageProps) {
         </div>
       </div>
     </div>
+    </PagesListClient>
   );
 }
 

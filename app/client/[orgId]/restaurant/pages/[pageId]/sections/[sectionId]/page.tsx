@@ -8,6 +8,7 @@ import { IconArrowLeft } from "@tabler/icons-react"
 import { SectionForm } from "@/components/section-form"
 import { useBreadcrumb } from "@/components/breadcrumb-context"
 import type { PageSectionV2 } from "@/lib/types"
+import type { Business } from "@/lib/businesses"
 import { toast } from "sonner"
 
 interface SectionEditPageProps {
@@ -32,6 +33,7 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
   const [pageSlug, setPageSlug] = React.useState<string>('')
   const [pageName, setPageName] = React.useState<string>('')
   const [pageBaseUrl, setPageBaseUrl] = React.useState<string | null>(null)
+  const [business, setBusiness] = React.useState<Business | null>(null)
   const [previewToken, setPreviewToken] = React.useState<string | null>(null)
   const [isLoadingPreview, setIsLoadingPreview] = React.useState(false)
   const [previewError, setPreviewError] = React.useState<string | null>(null)
@@ -47,6 +49,7 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
   React.useEffect(() => {
     if (resolvedParams) {
       loadSection()
+      loadBusiness()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedParams])
@@ -83,6 +86,23 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
       setBreadcrumb(null)
     }
   }, [pageName, section, setBreadcrumb])
+
+  const loadBusiness = async () => {
+    if (!resolvedParams) return
+
+    try {
+      const response = await fetch(`/api/businesses/${resolvedParams.orgId}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.business) {
+          setBusiness(data.business)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading business:', error)
+      // Don't show error toast for business loading failure, just continue without it
+    }
+  }
 
   const loadSection = async () => {
     if (!resolvedParams) return
@@ -309,7 +329,7 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
                       <iframe
                         key={iframeKey}
                         ref={iframeRef}
-                        src={`${process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'}/?page=${pageSlug}&section=${section.key}&token=${previewToken}`}
+                        src={`${pageBaseUrl || business?.site_base_url || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'}/?page=${pageSlug}&section=${section.key}&token=${previewToken}`}
                         className="w-full border-0"
                         style={{
                           height: '80vh',

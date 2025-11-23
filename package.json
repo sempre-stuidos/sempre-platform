@@ -9,7 +9,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy": "vercel --prod --force",
+    "deploy:preview": "vercel --force"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
