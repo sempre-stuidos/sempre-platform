@@ -21,14 +21,16 @@ interface SectionFormProps {
   sectionKey: string
   pageBaseUrl?: string | null
   onSave?: () => void
+  isWidgetMode?: boolean
 }
 
-export function SectionForm({ component, draftContent, onContentChange, sectionId, orgId, pageId, pageSlug, sectionKey, pageBaseUrl, onSave }: SectionFormProps) {
+export function SectionForm({ component, draftContent, onContentChange, sectionId, orgId, pageId, pageSlug, sectionKey, pageBaseUrl, onSave, isWidgetMode = false }: SectionFormProps) {
   const router = useRouter()
   const [isSaving, setIsSaving] = React.useState(false)
   const [isPublishing, setIsPublishing] = React.useState(false)
   const [isDiscarding, setIsDiscarding] = React.useState(false)
   const [isPreviewing, setIsPreviewing] = React.useState(false)
+  const [hasSavedDraft, setHasSavedDraft] = React.useState(false)
 
   const handleSaveDraft = async (silent = false) => {
     try {
@@ -56,6 +58,8 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
       if (!silent) {
         toast.success('Draft saved')
       }
+      setHasSavedDraft(true)
+      savedContentRef.current = JSON.stringify(draftContent)
       onSave?.()
       router.refresh()
     } catch (error) {
@@ -84,6 +88,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
       }
 
       toast.success('Section published successfully')
+      setHasSavedDraft(false) // Reset after publishing
       onSave?.()
       router.refresh()
     } catch (error) {
@@ -113,6 +118,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
         const discardedContent = data.section.draft_content || {}
         onContentChange(discardedContent)
       }
+      setHasSavedDraft(false) // Reset after discarding
       toast.success('Changes discarded')
       onSave?.()
       router.refresh()
@@ -838,6 +844,64 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
       default:
         return renderDynamicForm(draftContent, onContentChange)
     }
+  }
+
+  // Track content to detect changes after save
+  const savedContentRef = React.useRef<string | null>(null)
+  
+  React.useEffect(() => {
+    // If content changes after saving, reset hasSavedDraft
+    if (hasSavedDraft && savedContentRef.current) {
+      const currentContent = JSON.stringify(draftContent)
+      if (currentContent !== savedContentRef.current) {
+        setHasSavedDraft(false)
+        savedContentRef.current = null
+      }
+    }
+  }, [draftContent, hasSavedDraft])
+
+  if (isWidgetMode) {
+    return (
+      <div className="space-y-6 flex flex-col h-full">
+        <div className="flex-1">
+          {renderForm()}
+        </div>
+
+        {/* Sticky buttons at bottom */}
+        <div className="sticky bottom-0 bg-background border-t pt-4 pb-2 -mx-4 px-4">
+          <div className="flex gap-2">
+            <Button
+              onClick={() => handleDiscard()}
+              disabled={isDiscarding}
+              variant="outline"
+              className="flex-1"
+            >
+              <IconX className="h-4 w-4 mr-2" />
+              Discard Changes
+            </Button>
+            {hasSavedDraft ? (
+              <Button
+                onClick={() => handlePublish()}
+                disabled={isPublishing}
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <IconCheck className="h-4 w-4 mr-2" />
+                {isPublishing ? 'Publishing...' : 'Publish'}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => handleSaveDraft()}
+                disabled={isSaving}
+                variant="outline"
+                className="flex-1"
+              >
+                {isSaving ? 'Saving...' : 'Save Draft'}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

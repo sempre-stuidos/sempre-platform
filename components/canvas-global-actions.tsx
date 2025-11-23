@@ -2,7 +2,13 @@
 
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { IconCheck, IconX } from "@tabler/icons-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { IconCheck, IconX, IconDots } from "@tabler/icons-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
@@ -79,31 +85,30 @@ export function CanvasGlobalActions({
     }
   }
 
-  if (!hasDirtySections) {
-    return null
-  }
-
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        onClick={handleDiscardAll}
-        disabled={isDiscarding}
-        variant="outline"
-        size="sm"
-      >
-        <IconX className="h-4 w-4 mr-2" />
-        {isDiscarding ? 'Discarding...' : 'Discard All Changes'}
-      </Button>
-      <Button
-        onClick={handlePublishAll}
-        disabled={isPublishing}
-        className="bg-primary text-primary-foreground"
-        size="sm"
-      >
-        <IconCheck className="h-4 w-4 mr-2" />
-        {isPublishing ? 'Publishing...' : 'Publish All Changes'}
-      </Button>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm">
+          <IconDots className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onClick={handleDiscardAll}
+          disabled={isDiscarding || !hasDirtySections}
+        >
+          <IconX className="h-4 w-4 mr-2" />
+          {isDiscarding ? 'Discarding...' : 'Discard All Changes'}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={handlePublishAll}
+          disabled={isPublishing || !hasDirtySections}
+        >
+          <IconCheck className="h-4 w-4 mr-2" />
+          {isPublishing ? 'Publishing...' : 'Publish All Changes'}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { SectionForm } from "@/components/section-form"
 import { IconX, IconChevronUp, IconChevronDown } from "@tabler/icons-react"
@@ -36,6 +37,28 @@ export function SectionWidget({
 }: SectionWidgetProps) {
   const [isMinimized, setIsMinimized] = React.useState(false)
 
+  const getStatusBadge = () => {
+    if (section.status === 'dirty') {
+      return (
+        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-[10px] h-4 px-1.5 py-0">
+          Draft
+        </Badge>
+      )
+    }
+    if (section.status === 'published') {
+      return (
+        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] h-4 px-1.5 py-0">
+          Pub
+        </Badge>
+      )
+    }
+    return (
+      <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-[10px] h-4 px-1.5 py-0">
+        Draft
+      </Badge>
+    )
+  }
+
   return (
     <div className={`fixed bottom-6 right-6 z-50 w-96 bg-background border rounded-lg shadow-2xl transition-all duration-300 ${
       isMinimized ? 'h-16' : 'h-[500px]'
@@ -43,31 +66,18 @@ export function SectionWidget({
       {/* Header */}
       <div className="p-3 border-b flex items-center justify-between bg-muted/50">
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold truncate">{section.label}</h3>
-          {!isMinimized && (
-            <p className="text-xs text-muted-foreground truncate">
-              {section.component}
-            </p>
-          )}
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold truncate">{section.label}</h3>
+            {getStatusBadge()}
+          </div>
         </div>
         <div className="flex items-center gap-1">
-          {onExpand && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onExpand}
-              className="h-7 w-7 p-0"
-              title="Expand to full panel"
-            >
-              <IconChevronUp className="h-4 w-4" />
-            </Button>
-          )}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setIsMinimized(!isMinimized)}
             className="h-7 w-7 p-0"
-            title={isMinimized ? "Expand" : "Minimize"}
+            title="Minimize"
           >
             {isMinimized ? (
               <IconChevronUp className="h-4 w-4" />
@@ -89,7 +99,7 @@ export function SectionWidget({
 
       {/* Content */}
       {!isMinimized && (
-        <>
+        <div className="flex-1 flex flex-col overflow-hidden">
           <ScrollArea className="flex-1">
             <div className="p-4">
               <SectionForm
@@ -102,13 +112,14 @@ export function SectionWidget({
                 pageSlug={pageSlug}
                 sectionKey={sectionKey}
                 pageBaseUrl={pageBaseUrl}
+                isWidgetMode={true}
                 onSave={() => {
                   onSave?.()
                 }}
               />
             </div>
           </ScrollArea>
-        </>
+        </div>
       )}
     </div>
   )

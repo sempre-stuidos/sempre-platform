@@ -184,8 +184,9 @@ export function PageCanvasEditor({
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-background z-50">
       {/* Header */}
       <div className="border-b bg-background z-10">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="px-4 py-3 flex items-center">
+          {/* Left Section */}
+          <div className="flex items-center gap-4 flex-1">
             <Link href={`/client/${orgId}/restaurant/pages/${pageId}`}>
               <Button variant="ghost" size="sm">
                 <IconArrowLeft className="h-4 w-4 mr-2" />
@@ -196,9 +197,7 @@ export function PageCanvasEditor({
               <h1 className="text-lg font-semibold">{pageName}</h1>
               <p className="text-xs text-muted-foreground">Canvas Editor</p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-4">
+            
             {/* Draft/Published Toggle */}
             <ToggleGroup
               type="single"
@@ -208,19 +207,25 @@ export function PageCanvasEditor({
                   setViewMode(value)
                 }
               }}
+              className="min-w-[140px]"
             >
-              <ToggleGroupItem value="draft" aria-label="View draft">
+              <ToggleGroupItem value="draft" aria-label="View draft" className="flex-1">
                 Draft
               </ToggleGroupItem>
-              <ToggleGroupItem value="published" aria-label="View published">
+              <ToggleGroupItem value="published" aria-label="View published" className="flex-1">
                 Published
               </ToggleGroupItem>
             </ToggleGroup>
+          </div>
 
-            {/* Viewport Toggle */}
+          {/* Center Section - Viewport Toggle */}
+          <div className="flex-1 flex justify-center">
             <ViewportToggle value={viewportSize} onChange={setViewportSize} />
+          </div>
 
-            {/* Global Actions */}
+          {/* Right Section */}
+          <div className="flex items-center gap-4 flex-1 justify-end">
+            {/* Global Actions - Dropdown */}
             <CanvasGlobalActions
               pageId={pageId}
               hasDirtySections={hasDirtySections}
