@@ -214,6 +214,315 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
   }
 
   // Render form based on component type
+  // Render dynamic form for unimplemented components
+  const renderDynamicForm = (content: Record<string, unknown>, onChange: (content: Record<string, unknown>) => void) => {
+    const handleFieldChange = (key: string, value: unknown) => {
+      const newContent = { ...content, [key]: value }
+      onChange(newContent)
+    }
+
+    const handleArrayItemChange = (key: string, index: number, value: unknown) => {
+      const array = Array.isArray(content[key]) ? [...(content[key] as unknown[])] : []
+      array[index] = value
+      handleFieldChange(key, array)
+    }
+
+    const handleArrayItemRemove = (key: string, index: number) => {
+      const array = Array.isArray(content[key]) ? [...(content[key] as unknown[])] : []
+      array.splice(index, 1)
+      handleFieldChange(key, array)
+    }
+
+    const handleArrayItemAdd = (key: string) => {
+      const array = Array.isArray(content[key]) ? [...(content[key] as unknown[])] : []
+      array.push('')
+      handleFieldChange(key, array)
+    }
+
+    const handleNestedObjectChange = (key: string, nestedKey: string, value: unknown) => {
+      const nested = typeof content[key] === 'object' && content[key] !== null && !Array.isArray(content[key])
+        ? { ...(content[key] as Record<string, unknown>) }
+        : {}
+      nested[nestedKey] = value
+      handleFieldChange(key, nested)
+    }
+
+    const renderField = (key: string, value: unknown, path: string = '') => {
+      const fieldKey = path ? `${path}.${key}` : key
+      const displayKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()
+
+      if (value === null || value === undefined) {
+        return (
+          <div key={fieldKey} className="space-y-2">
+            <Label htmlFor={fieldKey}>{displayKey}</Label>
+            <Input
+              id={fieldKey}
+              type="text"
+              value=""
+              placeholder="Enter value..."
+              onChange={(e) => handleFieldChange(key, e.target.value)}
+            />
+          </div>
+        )
+      }
+
+      if (typeof value === 'string') {
+        // Check if it looks like a URL or image field name
+        const isImageField = key.toLowerCase().includes('image') || key.toLowerCase().includes('photo') || key.toLowerCase().includes('picture')
+        if (isImageField || value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) {
+          return (
+            <div key={fieldKey} className="space-y-2">
+              <Label htmlFor={fieldKey}>{displayKey}</Label>
+              <ImagePicker
+                value={value}
+                onChange={(url) => handleFieldChange(key, url)}
+                label=""
+              />
+            </div>
+          )
+        }
+        // Check if it's a long string (use textarea)
+        if (value.length > 100 || value.includes('\n')) {
+          return (
+            <div key={fieldKey} className="space-y-2">
+              <Label htmlFor={fieldKey}>{displayKey}</Label>
+              <Textarea
+                id={fieldKey}
+                value={value}
+                onChange={(e) => handleFieldChange(key, e.target.value)}
+                rows={4}
+              />
+            </div>
+          )
+        }
+        return (
+          <div key={fieldKey} className="space-y-2">
+            <Label htmlFor={fieldKey}>{displayKey}</Label>
+            <Input
+              id={fieldKey}
+              type="text"
+              value={value}
+              onChange={(e) => handleFieldChange(key, e.target.value)}
+            />
+          </div>
+        )
+      }
+
+      if (typeof value === 'number') {
+        return (
+          <div key={fieldKey} className="space-y-2">
+            <Label htmlFor={fieldKey}>{displayKey}</Label>
+            <Input
+              id={fieldKey}
+              type="number"
+              value={value}
+              onChange={(e) => handleFieldChange(key, parseFloat(e.target.value) || 0)}
+            />
+          </div>
+        )
+      }
+
+      if (typeof value === 'boolean') {
+        return (
+          <div key={fieldKey} className="flex items-center space-x-2">
+            <input
+              id={fieldKey}
+              type="checkbox"
+              checked={value}
+              onChange={(e) => handleFieldChange(key, e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <Label htmlFor={fieldKey} className="cursor-pointer">{displayKey}</Label>
+          </div>
+        )
+      }
+
+      if (Array.isArray(value)) {
+        return (
+          <div key={fieldKey} className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>{displayKey}</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleArrayItemAdd(key)}
+              >
+                Add Item
+              </Button>
+            </div>
+            <div className="space-y-2 border rounded-md p-3">
+              {value.map((item, index) => (
+                <div key={index} className="flex gap-2 items-start">
+                  <div className="flex-1 space-y-2">
+                    {typeof item === 'object' && item !== null && !Array.isArray(item) ? (
+                      <div className="space-y-2 border rounded p-2 bg-muted/50">
+                        {Object.entries(item as Record<string, unknown>).map(([nestedKey, nestedValue]) => {
+                          const nestedFieldKey = `${fieldKey}[${index}].${nestedKey}`
+                          const nestedDisplayKey = nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()
+                          
+                          // Handle nested object fields
+                          if (typeof nestedValue === 'string') {
+                            const isNestedImageField = nestedKey.toLowerCase().includes('image') || nestedKey.toLowerCase().includes('photo') || nestedKey.toLowerCase().includes('picture')
+                            if (isNestedImageField || nestedValue.startsWith('http://') || nestedValue.startsWith('https://') || nestedValue.startsWith('/')) {
+                              return (
+                                <div key={nestedFieldKey} className="space-y-2">
+                                  <Label htmlFor={nestedFieldKey}>{nestedDisplayKey}</Label>
+                                  <ImagePicker
+                                    value={nestedValue}
+                                    onChange={(url) => {
+                                      const updatedItem = { ...(item as Record<string, unknown>), [nestedKey]: url }
+                                      handleArrayItemChange(key, index, updatedItem)
+                                    }}
+                                    label=""
+                                  />
+                                </div>
+                              )
+                            }
+                            if (nestedValue.length > 100 || nestedValue.includes('\n')) {
+                              return (
+                                <div key={nestedFieldKey} className="space-y-2">
+                                  <Label htmlFor={nestedFieldKey}>{nestedDisplayKey}</Label>
+                                  <Textarea
+                                    id={nestedFieldKey}
+                                    value={nestedValue}
+                                    onChange={(e) => {
+                                      const updatedItem = { ...(item as Record<string, unknown>), [nestedKey]: e.target.value }
+                                      handleArrayItemChange(key, index, updatedItem)
+                                    }}
+                                    rows={3}
+                                  />
+                                </div>
+                              )
+                            }
+                            return (
+                              <div key={nestedFieldKey} className="space-y-2">
+                                <Label htmlFor={nestedFieldKey}>{nestedDisplayKey}</Label>
+                                <Input
+                                  id={nestedFieldKey}
+                                  type="text"
+                                  value={nestedValue}
+                                  onChange={(e) => {
+                                    const updatedItem = { ...(item as Record<string, unknown>), [nestedKey]: e.target.value }
+                                    handleArrayItemChange(key, index, updatedItem)
+                                  }}
+                                />
+                              </div>
+                            )
+                          }
+                          if (typeof nestedValue === 'number') {
+                            return (
+                              <div key={nestedFieldKey} className="space-y-2">
+                                <Label htmlFor={nestedFieldKey}>{nestedDisplayKey}</Label>
+                                <Input
+                                  id={nestedFieldKey}
+                                  type="number"
+                                  value={nestedValue}
+                                  onChange={(e) => {
+                                    const updatedItem = { ...(item as Record<string, unknown>), [nestedKey]: parseFloat(e.target.value) || 0 }
+                                    handleArrayItemChange(key, index, updatedItem)
+                                  }}
+                                />
+                              </div>
+                            )
+                          }
+                          if (typeof nestedValue === 'boolean') {
+                            return (
+                              <div key={nestedFieldKey} className="flex items-center space-x-2">
+                                <input
+                                  id={nestedFieldKey}
+                                  type="checkbox"
+                                  checked={nestedValue}
+                                  onChange={(e) => {
+                                    const updatedItem = { ...(item as Record<string, unknown>), [nestedKey]: e.target.checked }
+                                    handleArrayItemChange(key, index, updatedItem)
+                                  }}
+                                  className="h-4 w-4 rounded border-gray-300"
+                                />
+                                <Label htmlFor={nestedFieldKey} className="cursor-pointer">{nestedDisplayKey}</Label>
+                              </div>
+                            )
+                          }
+                          return null
+                        })}
+                      </div>
+                    ) : (
+                      <Input
+                        type="text"
+                        value={String(item)}
+                        onChange={(e) => handleArrayItemChange(key, index, e.target.value)}
+                        placeholder={`Item ${index + 1}`}
+                      />
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleArrayItemRemove(key, index)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <IconX className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {value.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-2">No items. Click "Add Item" to add one.</p>
+              )}
+            </div>
+          </div>
+        )
+      }
+
+      if (typeof value === 'object' && value !== null) {
+        return (
+          <div key={fieldKey} className="space-y-2 border rounded-md p-3 bg-muted/30">
+            <Label className="font-semibold">{displayKey}</Label>
+            <div className="space-y-3 pl-2 border-l-2">
+              {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) =>
+                renderField(nestedKey, nestedValue, fieldKey)
+              )}
+            </div>
+          </div>
+        )
+      }
+
+      return null
+    }
+
+    const contentEntries = Object.entries(content)
+    
+    if (contentEntries.length === 0) {
+      return (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">No content fields available. Add fields by editing the JSON directly or implement a custom form for this component.</p>
+          <div>
+            <Label>Raw Content (JSON)</Label>
+            <Textarea
+              value={JSON.stringify(content, null, 2)}
+              onChange={(e) => {
+                try {
+                  const parsed = JSON.parse(e.target.value)
+                  onChange(parsed)
+                } catch {
+                  // Invalid JSON, ignore
+                }
+              }}
+              rows={10}
+              className="font-mono text-sm"
+            />
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-4">
+        {contentEntries.map(([key, value]) => renderField(key, value))}
+      </div>
+    )
+  }
+
   const renderForm = () => {
     switch (component) {
       case 'InfoBar':
@@ -527,27 +836,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
         )
 
       default:
-        return (
-          <div className="space-y-4">
-            <p className="text-muted-foreground">Form for {component} component not yet implemented.</p>
-            <div>
-              <Label>Raw Content (JSON)</Label>
-              <Textarea
-                value={JSON.stringify(draftContent, null, 2)}
-                onChange={(e) => {
-                  try {
-                    const parsed = JSON.parse(e.target.value)
-                    onContentChange(parsed)
-                  } catch {
-                    // Invalid JSON, ignore
-                  }
-                }}
-                rows={10}
-                className="font-mono text-sm"
-              />
-            </div>
-          </div>
-        )
+        return renderDynamicForm(draftContent, onContentChange)
     }
   }
 

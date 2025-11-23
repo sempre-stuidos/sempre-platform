@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { IconArrowLeft, IconEye } from "@tabler/icons-react"
 import { PageCanvasView } from "@/components/page-canvas-view"
 import { SectionInspectorPanel } from "@/components/section-inspector-panel"
+import { SectionWidget } from "@/components/section-widget"
 import { SectionListPanel } from "@/components/section-list-panel"
 import { ViewportToggle, type ViewportSize } from "@/components/viewport-toggle"
 import { CanvasGlobalActions } from "@/components/canvas-global-actions"
@@ -39,6 +40,7 @@ export function PageCanvasEditor({
   const [viewMode, setViewMode] = React.useState<'draft' | 'published'>('draft')
   const [viewportSize, setViewportSize] = React.useState<ViewportSize>('desktop')
   const [showSectionList, setShowSectionList] = React.useState(true)
+  const [isWidgetMode, setIsWidgetMode] = React.useState(true)
   const [previewToken, setPreviewToken] = React.useState<string | null>(null)
   const [isLoadingToken, setIsLoadingToken] = React.useState(true)
   const [iframeKey, setIframeKey] = React.useState(0)
@@ -114,6 +116,10 @@ export function PageCanvasEditor({
 
   const handleSectionClick = (sectionId: string) => {
     setSelectedSectionId(sectionId)
+    // Default to widget mode when section is selected
+    if (!isWidgetMode) {
+      setIsWidgetMode(true)
+    }
   }
 
   const handleSectionHover = (sectionId: string | null) => {
@@ -259,14 +265,15 @@ export function PageCanvasEditor({
             pageBaseUrl={pageBaseUrl}
             pageSlug={pageSlug}
             iframeKey={iframeKey}
+            isWidgetMode={isWidgetMode}
             onSectionClick={handleSectionClick}
             onSectionHover={handleSectionHover}
             sectionRefs={sectionRefs}
           />
         </div>
 
-        {/* Inspector Panel */}
-        {selectedSection && (
+        {/* Inspector Panel or Widget */}
+        {selectedSection && !isWidgetMode && (
           <SectionInspectorPanel
             section={selectedSection}
             orgId={orgId}
@@ -278,6 +285,27 @@ export function PageCanvasEditor({
             onContentChange={handleContentChange}
             onClose={() => setSelectedSectionId(null)}
             onSave={handleSave}
+            onConvertToWidget={() => setIsWidgetMode(true)}
+          />
+        )}
+
+        {/* Widget Mode */}
+        {selectedSection && isWidgetMode && (
+          <SectionWidget
+            section={selectedSection}
+            orgId={orgId}
+            pageId={pageId}
+            pageSlug={pageSlug}
+            sectionKey={selectedSection.key}
+            pageBaseUrl={pageBaseUrl}
+            draftContent={selectedDraftContent}
+            onContentChange={handleContentChange}
+            onClose={() => {
+              setIsWidgetMode(false)
+              setSelectedSectionId(null)
+            }}
+            onSave={handleSave}
+            onExpand={() => setIsWidgetMode(false)}
           />
         )}
       </div>

@@ -16,6 +16,7 @@ interface PageCanvasViewProps {
   pageBaseUrl: string | null
   pageSlug: string
   iframeKey: number
+  isWidgetMode?: boolean
   onSectionClick: (sectionId: string) => void
   onSectionHover: (sectionId: string | null) => void
   sectionRefs: React.RefObject<Record<string, HTMLDivElement | null>>
@@ -31,14 +32,17 @@ export function PageCanvasView({
   pageBaseUrl,
   pageSlug,
   iframeKey,
+  isWidgetMode = false,
   onSectionClick,
   onSectionHover,
   sectionRefs,
 }: PageCanvasViewProps) {
   const [isLoading, setIsLoading] = React.useState(true)
   const [iframeError, setIframeError] = React.useState<string | null>(null)
+  const [sectionPositions, setSectionPositions] = React.useState<Record<string, DOMRect>>({})
   const iframeRef = React.useRef<HTMLIFrameElement>(null)
   const containerRef = React.useRef<HTMLDivElement>(null)
+  const highlightOverlayRef = React.useRef<HTMLDivElement>(null)
 
   const getStatusBadge = (section: PageSectionV2) => {
     if (section.status === 'dirty') {
@@ -93,7 +97,84 @@ export function PageCanvasView({
     setIframeError('Failed to load page preview')
   }
 
-  // Scroll to section in iframe if possible
+  // Listen for section positions from iframe
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Only accept messages from the same origin or trusted source
+      if (event.data?.type === 'section-positions' && event.data?.positions) {
+        setSectionPositions(event.data.positions)
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [])
+
+  // Request section positions from iframe after load
+  React.useEffect(() => {
+    if (!isLoading && iframeRef.current) {
+      const iframe = iframeRef.current
+      const updatePositions = () => {
+        try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
+          if (iframeDoc) {
+            const positions: Record<string, DOMRect> = {}
+            sections.forEach(section => {
+              const element = iframeDoc.querySelector(`[data-section-key="${section.key}"]`)
+              if (element) {
+                const rect = element.getBoundingClientRect()
+                const iframeRect = iframe.getBoundingClientRect()
+                // Calculate position relative to iframe container
+                positions[section.id] = new DOMRect(
+                  rect.left - iframeRect.left,
+                  rect.top - iframeRect.top,
+                  rect.width,
+                  rect.height
+                )
+              }
+            })
+            if (Object.keys(positions).length > 0) {
+              setSectionPositions(prev => ({ ...prev, ...positions }))
+            }
+          }
+        } catch (error) {
+          // Cross-origin restrictions - try postMessage approach
+          try {
+            iframe.contentWindow?.postMessage({ type: 'request-section-positions', sectionKeys: sections.map(s => s.key) }, '*')
+          } catch (e) {
+            // Ignore
+          }
+        }
+      }
+
+      // Update positions after load with multiple attempts
+      const attemptUpdate = (delay: number) => {
+        setTimeout(() => {
+          updatePositions()
+        }, delay)
+      }
+      
+      attemptUpdate(500)
+      attemptUpdate(1000)
+      attemptUpdate(2000)
+      
+      // Update on scroll and resize
+      const handleUpdate = () => {
+        updatePositions()
+      }
+      const scrollContainer = containerRef.current?.parentElement
+      if (scrollContainer) {
+        scrollContainer.addEventListener('scroll', handleUpdate, { passive: true })
+        window.addEventListener('resize', handleUpdate)
+        return () => {
+          scrollContainer.removeEventListener('scroll', handleUpdate)
+          window.removeEventListener('resize', handleUpdate)
+        }
+      }
+    }
+  }, [isLoading, sections, iframeKey])
+
+  // Scroll to section in iframe and update position
   React.useEffect(() => {
     if (selectedSectionId && iframeRef.current) {
       const section = sections.find(s => s.id === selectedSectionId)
@@ -103,9 +184,29 @@ export function PageCanvasView({
           if (iframe.contentWindow) {
             setTimeout(() => {
               try {
-                const sectionElement = iframe.contentDocument?.querySelector(`[data-section-key="${section.key}"]`)
-                if (sectionElement) {
-                  sectionElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
+                if (iframeDoc) {
+                  const sectionElement = iframeDoc.querySelector(`[data-section-key="${section.key}"]`)
+                  if (sectionElement) {
+                    sectionElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    // Recalculate position after scroll
+                    setTimeout(() => {
+                      const element = iframeDoc.querySelector(`[data-section-key="${section.key}"]`)
+                      if (element) {
+                        const rect = element.getBoundingClientRect()
+                        const iframeRect = iframe.getBoundingClientRect()
+                        setSectionPositions(prev => ({
+                          ...prev,
+                          [section.id]: new DOMRect(
+                            rect.left - iframeRect.left,
+                            rect.top - iframeRect.top,
+                            rect.width,
+                            rect.height
+                          )
+                        }))
+                      }
+                    }, 500)
+                  }
                 }
               } catch {
                 // Cross-origin restrictions may prevent this
@@ -172,31 +273,26 @@ export function PageCanvasView({
             </div>
           )}
 
-          {/* Overlay for Section Labels and Badges */}
-          {selectedSection && (
-            <div className="absolute top-4 left-4 z-30 pointer-events-none">
-              <div className="bg-background/95 backdrop-blur-sm border rounded-md px-3 py-2 shadow-lg">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">{selectedSection.label}</span>
-                  {getStatusBadge(selectedSection)}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {selectedSection.component}
-                </p>
-              </div>
+
+          {/* Accurate section highlight overlay - only show if we have position data */}
+          {selectedSection && isWidgetMode && sectionPositions[selectedSection.id] && (
+            <div
+              ref={highlightOverlayRef}
+              className="absolute pointer-events-none z-20 border-4 border-primary rounded-lg transition-all duration-300"
+              style={{
+                left: `${sectionPositions[selectedSection.id].left}px`,
+                top: `${sectionPositions[selectedSection.id].top}px`,
+                width: `${sectionPositions[selectedSection.id].width}px`,
+                height: `${sectionPositions[selectedSection.id].height}px`,
+                boxShadow: '0 0 0 4px rgba(59, 130, 246, 0.4), inset 0 0 0 3px rgba(59, 130, 246, 0.3)',
+                backgroundColor: 'rgba(59, 130, 246, 0.05)',
+              }}
+            >
+              {/* Pulse animation */}
+              <div className="absolute inset-0 border-2 border-primary rounded-lg animate-pulse opacity-50" />
             </div>
           )}
 
-          {hoveredSection && !selectedSection && (
-            <div className="absolute top-4 left-4 z-30 pointer-events-none">
-              <div className="bg-background/95 backdrop-blur-sm border border-primary/30 rounded-md px-3 py-2 shadow-lg">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">{hoveredSection.label}</span>
-                  {getStatusBadge(hoveredSection)}
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Lock Indicator */}
           {(selectedSection || hoveredSection) && (
@@ -208,10 +304,6 @@ export function PageCanvasView({
             </div>
           )}
 
-          {/* Dim overlay when section is selected */}
-          {selectedSectionId && (
-            <div className="absolute inset-0 bg-background/10 pointer-events-none z-10" />
-          )}
         </div>
       </div>
     </div>

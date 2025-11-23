@@ -4,7 +4,7 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { SectionForm } from "@/components/section-form"
-import { IconX } from "@tabler/icons-react"
+import { IconX, IconLayoutDashboard } from "@tabler/icons-react"
 import type { PageSectionV2 } from "@/lib/types"
 
 interface SectionInspectorPanelProps {
@@ -18,6 +18,7 @@ interface SectionInspectorPanelProps {
   onContentChange: (content: Record<string, unknown>) => void
   onClose: () => void
   onSave?: () => void
+  onConvertToWidget?: () => void
 }
 
 export function SectionInspectorPanel({
@@ -31,13 +32,14 @@ export function SectionInspectorPanel({
   onContentChange,
   onClose,
   onSave,
+  onConvertToWidget,
 }: SectionInspectorPanelProps) {
   if (!section) {
     return null
   }
 
   return (
-    <div className="w-96 border-l bg-background flex flex-col h-full">
+    <div className="w-96 border-l bg-background flex flex-col h-full relative">
       <div className="p-4 border-b flex items-center justify-between">
         <div className="flex-1">
           <h3 className="text-sm font-semibold">{section.label}</h3>
@@ -74,6 +76,18 @@ export function SectionInspectorPanel({
           />
         </div>
       </ScrollArea>
+
+      {/* Floating Convert to Widget Button */}
+      <div className="absolute bottom-6 right-6 z-50">
+        <Button
+          onClick={() => onConvertToWidget?.()}
+          className="shadow-lg rounded-full h-12 px-4 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-105"
+          size="lg"
+        >
+          <IconLayoutDashboard className="h-5 w-5" />
+          <span className="font-medium">Convert to Widget</span>
+        </Button>
+      </div>
     </div>
   )
 }
