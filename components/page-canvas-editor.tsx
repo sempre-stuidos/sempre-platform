@@ -119,7 +119,19 @@ export function PageCanvasEditor({
     }
     return section || null
   }, [selectedSectionId, sections])
-  const selectedDraftContent = selectedSectionId ? draftContents[selectedSectionId] || {} : {}
+  const selectedDraftContent = React.useMemo(() => {
+    const content = selectedSectionId ? draftContents[selectedSectionId] || {} : {}
+    if (selectedSectionId && selectedComponentKey) {
+      console.log('[PageCanvasEditor] Selected draft content for component:', {
+        selectedSectionId,
+        selectedComponentKey,
+        content,
+        contentKeys: Object.keys(content),
+        componentValue: content[selectedComponentKey],
+      })
+    }
+    return content
+  }, [selectedSectionId, selectedComponentKey, draftContents])
 
   // Debug: Log when selectedSectionId changes
   React.useEffect(() => {

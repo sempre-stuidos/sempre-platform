@@ -178,16 +178,40 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
 
   // Extract component content if a component is selected
   const componentContent = React.useMemo(() => {
-    if (selectedComponentKey && draftContent[selectedComponentKey] !== undefined) {
-      const content = draftContent[selectedComponentKey]
-      // If it's an object (not array, not null), return it as-is
-      if (typeof content === 'object' && content !== null && !Array.isArray(content)) {
-        return content as Record<string, unknown>
+    if (selectedComponentKey) {
+      // Check if the component key exists directly in draftContent
+      if (draftContent[selectedComponentKey] !== undefined) {
+        const content = draftContent[selectedComponentKey]
+        console.log('[SectionForm] Extracting component content:', {
+          selectedComponentKey,
+          content,
+          contentType: typeof content,
+          isArray: Array.isArray(content),
+          draftContentKeys: Object.keys(draftContent),
+        })
+        // If it's an object (not array, not null), return it as-is
+        if (typeof content === 'object' && content !== null && !Array.isArray(content)) {
+          console.log('[SectionForm] Component content is object, returning as-is:', content)
+          return content as Record<string, unknown>
+        }
+        // If it's a primitive value (string, number, boolean), wrap it in an object
+        // using the component key as the field name so the label shows correctly
+        console.log('[SectionForm] Component content is primitive, wrapping:', { [selectedComponentKey]: content })
+        return { [selectedComponentKey]: content }
+      } else {
+        // Component key not found in draftContent - this might mean the content structure is different
+        // or the component is nested. Log a warning and use the full draftContent
+        console.warn('[SectionForm] Component key not found in draftContent:', {
+          selectedComponentKey,
+          draftContentKeys: Object.keys(draftContent),
+          draftContent,
+        })
+        // Return empty object or the full content depending on what makes sense
+        // For now, return an empty object so the form can show fields to add the component
+        return {}
       }
-      // If it's a primitive value (string, number, boolean), wrap it in an object
-      // using the component key as the field name so the label shows correctly
-      return { [selectedComponentKey]: content }
     }
+    console.log('[SectionForm] No component selected, using full draftContent:', draftContent)
     return draftContent
   }, [draftContent, selectedComponentKey])
 
@@ -616,7 +640,18 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
   const renderForm = () => {
     // If a component is selected, show only that component's fields using dynamic form
     if (selectedComponentKey) {
+      console.log('[SectionForm] Rendering form for component:', {
+        selectedComponentKey,
+        componentContent,
+        draftContent,
+        componentContentKeys: Object.keys(componentContent),
+      })
       return renderDynamicForm(componentContent, (content) => {
+        console.log('[SectionForm] Dynamic form content changed:', {
+          selectedComponentKey,
+          content,
+          contentKeys: Object.keys(content),
+        })
         // Get the original component value to check if it's a primitive
         const originalValue = draftContent[selectedComponentKey]
         const isPrimitive = originalValue !== null && originalValue !== undefined && 
@@ -626,12 +661,14 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
           // If it's a primitive, extract the value from the wrapped object
           // The content will be { [selectedComponentKey]: value }
           const extractedValue = content[selectedComponentKey]
+          console.log('[SectionForm] Component is primitive, extracted value:', extractedValue)
           if (typeof extractedValue === 'string' || typeof extractedValue === 'number' || typeof extractedValue === 'boolean' || 
               (typeof extractedValue === 'object' && extractedValue !== null && !Array.isArray(extractedValue))) {
             onContentChange(extractedValue as string | number | boolean | Record<string, unknown>)
           }
         } else {
           // If it's an object, pass the whole content
+          console.log('[SectionForm] Component is object, passing whole content:', content)
           onContentChange(content)
         }
       })
@@ -676,39 +713,149 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
       case 'HeroSection':
         return (
           <div className="space-y-4">
+            {/* Badge */}
+            <div className="space-y-2 border rounded-md p-3 bg-muted/30">
+              <Label className="font-semibold">Badge</Label>
+              <div className="space-y-3 pl-2 border-l-2">
+                <div>
+                  <Label htmlFor="badgeIcon">Icon</Label>
+                  <Input
+                    id="badgeIcon"
+                    value={getStringValue((componentContent.badge as Record<string, unknown>)?.icon)}
+                    onChange={(e) => handleFieldChange('badge', {
+                      ...(typeof componentContent.badge === 'object' && componentContent.badge !== null && !Array.isArray(componentContent.badge) 
+                        ? componentContent.badge as Record<string, unknown>
+                        : {}),
+                      icon: e.target.value
+                    })}
+                    placeholder="Leaf"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="badgeText">Text</Label>
+                  <Input
+                    id="badgeText"
+                    value={getStringValue((componentContent.badge as Record<string, unknown>)?.text)}
+                    onChange={(e) => handleFieldChange('badge', {
+                      ...(typeof componentContent.badge === 'object' && componentContent.badge !== null && !Array.isArray(componentContent.badge) 
+                        ? componentContent.badge as Record<string, unknown>
+                        : {}),
+                      text: e.target.value
+                    })}
+                    placeholder="Made in Canada"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Title */}
             <div>
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
                 value={getStringValue(componentContent.title)}
                 onChange={(e) => handleFieldChange('title', e.target.value)}
-                placeholder="Culinary Excellence"
+                placeholder="Clean Beauty That Works—Made With Care in Canada"
               />
             </div>
+
+            {/* Subtitle */}
             <div className="space-y-2">
               <Label htmlFor="subtitle">Subtitle</Label>
               <Textarea
                 id="subtitle"
                 value={getStringValue(componentContent.subtitle)}
                 onChange={(e) => handleFieldChange('subtitle', e.target.value)}
-                placeholder="Experience an unforgettable evening..."
+                placeholder="Luxurious hair care and skincare crafted with clean ingredients..."
                 rows={3}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="ctaLabel">CTA Button Label</Label>
-              <Input
-                id="ctaLabel"
-                value={getStringValue(componentContent.ctaLabel)}
-                onChange={(e) => handleFieldChange('ctaLabel', e.target.value)}
-                placeholder="View Our Menu"
-              />
+
+            {/* Primary CTA */}
+            <div className="space-y-2 border rounded-md p-3 bg-muted/30">
+              <Label className="font-semibold">Primary CTA</Label>
+              <div className="space-y-3 pl-2 border-l-2">
+                <div>
+                  <Label htmlFor="primaryCtaLabel">Label</Label>
+                  <Input
+                    id="primaryCtaLabel"
+                    value={getStringValue((componentContent.primaryCta as Record<string, unknown>)?.label)}
+                    onChange={(e) => handleFieldChange('primaryCta', {
+                      ...(typeof componentContent.primaryCta === 'object' && componentContent.primaryCta !== null && !Array.isArray(componentContent.primaryCta) 
+                        ? componentContent.primaryCta as Record<string, unknown>
+                        : {}),
+                      label: e.target.value
+                    })}
+                    placeholder="Shop Bestsellers"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="primaryCtaHref">Link (href)</Label>
+                  <Input
+                    id="primaryCtaHref"
+                    value={getStringValue((componentContent.primaryCta as Record<string, unknown>)?.href)}
+                    onChange={(e) => handleFieldChange('primaryCta', {
+                      ...(typeof componentContent.primaryCta === 'object' && componentContent.primaryCta !== null && !Array.isArray(componentContent.primaryCta) 
+                        ? componentContent.primaryCta as Record<string, unknown>
+                        : {}),
+                      href: e.target.value
+                    })}
+                    placeholder="#products"
+                  />
+                </div>
+              </div>
             </div>
+
+            {/* Secondary CTA */}
+            <div className="space-y-2 border rounded-md p-3 bg-muted/30">
+              <Label className="font-semibold">Secondary CTA</Label>
+              <div className="space-y-3 pl-2 border-l-2">
+                <div>
+                  <Label htmlFor="secondaryCtaLabel">Label</Label>
+                  <Input
+                    id="secondaryCtaLabel"
+                    value={getStringValue((componentContent.secondaryCta as Record<string, unknown>)?.label)}
+                    onChange={(e) => handleFieldChange('secondaryCta', {
+                      ...(typeof componentContent.secondaryCta === 'object' && componentContent.secondaryCta !== null && !Array.isArray(componentContent.secondaryCta) 
+                        ? componentContent.secondaryCta as Record<string, unknown>
+                        : {}),
+                      label: e.target.value
+                    })}
+                    placeholder="See Our Ingredients"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="secondaryCtaHref">Link (href)</Label>
+                  <Input
+                    id="secondaryCtaHref"
+                    value={getStringValue((componentContent.secondaryCta as Record<string, unknown>)?.href)}
+                    onChange={(e) => handleFieldChange('secondaryCta', {
+                      ...(typeof componentContent.secondaryCta === 'object' && componentContent.secondaryCta !== null && !Array.isArray(componentContent.secondaryCta) 
+                        ? componentContent.secondaryCta as Record<string, unknown>
+                        : {}),
+                      href: e.target.value
+                    })}
+                    placeholder="#ingredients"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Hero Image */}
             <ImagePicker
-              value={getStringValue(componentContent.imageUrl)}
-              onChange={(url) => handleFieldChange('imageUrl', url)}
+              value={getStringValue(componentContent.heroImage)}
+              onChange={(url) => handleFieldChange('heroImage', url)}
               label="Hero Image"
-              placeholder="/elegant-restaurant-interior.png"
+              placeholder="https://images.unsplash.com/..."
+              compact={isWidgetMode}
+            />
+
+            {/* Accent Image */}
+            <ImagePicker
+              value={getStringValue(componentContent.accentImage)}
+              onChange={(url) => handleFieldChange('accentImage', url)}
+              label="Accent Image"
+              placeholder="https://images.unsplash.com/..."
               compact={isWidgetMode}
             />
           </div>
