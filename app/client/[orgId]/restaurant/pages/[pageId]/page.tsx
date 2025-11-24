@@ -5,9 +5,10 @@ import { getOrganizationById } from '@/lib/businesses';
 import { getPageWithSections } from '@/lib/pages';
 import { supabaseAdmin } from '@/lib/supabase';
 import { PageSectionsTable } from '@/components/page-sections-table';
-import { PageActionsBar } from '@/components/page-actions-bar';
 import { Button } from '@/components/ui/button';
-import { IconArrowLeft } from '@tabler/icons-react';
+import { Badge } from '@/components/ui/badge';
+import { IconArrowLeft, IconEye } from '@tabler/icons-react';
+import { PreviewPageButton } from '@/components/preview-page-button';
 import { notFound } from 'next/navigation';
 import { PageDetailsClient } from '@/components/page-details-client';
 
@@ -99,20 +100,28 @@ export default async function EditPage({ params }: EditPageProps) {
               </div>
           </div>
           
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <PageActionsBar 
-              orgId={orgId}
-              pageId={pageId}
-              pageSlug={pageWithSections.slug}
-              hasDirtySections={hasDirtySections}
-              business={organization}
-              page={pageWithSections}
-            />
-            <Link href={`/client/${orgId}/restaurant/pages/${pageId}/canvas`}>
-              <Button className="bg-primary text-primary-foreground">
-                Edit in Canvas
-              </Button>
-            </Link>
+          <div className="mb-4 flex items-center justify-end gap-4">
+            <div className="flex flex-col items-end gap-2">
+              {hasDirtySections && (
+                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                  Has Unpublished Changes
+                </Badge>
+              )}
+              <div className="flex items-center gap-2">
+                <PreviewPageButton
+                  orgId={orgId}
+                  pageId={pageId}
+                  pageSlug={pageWithSections.slug}
+                  business={organization}
+                  page={pageWithSections}
+                />
+                <Link href={`/client/${orgId}/restaurant/pages/${pageId}/canvas`}>
+                  <Button className="bg-primary text-primary-foreground">
+                    Edit Page
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </div>
 
           <PageSectionsTable 

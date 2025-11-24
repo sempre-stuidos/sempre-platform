@@ -861,7 +861,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
   }, [draftContent, hasSavedDraft])
 
   if (isWidgetMode) {
-    return (
+        return (
       <div className="space-y-6 flex flex-col h-full">
         <div className="flex-1">
           {renderForm()}
@@ -899,9 +899,9 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               </Button>
             )}
           </div>
-        </div>
-      </div>
-    )
+            </div>
+          </div>
+        )
   }
 
   return (
