@@ -291,7 +291,7 @@ export function PageCanvasEditor({
         <div className="px-4 py-3 flex items-center">
           {/* Left Section */}
           <div className="flex items-center gap-4 flex-1">
-            <Link href={`/client/${orgId}/restaurant/pages/${pageId}`}>
+            <Link href={`/client/${orgId}/restaurant/pages`}>
               <Button variant="ghost" size="sm">
                 <IconArrowLeft className="h-4 w-4 mr-2" />
                 Back

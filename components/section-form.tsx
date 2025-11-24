@@ -355,8 +355,11 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
             </div>
           )
         }
+        // Fields that should always use textarea (for multi-line text)
+        const textareaFields = ['subtitle', 'description', 'text', 'content', 'quote', 'message', 'body']
+        const shouldUseTextarea = textareaFields.some(field => key.toLowerCase().includes(field))
         // Check if it's a long string (use textarea)
-        if (value.length > 100 || value.includes('\n')) {
+        if (shouldUseTextarea || value.length > 100 || value.includes('\n')) {
           return (
             <div key={fieldKey} className="space-y-2">
               <Label htmlFor={fieldKey}>{displayKey}</Label>
@@ -364,7 +367,8 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
                 id={fieldKey}
                 value={value}
                 onChange={(e) => handleFieldChange(key, e.target.value)}
-                rows={4}
+                rows={3}
+                className="resize-none"
               />
             </div>
           )
@@ -454,7 +458,10 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
                                 </div>
                               )
                             }
-                            if (nestedValue.length > 100 || nestedValue.includes('\n')) {
+                            // Fields that should always use textarea (for multi-line text)
+                            const textareaFields = ['subtitle', 'description', 'text', 'content', 'quote', 'message', 'body']
+                            const shouldUseTextarea = textareaFields.some(field => nestedKey.toLowerCase().includes(field))
+                            if (shouldUseTextarea || nestedValue.length > 100 || nestedValue.includes('\n')) {
                               return (
                                 <div key={nestedFieldKey} className="space-y-2">
                                   <Label htmlFor={nestedFieldKey}>{nestedDisplayKey}</Label>
@@ -466,6 +473,7 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
                                       handleArrayItemChange(key, index, updatedItem)
                                     }}
                                     rows={3}
+                                    className="resize-none"
                                   />
                                 </div>
                               )
@@ -522,11 +530,12 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
                         })}
                       </div>
                     ) : (
-                      <Input
-                        type="text"
+                      <Textarea
                         value={String(item)}
                         onChange={(e) => handleArrayItemChange(key, index, e.target.value)}
                         placeholder={`Item ${index + 1}`}
+                        rows={3}
+                        className="resize-none"
                       />
                     )}
                   </div>

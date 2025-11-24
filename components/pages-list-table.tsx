@@ -132,7 +132,7 @@ export function PagesListTable({ orgId, pages, organization }: PagesListTablePro
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => router.push(`/client/${orgId}/restaurant/pages/${page.id}`)}
+                    onClick={() => router.push(`/client/${orgId}/restaurant/pages/${page.id}/canvas`)}
                   >
                     <IconEdit className="h-4 w-4 mr-2" />
                     Edit
