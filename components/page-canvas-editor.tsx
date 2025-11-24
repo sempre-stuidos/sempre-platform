@@ -100,6 +100,7 @@ export function PageCanvasEditor({
     }
   }, [viewMode]) // Only depend on viewMode, not createPreviewToken to avoid loops
 
+
   // Update draft contents when sections prop changes (e.g., after save/refresh)
   React.useEffect(() => {
     const newDraftContents = sections.reduce((acc, section) => {
@@ -109,18 +110,53 @@ export function PageCanvasEditor({
     setDraftContents(newDraftContents)
   }, [sections])
 
-  const selectedSection = sections.find(s => s.id === selectedSectionId) || null
+  const selectedSection = React.useMemo(() => {
+    if (!selectedSectionId) return null
+    const section = sections.find(s => s.id === selectedSectionId)
+    if (!section) {
+      console.warn('[PageCanvasEditor] Selected section not found:', selectedSectionId, 'Available sections:', sections.map(s => s.id))
+    }
+    return section || null
+  }, [selectedSectionId, sections])
   const selectedDraftContent = selectedSectionId ? draftContents[selectedSectionId] || {} : {}
+
+  // Debug: Log when selectedSectionId changes
+  React.useEffect(() => {
+    console.log('[PageCanvasEditor] selectedSectionId changed:', selectedSectionId)
+    console.log('[PageCanvasEditor] selectedSection:', selectedSection)
+    console.log('[PageCanvasEditor] isWidgetMode:', isWidgetMode)
+  }, [selectedSectionId, selectedSection, isWidgetMode])
 
   const hasDirtySections = sections.some(s => s.status === 'dirty')
 
-  const handleSectionClick = (sectionId: string) => {
-    setSelectedSectionId(sectionId)
-    // Default to widget mode when section is selected
-    if (!isWidgetMode) {
-      setIsWidgetMode(true)
+  const handleSectionClick = React.useCallback((sectionId: string, sectionKey?: string) => {
+    console.log('[PageCanvasEditor] handleSectionClick called with:', sectionId, 'sectionKey:', sectionKey)
+    console.log('[PageCanvasEditor] Available sections:', sections.map(s => ({ id: s.id, key: s.key })))
+    
+    // Try to find section by ID first
+    let section = sections.find(s => s.id === sectionId)
+    
+    // If not found by ID, try to find by key (in case IDs don't match between iframe and editor)
+    if (!section && sectionKey) {
+      section = sections.find(s => s.key === sectionKey)
+      if (section) {
+        console.log('[PageCanvasEditor] Found section by key instead of ID:', section.id, section.key)
+      }
     }
-  }
+    
+    if (section) {
+      console.log('[PageCanvasEditor] Setting selected section:', section.id, section.key)
+      setSelectedSectionId(section.id)
+      // Default to widget mode when section is selected
+      if (!isWidgetMode) {
+        setIsWidgetMode(true)
+      }
+    } else {
+      console.warn('[PageCanvasEditor] Section not found by ID or key:', sectionId, sectionKey)
+      console.warn('[PageCanvasEditor] Available section keys:', sections.map(s => s.key))
+      console.warn('[PageCanvasEditor] Available section IDs:', sections.map(s => s.id))
+    }
+  }, [isWidgetMode, sections])
 
   const handleSectionHover = (sectionId: string | null) => {
     setHoveredSectionId(sectionId)

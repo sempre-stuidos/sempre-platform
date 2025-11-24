@@ -17,7 +17,7 @@ interface PageCanvasViewProps {
   pageSlug: string
   iframeKey: number
   isWidgetMode?: boolean
-  onSectionClick: (sectionId: string) => void
+  onSectionClick: (sectionId: string, sectionKey?: string) => void
   onSectionHover: (sectionId: string | null) => void
   sectionRefs: React.RefObject<Record<string, HTMLDivElement | null>>
 }
@@ -97,18 +97,55 @@ export function PageCanvasView({
     setIframeError('Failed to load page preview')
   }
 
-  // Listen for section positions from iframe
+  // Listen for section click messages from iframe
   React.useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Only accept messages from the same origin or trusted source
-      if (event.data?.type === 'section-positions' && event.data?.positions) {
-        setSectionPositions(event.data.positions)
+      // Only process section-click messages
+      if (event.data?.type !== 'section-click') {
+        return
+      }
+
+      // Accept messages from iframe - be permissive for development
+      const publicSiteUrl = pageBaseUrl || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
+      
+      // Accept messages from expected origin or localhost (for development)
+      const isValidOrigin = event.origin === publicSiteUrl || 
+                           event.origin.includes('localhost') || 
+                           event.origin.includes('127.0.0.1')
+      
+      if (!isValidOrigin) {
+        return
+      }
+
+      // Handle section click
+      if (event.data?.sectionId) {
+        console.log('[PageCanvasView] Section clicked:', event.data.sectionId, 'sectionKey:', event.data.sectionKey)
+        onSectionClick(event.data.sectionId, event.data.sectionKey)
       }
     }
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [])
+  }, [pageBaseUrl, onSectionClick])
+
+  // Listen for section positions from iframe (for highlighting)
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'section-positions' && event.data?.positions) {
+        const publicSiteUrl = pageBaseUrl || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
+        const isValidOrigin = event.origin === publicSiteUrl || 
+                             event.origin.includes('localhost') || 
+                             event.origin.includes('127.0.0.1')
+        
+        if (isValidOrigin) {
+          setSectionPositions(event.data.positions)
+        }
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [pageBaseUrl])
 
   // Request section positions from iframe after load
   React.useEffect(() => {
