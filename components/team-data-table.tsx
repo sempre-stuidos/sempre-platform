@@ -12,7 +12,6 @@ import {
   IconLayoutColumns,
   IconPlus,
   IconClock,
-  IconUser,
   IconBriefcase,
   IconTrash,
   IconEdit,
@@ -47,7 +46,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -63,12 +61,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -88,9 +80,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TeamMember } from "@/lib/types"
-import { updateTeamMember, deleteTeamMember } from "@/lib/team"
+import { deleteTeamMember } from "@/lib/team"
 import { AddTeamMemberModal } from "@/components/add-team-member-modal"
 import { AddExistingUserModal } from "@/components/add-existing-user-modal"
 
@@ -295,7 +287,6 @@ export function TeamDataTable({
   })
   const [selectedMember, setSelectedMember] = React.useState<TeamMember | null>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = React.useState(false)
-  const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list')
   
   // CRUD modal states
   const [isAddTeamMemberModalOpen, setIsAddTeamMemberModalOpen] = React.useState(false)

@@ -412,15 +412,15 @@ export function ClientDataTable({
     }
   }
 
-  const openDeleteDialog = (client: Client) => {
+  const openDeleteDialog = React.useCallback((client: Client) => {
     setClientToDelete(client)
     setDeleteDialogOpen(true)
-  }
+  }, [])
 
-  const handleEditClient = (client: Client) => {
+  const handleEditClient = React.useCallback((client: Client) => {
     setEditingClient(client)
     setIsEditClientModalOpen(true)
-  }
+  }, [])
 
   const handleEditSubmit = async (updatedClient: Partial<Client>) => {
     if (editingClient) {

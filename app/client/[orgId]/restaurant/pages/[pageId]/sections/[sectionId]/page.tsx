@@ -187,8 +187,11 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
     }
   }
 
-  const handleContentChange = (newContent: Record<string, unknown>) => {
-    setDraftContent(newContent)
+  const handleContentChange = (newContent: Record<string, unknown> | string | number | boolean) => {
+    // Only update if it's an object, otherwise ignore primitive values
+    if (typeof newContent === 'object' && newContent !== null && !Array.isArray(newContent)) {
+      setDraftContent(newContent as Record<string, unknown>)
+    }
   }
 
   const handleSave = () => {

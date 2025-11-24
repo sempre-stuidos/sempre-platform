@@ -378,7 +378,7 @@ export function PageCanvasEditor({
             viewMode={viewMode}
             viewportSize={viewportSize}
             previewToken={previewToken}
-            pageBaseUrl={pageBaseUrl}
+            pageBaseUrl={pageBaseUrl ?? null}
             pageSlug={pageSlug}
             iframeKey={iframeKey}
             isWidgetMode={isWidgetMode}
@@ -397,7 +397,7 @@ export function PageCanvasEditor({
             pageId={pageId}
             pageSlug={pageSlug}
             sectionKey={selectedSection.key}
-            pageBaseUrl={pageBaseUrl}
+            pageBaseUrl={pageBaseUrl ?? null}
             draftContent={selectedDraftContent}
             onContentChange={handleContentChange}
             onClose={() => setSelectedSectionId(null)}
@@ -414,7 +414,7 @@ export function PageCanvasEditor({
             pageId={pageId}
             pageSlug={pageSlug}
             sectionKey={selectedSection.key}
-            pageBaseUrl={pageBaseUrl}
+            pageBaseUrl={pageBaseUrl ?? null}
             draftContent={selectedDraftContent}
             selectedComponentKey={selectedComponentKey}
             onContentChange={handleContentChange}

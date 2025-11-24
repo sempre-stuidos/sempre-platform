@@ -383,15 +383,15 @@ export function ProjectsDataTable({
     }
   }
 
-  const openDeleteDialog = (project: Project) => {
+  const openDeleteDialog = React.useCallback((project: Project) => {
     setProjectToDelete(project)
     setDeleteDialogOpen(true)
-  }
+  }, [])
 
-  const handleEditProject = (project: Project) => {
+  const handleEditProject = React.useCallback((project: Project) => {
     setEditingProject(project)
     setIsAddProjectModalOpen(true)
-  }
+  }, [])
 
   const columns = React.useMemo(() => createColumns(handleEditProject, openDeleteDialog), [handleEditProject, openDeleteDialog])
 

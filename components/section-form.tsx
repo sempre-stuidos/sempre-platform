@@ -201,10 +201,16 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
       if (isPrimitive && field === selectedComponentKey) {
         // If the component is a primitive and the field matches the component key,
         // the value is the new primitive value itself
-        onContentChange(value)
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || 
+            (typeof value === 'object' && value !== null && !Array.isArray(value))) {
+          onContentChange(value as string | number | boolean | Record<string, unknown>)
+        }
       } else if (isPrimitive) {
         // This shouldn't happen, but handle it just in case
-        onContentChange(value)
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || 
+            (typeof value === 'object' && value !== null && !Array.isArray(value))) {
+          onContentChange(value as string | number | boolean | Record<string, unknown>)
+        }
       } else {
         // If the component is an object, update the field within it
         const updatedComponentContent = {
@@ -551,7 +557,7 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
                 </div>
               ))}
               {value.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-2">No items. Click "Add Item" to add one.</p>
+                <p className="text-sm text-muted-foreground text-center py-2">No items. Click &quot;Add Item&quot; to add one.</p>
               )}
             </div>
           </div>
@@ -620,7 +626,10 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
           // If it's a primitive, extract the value from the wrapped object
           // The content will be { [selectedComponentKey]: value }
           const extractedValue = content[selectedComponentKey]
-          onContentChange(extractedValue)
+          if (typeof extractedValue === 'string' || typeof extractedValue === 'number' || typeof extractedValue === 'boolean' || 
+              (typeof extractedValue === 'object' && extractedValue !== null && !Array.isArray(extractedValue))) {
+            onContentChange(extractedValue as string | number | boolean | Record<string, unknown>)
+          }
         } else {
           // If it's an object, pass the whole content
           onContentChange(content)

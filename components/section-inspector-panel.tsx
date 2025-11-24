@@ -15,7 +15,7 @@ interface SectionInspectorPanelProps {
   sectionKey: string
   pageBaseUrl?: string | null
   draftContent: Record<string, unknown>
-  onContentChange: (content: Record<string, unknown>) => void
+  onContentChange: (content: Record<string, unknown> | string | number | boolean) => void
   onClose: () => void
   onSave?: () => void
   onConvertToWidget?: () => void

@@ -413,15 +413,15 @@ export function TasksDataTable({
     }
   }
 
-  const openDeleteDialog = (task: Task) => {
+  const openDeleteDialog = React.useCallback((task: Task) => {
     setTaskToDelete(task)
     setDeleteDialogOpen(true)
-  }
+  }, [])
 
-  const handleEditTask = (task: Task) => {
+  const handleEditTask = React.useCallback((task: Task) => {
     setEditingTask(task)
     setIsAddTaskModalOpen(true)
-  }
+  }, [])
 
   const columns = React.useMemo(() => createColumns(handleEditTask, openDeleteDialog), [handleEditTask, openDeleteDialog])
 
