@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { SectionForm } from "@/components/section-form"
-import { IconX, IconChevronUp, IconChevronDown } from "@tabler/icons-react"
+import { IconX, IconChevronUp, IconChevronDown, IconCheck } from "@tabler/icons-react"
 import type { PageSectionV2 } from "@/lib/types"
 
 interface SectionWidgetProps {
@@ -16,10 +16,12 @@ interface SectionWidgetProps {
   sectionKey: string
   pageBaseUrl?: string | null
   draftContent: Record<string, unknown>
-  onContentChange: (content: Record<string, unknown>) => void
+  selectedComponentKey?: string | null
+  onContentChange: (content: Record<string, unknown> | string | number | boolean) => void
   onClose: () => void
   onSave?: () => void
   onExpand?: () => void
+  getLatestContent?: () => Record<string, unknown>
 }
 
 export function SectionWidget({
@@ -30,12 +32,27 @@ export function SectionWidget({
   sectionKey,
   pageBaseUrl,
   draftContent,
+  selectedComponentKey,
   onContentChange,
   onClose,
   onSave,
   onExpand,
+  getLatestContent,
 }: SectionWidgetProps) {
   const [isMinimized, setIsMinimized] = React.useState(false)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [isPublishing, setIsPublishing] = React.useState(false)
+  const [isDiscarding, setIsDiscarding] = React.useState(false)
+  const [hasSavedDraft, setHasSavedDraft] = React.useState(false)
+  const savedContentRef = React.useRef<string | null>(null)
+
+  // Track content changes to reset saved state
+  React.useEffect(() => {
+    const currentContent = JSON.stringify(draftContent)
+    if (hasSavedDraft && savedContentRef.current && currentContent !== savedContentRef.current) {
+      setHasSavedDraft(false)
+    }
+  }, [draftContent, hasSavedDraft])
 
   const getStatusBadge = () => {
     if (section.status === 'dirty') {
@@ -67,7 +84,11 @@ export function SectionWidget({
       <div className="p-3 border-b flex items-center justify-between bg-muted/50">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold truncate">{section.label}</h3>
+            <h3 className="text-sm font-semibold truncate">
+              {selectedComponentKey 
+                ? `${section.label} - ${selectedComponentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}`
+                : section.label}
+            </h3>
             {getStatusBadge()}
           </div>
         </div>
@@ -105,6 +126,7 @@ export function SectionWidget({
               <SectionForm
                 component={section.component}
                 draftContent={draftContent}
+                selectedComponentKey={selectedComponentKey || undefined}
                 onContentChange={onContentChange}
                 sectionId={section.id}
                 orgId={orgId}
@@ -113,12 +135,166 @@ export function SectionWidget({
                 sectionKey={sectionKey}
                 pageBaseUrl={pageBaseUrl}
                 isWidgetMode={true}
+                hideButtons={true}
                 onSave={() => {
+                  setHasSavedDraft(true)
                   onSave?.()
+                }}
+                onDiscard={async () => {
+                  setIsDiscarding(true)
+                  try {
+                    const response = await fetch(`/api/sections/${section.id}/discard`, {
+                      method: 'POST',
+                    })
+                    const data = await response.json()
+                    if (response.ok && data.section) {
+                      const discardedContent = data.section.draft_content || {}
+                      onContentChange(discardedContent)
+                      setHasSavedDraft(false)
+                      savedContentRef.current = null
+                    }
+                  } catch (error) {
+                    console.error('Error discarding:', error)
+                  } finally {
+                    setIsDiscarding(false)
+                  }
+                }}
+                onPublish={async () => {
+                  setIsPublishing(true)
+                  try {
+                    const response = await fetch(`/api/sections/${section.id}/publish`, {
+                      method: 'POST',
+                    })
+                    if (response.ok) {
+                      setHasSavedDraft(false)
+                      onSave?.()
+                    }
+                  } catch (error) {
+                    console.error('Error publishing:', error)
+                  } finally {
+                    setIsPublishing(false)
+                  }
                 }}
               />
             </div>
           </ScrollArea>
+          {/* Action buttons at bottom of widget */}
+          <div className="border-t bg-background p-4">
+            <div className="flex gap-2">
+              <Button
+                onClick={async () => {
+                  setIsDiscarding(true)
+                  try {
+                    const response = await fetch(`/api/sections/${section.id}/discard`, {
+                      method: 'POST',
+                    })
+                    const data = await response.json()
+                    if (response.ok && data.section) {
+                      const discardedContent = data.section.draft_content || {}
+                      onContentChange(discardedContent)
+                      setHasSavedDraft(false)
+                      savedContentRef.current = null
+                    }
+                  } catch (error) {
+                    console.error('Error discarding:', error)
+                  } finally {
+                    setIsDiscarding(false)
+                  }
+                }}
+                disabled={isDiscarding}
+                variant="outline"
+                className="flex-1"
+              >
+                <IconX className="h-4 w-4 mr-2" />
+                {isDiscarding ? 'Discarding...' : 'Discard Changes'}
+              </Button>
+              {hasSavedDraft ? (
+                <Button
+                  onClick={async () => {
+                    setIsPublishing(true)
+                    try {
+                      const response = await fetch(`/api/sections/${section.id}/publish`, {
+                        method: 'POST',
+                      })
+                      if (response.ok) {
+                        setHasSavedDraft(false)
+                        savedContentRef.current = null
+                        onSave?.()
+                      }
+                    } catch (error) {
+                      console.error('Error publishing:', error)
+                    } finally {
+                      setIsPublishing(false)
+                    }
+                  }}
+                  disabled={isPublishing}
+                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <IconCheck className="h-4 w-4 mr-2" />
+                  {isPublishing ? 'Publishing...' : 'Publish'}
+                </Button>
+              ) : (
+                <Button
+                  onClick={async () => {
+                    setIsSaving(true)
+                    try {
+                      // Get the latest content from the editor state to ensure we have the most up-to-date content
+                      const contentToSave = getLatestContent ? getLatestContent() : draftContent
+                      
+                      // Log the content being saved for debugging
+                      console.log('[SectionWidget] Saving draft content:', {
+                        sectionId: section.id,
+                        selectedComponentKey,
+                        draftContentProp: draftContent,
+                        latestContent: contentToSave,
+                        draftContentKeys: Object.keys(contentToSave),
+                      })
+                      
+                      // Use the latest content from editor state
+                      const response = await fetch(`/api/sections/${section.id}`, {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          draftContent: contentToSave,
+                        }),
+                      })
+                      const data = await response.json()
+                      if (response.ok && data.section) {
+                        console.log('[SectionWidget] Save successful, updated section:', data.section)
+                        console.log('[SectionWidget] Saved draft_content:', data.section?.draft_content)
+                        // Update local state with saved content immediately
+                        // Pass the full section content (not component-specific) to ensure proper merge
+                        const savedDraftContent = data.section.draft_content || {}
+                        // If a component is selected, we still need to update the full section content
+                        // The onContentChange will handle merging correctly based on selectedComponentKey
+                        onContentChange(savedDraftContent)
+                        setHasSavedDraft(true)
+                        savedContentRef.current = JSON.stringify(savedDraftContent)
+                        // Call onSave which will refresh the iframe and regenerate preview token
+                        // Add a small delay to ensure database write is complete
+                        setTimeout(() => {
+                          onSave?.()
+                        }, 100)
+                      } else {
+                        console.error('[SectionWidget] Save failed:', data.error)
+                      }
+                    } catch (error) {
+                      console.error('[SectionWidget] Error saving:', error)
+                    } finally {
+                      setIsSaving(false)
+                    }
+                  }}
+                  disabled={isSaving}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  {isSaving ? 'Saving...' : 'Save Draft'}
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -36,6 +36,7 @@ export function PageCanvasEditor({
   pageBaseUrl,
 }: PageCanvasEditorProps) {
   const [selectedSectionId, setSelectedSectionId] = React.useState<string | null>(null)
+  const [selectedComponentKey, setSelectedComponentKey] = React.useState<string | null>(null)
   const [hoveredSectionId, setHoveredSectionId] = React.useState<string | null>(null)
   const [viewMode, setViewMode] = React.useState<'draft' | 'published'>('draft')
   const [viewportSize, setViewportSize] = React.useState<ViewportSize>('desktop')
@@ -147,6 +148,7 @@ export function PageCanvasEditor({
     if (section) {
       console.log('[PageCanvasEditor] Setting selected section:', section.id, section.key)
       setSelectedSectionId(section.id)
+      setSelectedComponentKey(null) // Reset component selection when section is clicked
       // Default to widget mode when section is selected
       if (!isWidgetMode) {
         setIsWidgetMode(true)
@@ -158,16 +160,79 @@ export function PageCanvasEditor({
     }
   }, [isWidgetMode, sections])
 
+  const handleComponentClick = React.useCallback((sectionId: string, sectionKey: string, componentKey: string) => {
+    console.log('[PageCanvasEditor] handleComponentClick called with:', sectionId, 'componentKey:', componentKey)
+    
+    // Try to find section by ID first
+    let section = sections.find(s => s.id === sectionId)
+    
+    // If not found by ID, try to find by key
+    if (!section) {
+      section = sections.find(s => s.key === sectionKey)
+    }
+    
+    if (section) {
+      console.log('[PageCanvasEditor] Setting selected section and component:', section.id, componentKey)
+      setSelectedSectionId(section.id)
+      setSelectedComponentKey(componentKey)
+      // Default to widget mode when component is selected
+      if (!isWidgetMode) {
+        setIsWidgetMode(true)
+      }
+    } else {
+      console.warn('[PageCanvasEditor] Section not found for component click:', sectionId, sectionKey)
+    }
+  }, [isWidgetMode, sections])
+
   const handleSectionHover = (sectionId: string | null) => {
     setHoveredSectionId(sectionId)
   }
 
-  const handleContentChange = (content: Record<string, unknown>) => {
+  const handleContentChange = (content: Record<string, unknown> | string | number | boolean) => {
     if (selectedSectionId) {
-      setDraftContents(prev => ({
-        ...prev,
-        [selectedSectionId]: content,
-      }))
+      // Check if content is a full section object (has multiple keys, not just a component value)
+      const isFullSectionUpdate = typeof content === 'object' && 
+                                  content !== null && 
+                                  !Array.isArray(content) &&
+                                  Object.keys(content).length > 1
+      
+      if (selectedComponentKey && !isFullSectionUpdate) {
+        // If a component is selected and content is a primitive or single-component object,
+        // merge only that component's content into the section content
+        setDraftContents(prev => {
+          const currentSectionContent = prev[selectedSectionId] || {}
+          const updatedContent = {
+            ...currentSectionContent,
+            [selectedComponentKey]: content,
+          }
+          console.log('[PageCanvasEditor] handleContentChange - Component update:', {
+            selectedComponentKey,
+            content,
+            currentSectionContent,
+            updatedContent,
+          })
+          return {
+            ...prev,
+            [selectedSectionId]: updatedContent,
+          }
+        })
+      } else {
+        // If no component is selected OR content is a full section object, update the entire section content
+        // Ensure content is an object
+        const contentObj = typeof content === 'object' && content !== null && !Array.isArray(content)
+          ? content as Record<string, unknown>
+          : {}
+        console.log('[PageCanvasEditor] handleContentChange - Full section update:', {
+          selectedSectionId,
+          selectedComponentKey,
+          isFullSectionUpdate,
+          contentObj,
+        })
+        setDraftContents(prev => ({
+          ...prev,
+          [selectedSectionId]: contentObj,
+        }))
+      }
     }
   }
 
@@ -178,9 +243,12 @@ export function PageCanvasEditor({
     }
   }
 
-  const handleSave = () => {
-    // Refresh the page to get updated sections and reload iframe
+  const handleSave = async () => {
+    // Regenerate preview token to ensure draft content is shown
+    await createPreviewToken()
+    // Force iframe reload with new token
     setIframeKey(prev => prev + 1)
+    // Refresh the page to get updated sections from server
     router.refresh()
   }
 
@@ -289,7 +357,14 @@ export function PageCanvasEditor({
           <SectionListPanel
             sections={sections}
             selectedSectionId={selectedSectionId}
-            onSelectSection={handleSectionClick}
+            selectedComponentKey={selectedComponentKey}
+            onSelectSection={(sectionId) => {
+              handleSectionClick(sectionId)
+              setSelectedComponentKey(null)
+            }}
+            onSelectComponent={(sectionId, componentKey) => {
+              handleComponentClick(sectionId, sections.find(s => s.id === sectionId)?.key || '', componentKey)
+            }}
             onScrollToSection={handleScrollToSection}
           />
         )}
@@ -308,6 +383,7 @@ export function PageCanvasEditor({
             iframeKey={iframeKey}
             isWidgetMode={isWidgetMode}
             onSectionClick={handleSectionClick}
+            onComponentClick={handleComponentClick}
             onSectionHover={handleSectionHover}
             sectionRefs={sectionRefs}
           />
@@ -340,13 +416,16 @@ export function PageCanvasEditor({
             sectionKey={selectedSection.key}
             pageBaseUrl={pageBaseUrl}
             draftContent={selectedDraftContent}
+            selectedComponentKey={selectedComponentKey}
             onContentChange={handleContentChange}
             onClose={() => {
               setIsWidgetMode(false)
               setSelectedSectionId(null)
+              setSelectedComponentKey(null)
             }}
             onSave={handleSave}
             onExpand={() => setIsWidgetMode(false)}
+            getLatestContent={() => draftContents[selectedSection.id] || {}}
           />
         )}
       </div>

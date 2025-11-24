@@ -5,22 +5,56 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { PageSectionV2 } from "@/lib/types"
-import { IconLock, IconChevronLeft, IconChevronRight } from "@tabler/icons-react"
+import { IconLock, IconChevronLeft, IconChevronRight, IconChevronDown, IconChevronUp } from "@tabler/icons-react"
 
 interface SectionListPanelProps {
   sections: PageSectionV2[]
   selectedSectionId: string | null
+  selectedComponentKey?: string | null
   onSelectSection: (sectionId: string) => void
+  onSelectComponent?: (sectionId: string, componentKey: string) => void
   onScrollToSection: (sectionId: string) => void
 }
 
 export function SectionListPanel({
   sections,
   selectedSectionId,
+  selectedComponentKey,
   onSelectSection,
+  onSelectComponent,
   onScrollToSection,
 }: SectionListPanelProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
+  const [expandedSections, setExpandedSections] = React.useState<Set<string>>(new Set())
+
+  // Extract component keys from section content
+  const getComponentKeys = (section: PageSectionV2): string[] => {
+    const content = section.draft_content || section.published_content || {}
+    return Object.keys(content).filter(key => {
+      const value = content[key]
+      // Only include top-level keys that are objects or have meaningful content
+      return value !== null && value !== undefined
+    })
+  }
+
+  const toggleSectionExpand = (sectionId: string) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev)
+      if (next.has(sectionId)) {
+        next.delete(sectionId)
+      } else {
+        next.add(sectionId)
+      }
+      return next
+    })
+  }
+
+  // Auto-expand selected section
+  React.useEffect(() => {
+    if (selectedSectionId && !expandedSections.has(selectedSectionId)) {
+      setExpandedSections(prev => new Set(prev).add(selectedSectionId))
+    }
+  }, [selectedSectionId, expandedSections])
 
   const getStatusBadge = (section: PageSectionV2) => {
     if (section.status === 'dirty') {
@@ -86,26 +120,77 @@ export function SectionListPanel({
       </div>
       <ScrollArea className="flex-1">
         <div className="p-1.5 space-y-0.5">
-          {sections.map((section) => (
-            <Button
-              key={section.id}
-              variant={selectedSectionId === section.id ? 'secondary' : 'ghost'}
-              className="w-full justify-start h-auto py-1.5 px-2.5 text-left hover:bg-accent/50"
-              onClick={() => handleSectionClick(section)}
-            >
-              <div className="flex items-center justify-between w-full gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium truncate">{section.label}</span>
-                    {getStatusBadge(section)}
-                  </div>
-                  <span className="text-[10px] text-muted-foreground truncate block mt-0.5">
-                    {section.component}
-                  </span>
+          {sections.map((section) => {
+            const isSelected = selectedSectionId === section.id
+            const isExpanded = expandedSections.has(section.id)
+            const componentKeys = getComponentKeys(section)
+            const hasComponents = componentKeys.length > 0
+
+            return (
+              <div key={section.id} className="space-y-0.5">
+                <div className="flex items-center gap-1">
+                  {hasComponents && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleSectionExpand(section.id)
+                      }}
+                    >
+                      {isExpanded ? (
+                        <IconChevronDown className="h-3 w-3" />
+                      ) : (
+                        <IconChevronRight className="h-3 w-3" />
+                      )}
+                    </Button>
+                  )}
+                  <Button
+                    variant={isSelected && !selectedComponentKey ? 'secondary' : 'ghost'}
+                    className="flex-1 justify-start h-auto py-1.5 px-2.5 text-left hover:bg-accent/50"
+                    onClick={() => handleSectionClick(section)}
+                  >
+                    <div className="flex items-center justify-between w-full gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium truncate">{section.label}</span>
+                          {getStatusBadge(section)}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground truncate block mt-0.5">
+                          {section.component}
+                        </span>
+                      </div>
+                    </div>
+                  </Button>
                 </div>
+                {isExpanded && hasComponents && (
+                  <div className="pl-7 space-y-0.5">
+                    {componentKeys.map((componentKey) => {
+                      const isComponentSelected = isSelected && selectedComponentKey === componentKey
+                      return (
+                        <Button
+                          key={componentKey}
+                          variant={isComponentSelected ? 'secondary' : 'ghost'}
+                          className="w-full justify-start h-auto py-1 px-2 text-left hover:bg-accent/50 text-[10px]"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (onSelectComponent) {
+                              onSelectComponent(section.id, componentKey)
+                            }
+                          }}
+                        >
+                          <span className="truncate">
+                            {componentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}
+                          </span>
+                        </Button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
-            </Button>
-          ))}
+            )
+          })}
         </div>
       </ScrollArea>
       <div className="p-3 border-t bg-muted/50">

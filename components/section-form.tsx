@@ -13,7 +13,8 @@ import { ImagePicker } from "@/components/image-picker"
 interface SectionFormProps {
   component: string
   draftContent: Record<string, unknown>
-  onContentChange: (content: Record<string, unknown>) => void
+  selectedComponentKey?: string
+  onContentChange: (content: Record<string, unknown> | string | number | boolean) => void
   sectionId: string
   orgId: string
   pageId: string
@@ -22,9 +23,12 @@ interface SectionFormProps {
   pageBaseUrl?: string | null
   onSave?: () => void
   isWidgetMode?: boolean
+  hideButtons?: boolean
+  onDiscard?: () => void
+  onPublish?: () => void
 }
 
-export function SectionForm({ component, draftContent, onContentChange, sectionId, orgId, pageId, pageSlug, sectionKey, pageBaseUrl, onSave, isWidgetMode = false }: SectionFormProps) {
+export function SectionForm({ component, draftContent, selectedComponentKey, onContentChange, sectionId, orgId, pageId, pageSlug, sectionKey, pageBaseUrl, onSave, isWidgetMode = false, hideButtons = false, onDiscard, onPublish }: SectionFormProps) {
   const router = useRouter()
   const [isSaving, setIsSaving] = React.useState(false)
   const [isPublishing, setIsPublishing] = React.useState(false)
@@ -172,49 +176,112 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
     }
   }
 
+  // Extract component content if a component is selected
+  const componentContent = React.useMemo(() => {
+    if (selectedComponentKey && draftContent[selectedComponentKey] !== undefined) {
+      const content = draftContent[selectedComponentKey]
+      // If it's an object (not array, not null), return it as-is
+      if (typeof content === 'object' && content !== null && !Array.isArray(content)) {
+        return content as Record<string, unknown>
+      }
+      // If it's a primitive value (string, number, boolean), wrap it in an object
+      // using the component key as the field name so the label shows correctly
+      return { [selectedComponentKey]: content }
+    }
+    return draftContent
+  }, [draftContent, selectedComponentKey])
+
   const handleFieldChange = (field: string, value: unknown) => {
-    onContentChange({
-      ...draftContent,
-      [field]: value,
-    })
+    if (selectedComponentKey) {
+      // Get the original component value
+      const originalValue = draftContent[selectedComponentKey]
+      const isPrimitive = originalValue !== null && originalValue !== undefined && 
+                         (typeof originalValue !== 'object' || Array.isArray(originalValue))
+      
+      if (isPrimitive && field === selectedComponentKey) {
+        // If the component is a primitive and the field matches the component key,
+        // the value is the new primitive value itself
+        onContentChange(value)
+      } else if (isPrimitive) {
+        // This shouldn't happen, but handle it just in case
+        onContentChange(value)
+      } else {
+        // If the component is an object, update the field within it
+        const updatedComponentContent = {
+          ...(originalValue as Record<string, unknown>),
+          [field]: value,
+        }
+        onContentChange(updatedComponentContent)
+      }
+    } else {
+      // Update section content directly
+      onContentChange({
+        ...draftContent,
+        [field]: value,
+      })
+    }
   }
 
   const handleArrayItemChange = (field: string, index: number, value: unknown) => {
-    const fieldValue = draftContent[field]
+    const fieldValue = componentContent[field]
     const array = Array.isArray(fieldValue) ? fieldValue : []
     const newArray = [...array]
     newArray[index] = value
-    onContentChange({
-      ...draftContent,
-      [field]: newArray,
-    })
+    if (selectedComponentKey) {
+      const updatedComponentContent = {
+        ...componentContent,
+        [field]: newArray,
+      }
+      onContentChange(updatedComponentContent)
+    } else {
+      onContentChange({
+        ...draftContent,
+        [field]: newArray,
+      })
+    }
   }
 
   const handleArrayItemAdd = (field: string, defaultValue: unknown) => {
-    const fieldValue = draftContent[field]
+    const fieldValue = componentContent[field]
     const array = Array.isArray(fieldValue) ? fieldValue : []
-    onContentChange({
-      ...draftContent,
-      [field]: [...array, defaultValue],
-    })
+    if (selectedComponentKey) {
+      const updatedComponentContent = {
+        ...componentContent,
+        [field]: [...array, defaultValue],
+      }
+      onContentChange(updatedComponentContent)
+    } else {
+      onContentChange({
+        ...draftContent,
+        [field]: [...array, defaultValue],
+      })
+    }
   }
 
   const handleArrayItemRemove = (field: string, index: number) => {
-    const fieldValue = draftContent[field]
+    const fieldValue = componentContent[field]
     const array = Array.isArray(fieldValue) ? fieldValue : []
     const newArray = array.filter((_: unknown, i: number) => i !== index)
-    onContentChange({
-      ...draftContent,
-      [field]: newArray,
-    })
+    if (selectedComponentKey) {
+      const updatedComponentContent = {
+        ...componentContent,
+        [field]: newArray,
+      }
+      onContentChange(updatedComponentContent)
+    } else {
+      onContentChange({
+        ...draftContent,
+        [field]: newArray,
+      })
+    }
   }
 
-  // Helper function to safely get string value from draftContent
+  // Helper function to safely get string value from componentContent
   const getStringValue = (value: unknown): string => {
     return typeof value === 'string' ? value : ''
   }
 
-  // Helper function to safely get array value from draftContent
+  // Helper function to safely get array value from componentContent
   const getArrayValue = <T,>(value: unknown): T[] => {
     return Array.isArray(value) ? value as T[] : []
   }
@@ -283,6 +350,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 value={value}
                 onChange={(url) => handleFieldChange(key, url)}
                 label=""
+                compact={isWidgetMode}
               />
             </div>
           )
@@ -381,6 +449,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                                       handleArrayItemChange(key, index, updatedItem)
                                     }}
                                     label=""
+                                    compact={isWidgetMode}
                                   />
                                 </div>
                               )
@@ -530,6 +599,27 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
   }
 
   const renderForm = () => {
+    // If a component is selected, show only that component's fields using dynamic form
+    if (selectedComponentKey) {
+      return renderDynamicForm(componentContent, (content) => {
+        // Get the original component value to check if it's a primitive
+        const originalValue = draftContent[selectedComponentKey]
+        const isPrimitive = originalValue !== null && originalValue !== undefined && 
+                           (typeof originalValue !== 'object' || Array.isArray(originalValue))
+        
+        if (isPrimitive) {
+          // If it's a primitive, extract the value from the wrapped object
+          // The content will be { [selectedComponentKey]: value }
+          const extractedValue = content[selectedComponentKey]
+          onContentChange(extractedValue)
+        } else {
+          // If it's an object, pass the whole content
+          onContentChange(content)
+        }
+      })
+    }
+
+    // Otherwise, show the full section form
     switch (component) {
       case 'InfoBar':
         return (
@@ -538,7 +628,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="hours">Hours</Label>
               <Input
                 id="hours"
-                value={getStringValue(draftContent.hours)}
+                value={getStringValue(componentContent.hours)}
                 onChange={(e) => handleFieldChange('hours', e.target.value)}
                 placeholder="5PM - 11PM Daily"
               />
@@ -547,7 +637,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
-                value={getStringValue(draftContent.phone)}
+                value={getStringValue(componentContent.phone)}
                 onChange={(e) => handleFieldChange('phone', e.target.value)}
                 placeholder="+1 (555) 123-4567"
               />
@@ -556,7 +646,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="tagline">Tagline</Label>
               <Input
                 id="tagline"
-                value={getStringValue(draftContent.tagline)}
+                value={getStringValue(componentContent.tagline)}
                 onChange={(e) => handleFieldChange('tagline', e.target.value)}
                 placeholder="Fine Dining Experience"
               />
@@ -572,7 +662,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
-                value={getStringValue(draftContent.title)}
+                value={getStringValue(componentContent.title)}
                 onChange={(e) => handleFieldChange('title', e.target.value)}
                 placeholder="Culinary Excellence"
               />
@@ -581,7 +671,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="subtitle">Subtitle</Label>
               <Textarea
                 id="subtitle"
-                value={getStringValue(draftContent.subtitle)}
+                value={getStringValue(componentContent.subtitle)}
                 onChange={(e) => handleFieldChange('subtitle', e.target.value)}
                 placeholder="Experience an unforgettable evening..."
                 rows={3}
@@ -591,16 +681,17 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="ctaLabel">CTA Button Label</Label>
               <Input
                 id="ctaLabel"
-                value={getStringValue(draftContent.ctaLabel)}
+                value={getStringValue(componentContent.ctaLabel)}
                 onChange={(e) => handleFieldChange('ctaLabel', e.target.value)}
                 placeholder="View Our Menu"
               />
             </div>
             <ImagePicker
-              value={getStringValue(draftContent.imageUrl)}
+              value={getStringValue(componentContent.imageUrl)}
               onChange={(url) => handleFieldChange('imageUrl', url)}
               label="Hero Image"
               placeholder="/elegant-restaurant-interior.png"
+              compact={isWidgetMode}
             />
           </div>
         )
@@ -612,7 +703,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="eyebrow">Eyebrow</Label>
               <Input
                 id="eyebrow"
-                value={getStringValue(draftContent.eyebrow)}
+                value={getStringValue(componentContent.eyebrow)}
                 onChange={(e) => handleFieldChange('eyebrow', e.target.value)}
                 placeholder="EXPLORE"
               />
@@ -621,7 +712,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
-                value={getStringValue(draftContent.title)}
+                value={getStringValue(componentContent.title)}
                 onChange={(e) => handleFieldChange('title', e.target.value)}
                 placeholder="Delicious Breakfast Menu"
               />
@@ -630,7 +721,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="hours">Hours</Label>
               <Input
                 id="hours"
-                value={getStringValue(draftContent.hours)}
+                value={getStringValue(componentContent.hours)}
                 onChange={(e) => handleFieldChange('hours', e.target.value)}
                 placeholder="7.00am – 4.00pm"
               />
@@ -639,7 +730,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="ctaLabel">CTA Label</Label>
               <Input
                 id="ctaLabel"
-                value={getStringValue(draftContent.ctaLabel)}
+                value={getStringValue(componentContent.ctaLabel)}
                 onChange={(e) => handleFieldChange('ctaLabel', e.target.value)}
                 placeholder="ORDER NOW"
               />
@@ -648,16 +739,17 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="ctaLink">CTA Link</Label>
               <Input
                 id="ctaLink"
-                value={getStringValue(draftContent.ctaLink)}
+                value={getStringValue(componentContent.ctaLink)}
                 onChange={(e) => handleFieldChange('ctaLink', e.target.value)}
                 placeholder="/menu"
               />
             </div>
             <ImagePicker
-              value={getStringValue(draftContent.imageUrl)}
+              value={getStringValue(componentContent.imageUrl)}
               onChange={(url) => handleFieldChange('imageUrl', url)}
               label="Promo Image"
               placeholder="/gourmet-breakfast.png"
+              compact={isWidgetMode}
             />
           </div>
         )
@@ -667,7 +759,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Reasons</Label>
-              {getArrayValue<Record<string, unknown>>(draftContent.reasons).map((reason: Record<string, unknown>, index: number) => (
+              {getArrayValue<Record<string, unknown>>(componentContent.reasons).map((reason: Record<string, unknown>, index: number) => (
                 <div key={index} className="border rounded-lg p-4 mb-4 space-y-2">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium">Reason {index + 1}</span>
@@ -709,7 +801,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
           <div className="space-y-4">
             <div>
               <Label>Specialties</Label>
-              {getArrayValue<Record<string, unknown>>(draftContent.specialties).map((specialty: Record<string, unknown>, index: number) => (
+              {getArrayValue<Record<string, unknown>>(componentContent.specialties).map((specialty: Record<string, unknown>, index: number) => (
                 <div key={index} className="border rounded-lg p-4 mb-4 space-y-2">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium">Specialty {index + 1}</span>
@@ -738,6 +830,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                     onChange={(url) => handleArrayItemChange('specialties', index, { ...specialty, image: url })}
                     label=""
                     placeholder="Image URL"
+                    compact={isWidgetMode}
                   />
                 </div>
               ))}
@@ -757,24 +850,25 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Images</Label>
-              {getArrayValue<string>(draftContent.images).map((image: string, index: number) => (
+              {getArrayValue<string>(componentContent.images).map((image: string, index: number) => (
                 <div key={index} className="space-y-2">
                   <ImagePicker
                     value={image || ''}
                     onChange={(url) => {
-                      const newImages = [...getArrayValue<string>(draftContent.images)]
+                      const newImages = [...getArrayValue<string>(componentContent.images)]
                       newImages[index] = url
                       handleFieldChange('images', newImages)
                     }}
                     label={`Image ${index + 1}`}
                     placeholder="/image.jpg"
+                    compact={isWidgetMode}
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      const newImages = [...getArrayValue<string>(draftContent.images)]
+                      const newImages = [...getArrayValue<string>(componentContent.images)]
                       newImages.splice(index, 1)
                       handleFieldChange('images', newImages)
                     }}
@@ -788,7 +882,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  const newImages = [...getArrayValue<string>(draftContent.images), '']
+                  const newImages = [...getArrayValue<string>(componentContent.images), '']
                   handleFieldChange('images', newImages)
                 }}
               >
@@ -799,7 +893,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="ctaLabel">CTA Button Label</Label>
               <Input
                 id="ctaLabel"
-                value={getStringValue(draftContent.ctaLabel)}
+                value={getStringValue(componentContent.ctaLabel)}
                 onChange={(e) => handleFieldChange('ctaLabel', e.target.value)}
                 placeholder="View Full Gallery"
               />
@@ -814,7 +908,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
-                value={getStringValue(draftContent.title)}
+                value={getStringValue(componentContent.title)}
                 onChange={(e) => handleFieldChange('title', e.target.value)}
                 placeholder="Ready to Dine with Us?"
               />
@@ -823,7 +917,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={getStringValue(draftContent.description)}
+                value={getStringValue(componentContent.description)}
                 onChange={(e) => handleFieldChange('description', e.target.value)}
                 placeholder="Reserve your table now..."
                 rows={3}
@@ -833,7 +927,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
               <Label htmlFor="ctaLabel">CTA Button Label</Label>
               <Input
                 id="ctaLabel"
-                value={getStringValue(draftContent.ctaLabel)}
+                value={getStringValue(componentContent.ctaLabel)}
                 onChange={(e) => handleFieldChange('ctaLabel', e.target.value)}
                 placeholder="Book Your Reservation"
               />
@@ -842,7 +936,13 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
         )
 
       default:
-        return renderDynamicForm(draftContent, onContentChange)
+        return renderDynamicForm(componentContent, (content) => {
+          if (selectedComponentKey) {
+            onContentChange(content)
+          } else {
+            onContentChange(content)
+          }
+        })
     }
   }
 
@@ -860,7 +960,7 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
     }
   }, [draftContent, hasSavedDraft])
 
-  if (isWidgetMode) {
+  if (isWidgetMode && !hideButtons) {
         return (
       <div className="space-y-6 flex flex-col h-full">
         <div className="flex-1">
@@ -871,7 +971,10 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
         <div className="sticky bottom-0 bg-background border-t pt-4 pb-2 -mx-4 px-4">
           <div className="flex gap-2">
             <Button
-              onClick={() => handleDiscard()}
+              onClick={() => {
+                handleDiscard()
+                onDiscard?.()
+              }}
               disabled={isDiscarding}
               variant="outline"
               className="flex-1"
@@ -881,7 +984,10 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
             </Button>
             {hasSavedDraft ? (
               <Button
-                onClick={() => handlePublish()}
+                onClick={() => {
+                  handlePublish()
+                  onPublish?.()
+                }}
                 disabled={isPublishing}
                 className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
               >
@@ -902,6 +1008,16 @@ export function SectionForm({ component, draftContent, onContentChange, sectionI
             </div>
           </div>
         )
+  }
+
+  if (isWidgetMode && hideButtons) {
+    return (
+      <div className="space-y-6 flex flex-col h-full">
+        <div className="flex-1">
+          {renderForm()}
+        </div>
+      </div>
+    )
   }
 
   return (

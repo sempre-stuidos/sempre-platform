@@ -14,9 +14,10 @@ interface ImagePickerProps {
   onChange: (url: string) => void
   label?: string
   placeholder?: string
+  compact?: boolean
 }
 
-export function ImagePicker({ value, onChange, label = "Image", placeholder = "/image.jpg" }: ImagePickerProps) {
+export function ImagePicker({ value, onChange, label = "Image", placeholder = "/image.jpg", compact = false }: ImagePickerProps) {
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false)
   const [galleryImages, setGalleryImages] = React.useState<Array<{ id: number; url: string; name: string }>>([])
   const [isLoadingGallery, setIsLoadingGallery] = React.useState(false)
@@ -101,6 +102,237 @@ export function ImagePicker({ value, onChange, label = "Image", placeholder = "/
     toast.success('Image removed')
   }
 
+  // Compact mode for widget
+  if (compact) {
+    return (
+      <div className="space-y-2">
+        {label && <Label>{label}</Label>}
+        
+        {value ? (
+          <div className="relative group rounded-lg overflow-hidden border bg-muted/30 aspect-video">
+            <Image
+              src={value || '/placeholder.svg'}
+              alt="Selected image"
+              fill
+              className="object-cover"
+              unoptimized
+              onError={(e) => {
+                const target = e.target as HTMLImageElement
+                target.src = '/placeholder.svg'
+              }}
+            />
+            {/* Overlay with Replace button */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setIsGalleryOpen(true)
+                        loadGalleryImages()
+                      }}
+                      className="mr-2"
+                    >
+                      <IconPhoto className="h-4 w-4 mr-2" />
+                      Replace
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Choose Image</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          fileInputRef.current?.click()
+                          setIsGalleryOpen(false)
+                        }}
+                        className="w-full"
+                      >
+                        <IconUpload className="h-4 w-4 mr-2" />
+                        Upload New Image
+                      </Button>
+                      {isLoadingGallery ? (
+                        <div className="flex items-center justify-center py-8">
+                          <p className="text-muted-foreground">Loading gallery...</p>
+                        </div>
+                      ) : galleryImages.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <p className="text-muted-foreground">No images in gallery</p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="border-t pt-4">
+                            <p className="text-sm font-medium mb-3">Choose from Gallery</p>
+                            <div className="grid grid-cols-3 gap-4">
+                              {galleryImages.map((image) => (
+                                <div
+                                  key={image.id}
+                                  className="relative group cursor-pointer border rounded-lg overflow-hidden hover:border-primary transition-colors"
+                                  onClick={() => handleGallerySelect(image.url)}
+                                >
+                                  <div className="relative aspect-square">
+                                    <Image
+                                      src={image.url}
+                                      alt={image.name}
+                                      fill
+                                      className="object-cover"
+                                      unoptimized
+                                    />
+                                  </div>
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                                  <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/60 text-white text-xs truncate">
+                                    {image.name}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="border-t pt-4">
+                            <Label htmlFor="image-url-input-compact" className="text-xs text-muted-foreground mb-2 block">
+                              Or enter image URL
+                            </Label>
+                            <Input
+                              id="image-url-input-compact"
+                              value={value}
+                              onChange={(e) => {
+                                onChange(e.target.value)
+                                setIsGalleryOpen(false)
+                              }}
+                              placeholder={placeholder}
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleRemove}
+                >
+                  <IconX className="h-4 w-4 mr-2" />
+                  Remove
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="relative rounded-lg overflow-hidden border-2 border-dashed border-muted-foreground/25 bg-muted/20 aspect-video flex items-center justify-center">
+            <div className="text-center space-y-3 p-6">
+              <IconPhoto className="h-12 w-12 mx-auto text-muted-foreground/50" />
+              <div className="space-y-2">
+                <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsGalleryOpen(true)
+                        loadGalleryImages()
+                      }}
+                    >
+                      <IconPhoto className="h-4 w-4 mr-2" />
+                      Choose Image
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Choose Image</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          fileInputRef.current?.click()
+                          setIsGalleryOpen(false)
+                        }}
+                        className="w-full"
+                      >
+                        <IconUpload className="h-4 w-4 mr-2" />
+                        Upload New Image
+                      </Button>
+                      {isLoadingGallery ? (
+                        <div className="flex items-center justify-center py-8">
+                          <p className="text-muted-foreground">Loading gallery...</p>
+                        </div>
+                      ) : galleryImages.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <p className="text-muted-foreground">No images in gallery</p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="border-t pt-4">
+                            <p className="text-sm font-medium mb-3">Choose from Gallery</p>
+                            <div className="grid grid-cols-3 gap-4">
+                              {galleryImages.map((image) => (
+                                <div
+                                  key={image.id}
+                                  className="relative group cursor-pointer border rounded-lg overflow-hidden hover:border-primary transition-colors"
+                                  onClick={() => handleGallerySelect(image.url)}
+                                >
+                                  <div className="relative aspect-square">
+                                    <Image
+                                      src={image.url}
+                                      alt={image.name}
+                                      fill
+                                      className="object-cover"
+                                      unoptimized
+                                    />
+                                  </div>
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                                  <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/60 text-white text-xs truncate">
+                                    {image.name}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="border-t pt-4">
+                            <Label htmlFor="image-url-input-compact-empty" className="text-xs text-muted-foreground mb-2 block">
+                              Or enter image URL
+                            </Label>
+                            <Input
+                              id="image-url-input-compact-empty"
+                              value={value}
+                              onChange={(e) => {
+                                onChange(e.target.value)
+                                setIsGalleryOpen(false)
+                              }}
+                              placeholder={placeholder}
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Hidden file input */}
+        <Input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+      </div>
+    )
+  }
+
+  // Default mode (full form)
   return (
     <div className="space-y-2">
       <Label>{label}</Label>

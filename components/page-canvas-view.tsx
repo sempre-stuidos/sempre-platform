@@ -18,6 +18,7 @@ interface PageCanvasViewProps {
   iframeKey: number
   isWidgetMode?: boolean
   onSectionClick: (sectionId: string, sectionKey?: string) => void
+  onComponentClick?: (sectionId: string, sectionKey: string, componentKey: string) => void
   onSectionHover: (sectionId: string | null) => void
   sectionRefs: React.RefObject<Record<string, HTMLDivElement | null>>
 }
@@ -34,6 +35,7 @@ export function PageCanvasView({
   iframeKey,
   isWidgetMode = false,
   onSectionClick,
+  onComponentClick,
   onSectionHover,
   sectionRefs,
 }: PageCanvasViewProps) {
@@ -97,11 +99,11 @@ export function PageCanvasView({
     setIframeError('Failed to load page preview')
   }
 
-  // Listen for section click messages from iframe
+  // Listen for section and component click messages from iframe
   React.useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Only process section-click messages
-      if (event.data?.type !== 'section-click') {
+      // Process section-click and component-click messages
+      if (event.data?.type !== 'section-click' && event.data?.type !== 'component-click') {
         return
       }
 
@@ -117,8 +119,15 @@ export function PageCanvasView({
         return
       }
 
+      // Handle component click (takes priority over section click)
+      if (event.data?.type === 'component-click' && event.data?.sectionId && event.data?.componentKey && onComponentClick) {
+        console.log('[PageCanvasView] Component clicked:', event.data.componentKey, 'in section:', event.data.sectionId)
+        onComponentClick(event.data.sectionId, event.data.sectionKey, event.data.componentKey)
+        return
+      }
+
       // Handle section click
-      if (event.data?.sectionId) {
+      if (event.data?.type === 'section-click' && event.data?.sectionId) {
         console.log('[PageCanvasView] Section clicked:', event.data.sectionId, 'sectionKey:', event.data.sectionKey)
         onSectionClick(event.data.sectionId, event.data.sectionKey)
       }
@@ -126,7 +135,7 @@ export function PageCanvasView({
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [pageBaseUrl, onSectionClick])
+  }, [pageBaseUrl, onSectionClick, onComponentClick])
 
   // Listen for section positions from iframe (for highlighting)
   React.useEffect(() => {
