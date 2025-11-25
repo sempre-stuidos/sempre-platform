@@ -47,12 +47,24 @@ export function SectionWidget({
   const [isDiscarding, setIsDiscarding] = React.useState(false)
   const [hasSavedDraft, setHasSavedDraft] = React.useState(false)
   const savedContentRef = React.useRef<string | null>(null)
+  const isSavingRef = React.useRef(false) // Track if we're currently saving to prevent reset during save
 
-  // Track content changes to reset saved state
+  // Track content changes to reset saved state when user makes new edits
+  // But don't reset if we're currently in the process of saving
   React.useEffect(() => {
-    const currentContent = JSON.stringify(draftContent)
-    if (hasSavedDraft && savedContentRef.current && currentContent !== savedContentRef.current) {
-      setHasSavedDraft(false)
+    // Skip if we're currently saving (to prevent reset during save operation)
+    if (isSavingRef.current) {
+      return
+    }
+    
+    if (hasSavedDraft && savedContentRef.current) {
+      const currentContent = JSON.stringify(draftContent)
+      // Only reset if content is different from what was saved
+      // This prevents resetting when content is updated from the save response
+      if (currentContent !== savedContentRef.current) {
+        setHasSavedDraft(false)
+        savedContentRef.current = null
+      }
     }
   }, [draftContent, hasSavedDraft])
 
@@ -240,6 +252,7 @@ export function SectionWidget({
                 <Button
                   onClick={async () => {
                     setIsSaving(true)
+                    isSavingRef.current = true
                     try {
                       // Get the latest content from the editor state to ensure we have the most up-to-date content
                       const contentToSave = getLatestContent ? getLatestContent() : draftContent
@@ -267,19 +280,21 @@ export function SectionWidget({
                       if (response.ok && data.section) {
                         console.log('[SectionWidget] Save successful, updated section:', data.section)
                         console.log('[SectionWidget] Saved draft_content:', data.section?.draft_content)
+                        // Get the saved content
+                        const savedDraftContent = data.section.draft_content || {}
+                        // Stringify the saved content for comparison
+                        const savedContentString = JSON.stringify(savedDraftContent)
+                        // Set the saved content ref BEFORE updating state
+                        savedContentRef.current = savedContentString
+                        // Set hasSavedDraft BEFORE updating content to prevent useEffect from resetting it
+                        setHasSavedDraft(true)
                         // Update local state with saved content immediately
                         // Pass the full section content (not component-specific) to ensure proper merge
-                        const savedDraftContent = data.section.draft_content || {}
-                        // If a component is selected, we still need to update the full section content
-                        // The onContentChange will handle merging correctly based on selectedComponentKey
                         onContentChange(savedDraftContent)
-                        setHasSavedDraft(true)
-                        savedContentRef.current = JSON.stringify(savedDraftContent)
+                        // Wait a bit before allowing useEffect to run again
+                        await new Promise(resolve => setTimeout(resolve, 200))
                         // Call onSave which will refresh the iframe and regenerate preview token
-                        // Add a small delay to ensure database write is complete
-                        setTimeout(() => {
-                          onSave?.()
-                        }, 100)
+                        onSave?.()
                       } else {
                         console.error('[SectionWidget] Save failed:', data.error)
                       }
@@ -287,6 +302,10 @@ export function SectionWidget({
                       console.error('[SectionWidget] Error saving:', error)
                     } finally {
                       setIsSaving(false)
+                      // Reset the saving flag after a delay to allow useEffect to run
+                      setTimeout(() => {
+                        isSavingRef.current = false
+                      }, 300)
                     }
                   }}
                   disabled={isSaving}

@@ -202,44 +202,26 @@ export function PageCanvasEditor({
 
   const handleContentChange = (content: Record<string, unknown> | string | number | boolean) => {
     if (selectedSectionId) {
-      // Check if content is a full section object (has multiple keys, not just a component value)
-      const isFullSectionUpdate = typeof content === 'object' && 
-                                  content !== null && 
-                                  !Array.isArray(content) &&
-                                  Object.keys(content).length > 1
-      
-      if (selectedComponentKey && !isFullSectionUpdate) {
-        // If a component is selected and content is a primitive or single-component object,
-        // merge only that component's content into the section content
+      // If a component is selected, always treat it as a component update
+      // (even if it's a nested object like badge with multiple keys)
+      if (selectedComponentKey) {
         setDraftContents(prev => {
           const currentSectionContent = prev[selectedSectionId] || {}
           const updatedContent = {
             ...currentSectionContent,
             [selectedComponentKey]: content,
           }
-          console.log('[PageCanvasEditor] handleContentChange - Component update:', {
-            selectedComponentKey,
-            content,
-            currentSectionContent,
-            updatedContent,
-          })
           return {
             ...prev,
             [selectedSectionId]: updatedContent,
           }
         })
       } else {
-        // If no component is selected OR content is a full section object, update the entire section content
+        // If no component is selected, update the entire section content
         // Ensure content is an object
         const contentObj = typeof content === 'object' && content !== null && !Array.isArray(content)
           ? content as Record<string, unknown>
           : {}
-        console.log('[PageCanvasEditor] handleContentChange - Full section update:', {
-          selectedSectionId,
-          selectedComponentKey,
-          isFullSectionUpdate,
-          contentObj,
-        })
         setDraftContents(prev => ({
           ...prev,
           [selectedSectionId]: contentObj,

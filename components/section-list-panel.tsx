@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { PageSectionV2 } from "@/lib/types"
 import { IconLock, IconChevronLeft, IconChevronRight, IconChevronDown } from "@tabler/icons-react"
+import { getComponentFieldKeys, getComponentSchema } from "@/lib/component-schemas"
 
 interface SectionListPanelProps {
   sections: PageSectionV2[]
@@ -27,32 +28,20 @@ export function SectionListPanel({
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [expandedSections, setExpandedSections] = React.useState<Set<string>>(new Set())
 
-  // Component schema mapping: defines expected component keys for each component type
-  // This ensures we show all components even when content is empty or incomplete
-  const getComponentSchema = (component: string): string[] | null => {
-    const schema: Record<string, string[]> = {
-      'HeroSection': ['badge', 'title', 'subtitle', 'primaryCta', 'secondaryCta', 'heroImage', 'accentImage'],
-      'HeroWelcome': ['badge', 'title', 'subtitle', 'primaryCta', 'secondaryCta', 'heroImage', 'accentImage'],
-      // Add other component schemas as needed
-    }
-    return schema[component] || null
-  }
-
-  // Extract component keys from section content
+  // Extract component keys from section content, using schema when available
   const getComponentKeys = (section: PageSectionV2): string[] => {
-    const content = section.draft_content || section.published_content || {}
-    
     // Get schema for this component type if available
-    const schema = getComponentSchema(section.component)
+    const schemaKeys = getComponentFieldKeys(section.component)
     
-    if (schema) {
-      // For components with a schema (like HeroSection), ALWAYS return all schema keys
+    if (schemaKeys.length > 0) {
+      // For components with a schema, ALWAYS return all schema keys
       // This ensures users can see and edit all available components even if content is
       // incomplete, malformed, or empty. This matches how other sections work.
-      return schema
+      return schemaKeys
     }
     
     // For components without a schema, return top-level keys from content
+    const content = section.draft_content || section.published_content || {}
     return Object.keys(content).filter(key => {
       const value = content[key]
       // Only include top-level keys that are objects or have meaningful content

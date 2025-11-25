@@ -9,6 +9,13 @@ import { toast } from "sonner"
 import { IconCheck, IconX, IconEye } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
 import { ImagePicker } from "@/components/image-picker"
+import { 
+  getComponentSchema, 
+  getFieldSchema, 
+  initializeContentWithDefaults,
+  type ComponentSchema,
+  type FieldSchema 
+} from "@/lib/component-schemas"
 
 interface SectionFormProps {
   component: string
@@ -200,44 +207,54 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
     }
   }
 
-  // Extract component content if a component is selected
+  // Extract component content if a component is selected, using schema defaults when needed
   const componentContent = React.useMemo(() => {
     if (selectedComponentKey) {
+      // Get the field schema to understand what type of field this is
+      const fieldSchema = getFieldSchema(component, selectedComponentKey)
+      
       // Check if the component key exists directly in draftContent
       if (draftContent[selectedComponentKey] !== undefined) {
         const content = draftContent[selectedComponentKey]
-        console.log('[SectionForm] Extracting component content:', {
-          selectedComponentKey,
-          content,
-          contentType: typeof content,
-          isArray: Array.isArray(content),
-          draftContentKeys: Object.keys(draftContent),
-        })
-        // If it's an object (not array, not null), return it as-is
+        // If it's an object (not array, not null), initialize with schema defaults if needed
         if (typeof content === 'object' && content !== null && !Array.isArray(content)) {
-          console.log('[SectionForm] Component content is object, returning as-is:', content)
-          return content as Record<string, unknown>
+          const contentObj = content as Record<string, unknown>
+          if (fieldSchema?.type === 'object' && fieldSchema.nestedSchema) {
+            // Initialize nested object fields with schema defaults
+            const initialized: Record<string, unknown> = { ...contentObj }
+            for (const [nestedKey, nestedSchema] of Object.entries(fieldSchema.nestedSchema)) {
+              if (!(nestedKey in initialized) || initialized[nestedKey] === null || initialized[nestedKey] === undefined) {
+                initialized[nestedKey] = nestedSchema.default ?? ''
+              }
+            }
+            return initialized
+          }
+          return contentObj
         }
         // If it's a primitive value (string, number, boolean), wrap it in an object
         // using the component key as the field name so the label shows correctly
-        console.log('[SectionForm] Component content is primitive, wrapping:', { [selectedComponentKey]: content })
         return { [selectedComponentKey]: content }
       } else {
-        // Component key not found in draftContent - this might mean the content structure is different
-        // or the component is nested. Log a warning and use the full draftContent
-        console.warn('[SectionForm] Component key not found in draftContent:', {
-          selectedComponentKey,
-          draftContentKeys: Object.keys(draftContent),
-          draftContent,
-        })
-        // Return empty object or the full content depending on what makes sense
-        // For now, return an empty object so the form can show fields to add the component
-        return {}
+        // Component key not found - initialize from schema
+        if (fieldSchema?.type === 'object' && fieldSchema.nestedSchema) {
+          // Initialize nested object from schema
+          const nestedDefault: Record<string, unknown> = {}
+          for (const [nestedKey, nestedSchema] of Object.entries(fieldSchema.nestedSchema)) {
+            nestedDefault[nestedKey] = nestedSchema.default ?? ''
+          }
+          return nestedDefault
+        } else if (fieldSchema) {
+          // Primitive field - initialize with default value wrapped in object
+          return { [selectedComponentKey]: fieldSchema.default ?? '' }
+        }
+        // Fallback: return empty object with the key
+        return { [selectedComponentKey]: '' }
       }
     }
-    console.log('[SectionForm] No component selected, using full draftContent:', draftContent)
-    return draftContent
-  }, [draftContent, selectedComponentKey])
+    // No component selected - initialize full section content with schema defaults
+    const initialized = initializeContentWithDefaults(component, draftContent)
+    return initialized
+  }, [draftContent, selectedComponentKey, component])
 
   const handleFieldChange = (field: string, value: unknown) => {
     if (selectedComponentKey) {
@@ -341,8 +358,31 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
   }
 
   // Render form based on component type
-  // Render dynamic form for unimplemented components
+  // Render dynamic form using schema when available, fallback to content inference
   const renderDynamicForm = (content: Record<string, unknown>, onChange: (content: Record<string, unknown>) => void) => {
+    // Get schema for current component or nested component
+    const getSchemaForContext = (): ComponentSchema | null => {
+      if (selectedComponentKey) {
+        // Check if this is a nested object component (like badge) or a primitive field (like title)
+        const fieldSchema = getFieldSchema(component, selectedComponentKey)
+        
+        if (fieldSchema?.type === 'object' && fieldSchema.nestedSchema) {
+          // Nested object component (e.g., badge with icon/text)
+          return fieldSchema.nestedSchema
+        } else if (fieldSchema) {
+          // Primitive field (e.g., title, subtitle) - create a schema with just this field
+          // This allows us to render the field with proper type, label, and placeholder
+          return {
+            [selectedComponentKey]: fieldSchema
+          }
+        }
+        return null
+      }
+      return getComponentSchema(component)
+    }
+
+    const schema = getSchemaForContext()
+
     const handleFieldChange = (key: string, value: unknown) => {
       const newContent = { ...content, [key]: value }
       onChange(newContent)
@@ -360,9 +400,23 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
       handleFieldChange(key, array)
     }
 
-    const handleArrayItemAdd = (key: string) => {
+    const handleArrayItemAdd = (key: string, defaultValue?: unknown) => {
       const array = Array.isArray(content[key]) ? [...(content[key] as unknown[])] : []
-      array.push('')
+      const fieldSchema = schema?.[key]
+      if (fieldSchema?.type === 'array' && fieldSchema.nestedSchema) {
+        // Initialize new item from nested schema
+        const newItem: Record<string, unknown> = {}
+        for (const [nestedKey, nestedSchema] of Object.entries(fieldSchema.nestedSchema)) {
+          if (nestedKey !== '_item') {
+            newItem[nestedKey] = nestedSchema.default ?? ''
+          } else {
+            newItem[''] = nestedSchema.default ?? ''
+          }
+        }
+        array.push(Object.keys(newItem).length > 0 ? newItem : defaultValue ?? '')
+      } else {
+        array.push(defaultValue ?? '')
+      }
       handleFieldChange(key, array)
     }
 
@@ -374,34 +428,30 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
       handleFieldChange(key, nested)
     }
 
-    const renderField = (key: string, value: unknown, path: string = '') => {
+    const renderField = (key: string, value: unknown, path: string = '', fieldSchemaOverride?: FieldSchema) => {
       const fieldKey = path ? `${path}.${key}` : key
-      const displayKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()
+      const fieldSchema = fieldSchemaOverride || schema?.[key]
+      const displayKey = fieldSchema?.label || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()
+      const placeholder = fieldSchema?.placeholder || 'Enter value...'
 
+      // Determine field type from schema or infer from value
+      const fieldType = fieldSchema?.type || 
+        (value === null || value === undefined ? 'string' :
+        typeof value === 'string' ? 'string' :
+        typeof value === 'number' ? 'number' :
+        typeof value === 'boolean' ? 'boolean' :
+        Array.isArray(value) ? 'array' :
+        'object')
+
+      // Handle null/undefined with schema default
       if (value === null || value === undefined) {
-        return (
-          <div key={fieldKey} className="space-y-2">
-            <Label htmlFor={fieldKey}>{displayKey}</Label>
-            <Input
-              id={fieldKey}
-              type="text"
-              value=""
-              placeholder="Enter value..."
-              onChange={(e) => handleFieldChange(key, e.target.value)}
-            />
-          </div>
-        )
-      }
-
-      if (typeof value === 'string') {
-        // Check if it looks like a URL or image field name
-        const isImageField = key.toLowerCase().includes('image') || key.toLowerCase().includes('photo') || key.toLowerCase().includes('picture')
-        if (isImageField || value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) {
+        const defaultValue = fieldSchema?.default ?? ''
+        if (fieldType === 'image') {
           return (
             <div key={fieldKey} className="space-y-2">
               <Label htmlFor={fieldKey}>{displayKey}</Label>
               <ImagePicker
-                value={value}
+                value={String(defaultValue)}
                 onChange={(url) => handleFieldChange(key, url)}
                 label=""
                 compact={isWidgetMode}
@@ -409,20 +459,17 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
             </div>
           )
         }
-        // Fields that should always use textarea (for multi-line text)
-        const textareaFields = ['subtitle', 'description', 'text', 'content', 'quote', 'message', 'body']
-        const shouldUseTextarea = textareaFields.some(field => key.toLowerCase().includes(field))
-        // Check if it's a long string (use textarea)
-        if (shouldUseTextarea || value.length > 100 || value.includes('\n')) {
+        if (fieldType === 'textarea') {
           return (
             <div key={fieldKey} className="space-y-2">
               <Label htmlFor={fieldKey}>{displayKey}</Label>
               <Textarea
                 id={fieldKey}
-                value={value}
+                value={String(defaultValue)}
                 onChange={(e) => handleFieldChange(key, e.target.value)}
                 rows={3}
                 className="resize-none"
+                placeholder={placeholder}
               />
             </div>
           )
@@ -432,35 +479,83 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
             <Label htmlFor={fieldKey}>{displayKey}</Label>
             <Input
               id={fieldKey}
+              type={fieldType === 'number' ? 'number' : 'text'}
+              value={String(defaultValue)}
+              placeholder={placeholder}
+              onChange={(e) => handleFieldChange(key, fieldType === 'number' ? parseFloat(e.target.value) || 0 : e.target.value)}
+            />
+          </div>
+        )
+      }
+
+      // Render based on schema type or inferred type
+      if (fieldType === 'image' || (typeof value === 'string' && (key.toLowerCase().includes('image') || key.toLowerCase().includes('photo') || key.toLowerCase().includes('picture') || value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')))) {
+        return (
+          <div key={fieldKey} className="space-y-2">
+            <Label htmlFor={fieldKey}>{displayKey}</Label>
+            <ImagePicker
+              value={String(value)}
+              onChange={(url) => handleFieldChange(key, url)}
+              label=""
+              compact={isWidgetMode}
+            />
+          </div>
+        )
+      }
+
+      if (fieldType === 'textarea' || (typeof value === 'string' && (['subtitle', 'description', 'text', 'content', 'quote', 'message', 'body'].some(field => key.toLowerCase().includes(field)) || value.length > 100 || value.includes('\n')))) {
+        return (
+          <div key={fieldKey} className="space-y-2">
+            <Label htmlFor={fieldKey}>{displayKey}</Label>
+            <Textarea
+              id={fieldKey}
+              value={String(value)}
+              onChange={(e) => handleFieldChange(key, e.target.value)}
+              rows={3}
+              className="resize-none"
+              placeholder={placeholder}
+            />
+          </div>
+        )
+      }
+
+      if (typeof value === 'string' && fieldType === 'string') {
+        return (
+          <div key={fieldKey} className="space-y-2">
+            <Label htmlFor={fieldKey}>{displayKey}</Label>
+            <Input
+              id={fieldKey}
               type="text"
               value={value}
+              placeholder={placeholder}
               onChange={(e) => handleFieldChange(key, e.target.value)}
             />
           </div>
         )
       }
 
-      if (typeof value === 'number') {
+      if (fieldType === 'number' || typeof value === 'number') {
         return (
           <div key={fieldKey} className="space-y-2">
             <Label htmlFor={fieldKey}>{displayKey}</Label>
             <Input
               id={fieldKey}
               type="number"
-              value={value}
+              value={typeof value === 'number' ? value : ''}
+              placeholder={placeholder}
               onChange={(e) => handleFieldChange(key, parseFloat(e.target.value) || 0)}
             />
           </div>
         )
       }
 
-      if (typeof value === 'boolean') {
+      if (fieldType === 'boolean' || typeof value === 'boolean') {
         return (
           <div key={fieldKey} className="flex items-center space-x-2">
             <input
               id={fieldKey}
               type="checkbox"
-              checked={value}
+              checked={typeof value === 'boolean' ? value : false}
               onChange={(e) => handleFieldChange(key, e.target.checked)}
               className="h-4 w-4 rounded border-gray-300"
             />
@@ -469,7 +564,8 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
         )
       }
 
-      if (Array.isArray(value)) {
+      if (fieldType === 'array' || Array.isArray(value)) {
+        const arraySchema = fieldSchema?.nestedSchema
         return (
           <div key={fieldKey} className="space-y-2">
             <div className="flex items-center justify-between">
@@ -484,103 +580,45 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
               </Button>
             </div>
             <div className="space-y-2 border rounded-md p-3">
-              {value.map((item, index) => (
+              {(Array.isArray(value) ? value : []).map((item, index) => (
                 <div key={index} className="flex gap-2 items-start">
                   <div className="flex-1 space-y-2">
-                    {typeof item === 'object' && item !== null && !Array.isArray(item) ? (
+                    {typeof item === 'object' && item !== null && !Array.isArray(item) && arraySchema ? (
                       <div className="space-y-2 border rounded p-2 bg-muted/50">
-                        {Object.entries(item as Record<string, unknown>).map(([nestedKey, nestedValue]) => {
-                          const nestedFieldKey = `${fieldKey}[${index}].${nestedKey}`
-                          const nestedDisplayKey = nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()
-                          
-                          // Handle nested object fields
-                          if (typeof nestedValue === 'string') {
-                            const isNestedImageField = nestedKey.toLowerCase().includes('image') || nestedKey.toLowerCase().includes('photo') || nestedKey.toLowerCase().includes('picture')
-                            if (isNestedImageField || nestedValue.startsWith('http://') || nestedValue.startsWith('https://') || nestedValue.startsWith('/')) {
-                              return (
-                                <div key={nestedFieldKey} className="space-y-2">
-                                  <Label htmlFor={nestedFieldKey}>{nestedDisplayKey}</Label>
+                        {Object.entries(arraySchema).map(([nestedKey, nestedSchema]) => {
+                          if (nestedKey === '_item') {
+                            // Handle simple array items (strings)
+                            return (
+                              <div key={`${fieldKey}[${index}]`} className="space-y-2">
+                                <Label htmlFor={`${fieldKey}[${index}]`}>{nestedSchema.label || 'Item'}</Label>
+                                {nestedSchema.type === 'image' ? (
                                   <ImagePicker
-                                    value={nestedValue}
-                                    onChange={(url) => {
-                                      const updatedItem = { ...(item as Record<string, unknown>), [nestedKey]: url }
-                                      handleArrayItemChange(key, index, updatedItem)
-                                    }}
+                                    value={String((item as Record<string, unknown>)[nestedKey] || item || '')}
+                                    onChange={(url) => handleArrayItemChange(key, index, url)}
                                     label=""
                                     compact={isWidgetMode}
                                   />
-                                </div>
-                              )
-                            }
-                            // Fields that should always use textarea (for multi-line text)
-                            const textareaFields = ['subtitle', 'description', 'text', 'content', 'quote', 'message', 'body']
-                            const shouldUseTextarea = textareaFields.some(field => nestedKey.toLowerCase().includes(field))
-                            if (shouldUseTextarea || nestedValue.length > 100 || nestedValue.includes('\n')) {
-                              return (
-                                <div key={nestedFieldKey} className="space-y-2">
-                                  <Label htmlFor={nestedFieldKey}>{nestedDisplayKey}</Label>
+                                ) : (
                                   <Textarea
-                                    id={nestedFieldKey}
-                                    value={nestedValue}
-                                    onChange={(e) => {
-                                      const updatedItem = { ...(item as Record<string, unknown>), [nestedKey]: e.target.value }
-                                      handleArrayItemChange(key, index, updatedItem)
-                                    }}
+                                    value={String(item)}
+                                    onChange={(e) => handleArrayItemChange(key, index, e.target.value)}
+                                    placeholder={nestedSchema.placeholder || `Item ${index + 1}`}
                                     rows={3}
                                     className="resize-none"
                                   />
-                                </div>
-                              )
-                            }
-                            return (
-                              <div key={nestedFieldKey} className="space-y-2">
-                                <Label htmlFor={nestedFieldKey}>{nestedDisplayKey}</Label>
-                                <Input
-                                  id={nestedFieldKey}
-                                  type="text"
-                                  value={nestedValue}
-                                  onChange={(e) => {
-                                    const updatedItem = { ...(item as Record<string, unknown>), [nestedKey]: e.target.value }
-                                    handleArrayItemChange(key, index, updatedItem)
-                                  }}
-                                />
+                                )}
                               </div>
                             )
                           }
-                          if (typeof nestedValue === 'number') {
-                            return (
-                              <div key={nestedFieldKey} className="space-y-2">
-                                <Label htmlFor={nestedFieldKey}>{nestedDisplayKey}</Label>
-                                <Input
-                                  id={nestedFieldKey}
-                                  type="number"
-                                  value={nestedValue}
-                                  onChange={(e) => {
-                                    const updatedItem = { ...(item as Record<string, unknown>), [nestedKey]: parseFloat(e.target.value) || 0 }
-                                    handleArrayItemChange(key, index, updatedItem)
-                                  }}
-                                />
-                              </div>
-                            )
-                          }
-                          if (typeof nestedValue === 'boolean') {
-                            return (
-                              <div key={nestedFieldKey} className="flex items-center space-x-2">
-                                <input
-                                  id={nestedFieldKey}
-                                  type="checkbox"
-                                  checked={nestedValue}
-                                  onChange={(e) => {
-                                    const updatedItem = { ...(item as Record<string, unknown>), [nestedKey]: e.target.checked }
-                                    handleArrayItemChange(key, index, updatedItem)
-                                  }}
-                                  className="h-4 w-4 rounded border-gray-300"
-                                />
-                                <Label htmlFor={nestedFieldKey} className="cursor-pointer">{nestedDisplayKey}</Label>
-                              </div>
-                            )
-                          }
-                          return null
+                          const nestedValue = (item as Record<string, unknown>)[nestedKey]
+                          return renderField(nestedKey, nestedValue, `${fieldKey}[${index}]`, nestedSchema)
+                        })}
+                      </div>
+                    ) : typeof item === 'object' && item !== null && !Array.isArray(item) ? (
+                      <div className="space-y-2 border rounded p-2 bg-muted/50">
+                        {Object.entries(item as Record<string, unknown>).map(([nestedKey, nestedValue]) => {
+                          const nestedSchema = arraySchema?.[nestedKey]
+                          return renderField(nestedKey, nestedValue, `${fieldKey}[${index}]`, nestedSchema)
                         })}
                       </div>
                     ) : (
@@ -604,7 +642,7 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
                   </Button>
                 </div>
               ))}
-              {value.length === 0 && (
+              {(!Array.isArray(value) || value.length === 0) && (
                 <p className="text-sm text-muted-foreground text-center py-2">No items. Click &quot;Add Item&quot; to add one.</p>
               )}
             </div>
@@ -612,14 +650,26 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
         )
       }
 
-      if (typeof value === 'object' && value !== null) {
+      if (fieldType === 'object' || (typeof value === 'object' && value !== null && !Array.isArray(value))) {
+        const nestedSchema = fieldSchema?.nestedSchema
+        const objValue = typeof value === 'object' && value !== null && !Array.isArray(value) 
+          ? value as Record<string, unknown>
+          : {}
+        
+        // If we have a nested schema, render all fields from schema (even if missing in value)
+        const fieldsToRender = nestedSchema 
+          ? Object.keys(nestedSchema)
+          : Object.keys(objValue)
+        
         return (
           <div key={fieldKey} className="space-y-2 border rounded-md p-3 bg-muted/30">
             <Label className="font-semibold">{displayKey}</Label>
             <div className="space-y-3 pl-2 border-l-2">
-              {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) =>
-                renderField(nestedKey, nestedValue, fieldKey)
-              )}
+              {fieldsToRender.map((nestedKey) => {
+                const nestedValue = objValue[nestedKey]
+                const nestedFieldSchema = nestedSchema?.[nestedKey]
+                return renderField(nestedKey, nestedValue, fieldKey, nestedFieldSchema)
+              })}
             </div>
           </div>
         )
@@ -628,9 +678,29 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
       return null
     }
 
+    // If we have a schema, render all fields from schema (even if missing in content)
+    // This ensures empty components show all available fields
+    if (schema) {
+      const schemaKeys = Object.keys(schema)
+      if (schemaKeys.length > 0) {
+        return (
+          <div className="space-y-4">
+            {schemaKeys.map((key) => {
+              const value = content[key]
+              const fieldSchema = schema[key]
+              return renderField(key, value, '', fieldSchema)
+            })}
+          </div>
+        )
+      }
+    }
+
+    // Fallback: render from content entries
     const contentEntries = Object.entries(content)
     
     if (contentEntries.length === 0) {
+      // If we have a schema but no content, we should have rendered above
+      // This only happens if schema is also empty
       return (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">No content fields available. Add fields by editing the JSON directly or implement a custom form for this component.</p>
@@ -664,18 +734,7 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
   const renderForm = () => {
     // If a component is selected, show only that component's fields using dynamic form
     if (selectedComponentKey) {
-      console.log('[SectionForm] Rendering form for component:', {
-        selectedComponentKey,
-        componentContent,
-        draftContent,
-        componentContentKeys: Object.keys(componentContent),
-      })
       return renderDynamicForm(componentContent, (content) => {
-        console.log('[SectionForm] Dynamic form content changed:', {
-          selectedComponentKey,
-          content,
-          contentKeys: Object.keys(content),
-        })
         // Get the original component value to check if it's a primitive
         const originalValue = draftContent[selectedComponentKey]
         const isPrimitive = originalValue !== null && originalValue !== undefined && 
@@ -685,14 +744,13 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
           // If it's a primitive, extract the value from the wrapped object
           // The content will be { [selectedComponentKey]: value }
           const extractedValue = content[selectedComponentKey]
-          console.log('[SectionForm] Component is primitive, extracted value:', extractedValue)
           if (typeof extractedValue === 'string' || typeof extractedValue === 'number' || typeof extractedValue === 'boolean' || 
               (typeof extractedValue === 'object' && extractedValue !== null && !Array.isArray(extractedValue))) {
             onContentChange(extractedValue as string | number | boolean | Record<string, unknown>)
           }
         } else {
-          // If it's an object, pass the whole content
-          console.log('[SectionForm] Component is object, passing whole content:', content)
+          // If it's an object (like badge), pass the whole content object
+          // This will update draftContent[selectedComponentKey] with the new object
           onContentChange(content)
         }
       })
