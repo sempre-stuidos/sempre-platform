@@ -390,10 +390,23 @@ export function PageCanvasEditor({
             viewMode={viewMode}
             viewportSize={viewportSize}
             previewToken={previewToken}
-            pageBaseUrl={pageBaseUrl ?? null}
+            pageBaseUrl={(() => {
+              // Resolve base URL with fallback: pageBaseUrl > organization.site_base_url > null
+              // This ensures we use the live URL instead of localhost
+              const resolved = pageBaseUrl || organization?.site_base_url || null
+              if (typeof window !== 'undefined' && resolved) {
+                console.log('[PageCanvasEditor] Resolved pageBaseUrl:', {
+                  pageBaseUrl,
+                  organizationSiteBaseUrl: organization?.site_base_url,
+                  resolved,
+                })
+              }
+              return resolved
+            })()}
             pageSlug={pageSlug}
             iframeKey={iframeKey}
             isWidgetMode={isWidgetMode}
+            businessSlug={organization?.slug ?? null}
             onSectionClick={handleSectionClick}
             onComponentClick={handleComponentClick}
             onSectionHover={handleSectionHover}
@@ -410,6 +423,7 @@ export function PageCanvasEditor({
             pageSlug={pageSlug}
             sectionKey={selectedSection.key}
             pageBaseUrl={pageBaseUrl ?? null}
+            businessSlug={organization?.slug ?? null}
             draftContent={selectedDraftContent}
             onContentChange={handleContentChange}
             onClose={() => setSelectedSectionId(null)}
@@ -427,6 +441,7 @@ export function PageCanvasEditor({
             pageSlug={pageSlug}
             sectionKey={selectedSection.key}
             pageBaseUrl={pageBaseUrl ?? null}
+            businessSlug={organization?.slug ?? null}
             draftContent={selectedDraftContent}
             selectedComponentKey={selectedComponentKey}
             onContentChange={handleContentChange}

@@ -21,6 +21,7 @@ interface SectionFormProps {
   pageSlug: string
   sectionKey: string
   pageBaseUrl?: string | null
+  businessSlug?: string | null
   onSave?: () => void
   isWidgetMode?: boolean
   hideButtons?: boolean
@@ -28,7 +29,7 @@ interface SectionFormProps {
   onPublish?: () => void
 }
 
-export function SectionForm({ component, draftContent, selectedComponentKey, onContentChange, sectionId, orgId, pageId, pageSlug, sectionKey, pageBaseUrl, onSave, isWidgetMode = false, hideButtons = false, onDiscard, onPublish }: SectionFormProps) {
+export function SectionForm({ component, draftContent, selectedComponentKey, onContentChange, sectionId, orgId, pageId, pageSlug, sectionKey, pageBaseUrl, businessSlug, onSave, isWidgetMode = false, hideButtons = false, onDiscard, onPublish }: SectionFormProps) {
   const router = useRouter()
   const [isSaving, setIsSaving] = React.useState(false)
   const [isPublishing, setIsPublishing] = React.useState(false)
@@ -161,8 +162,31 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
       // Use page's base_url if available, otherwise fall back to env var
       const publicSiteUrl = pageBaseUrl || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
-      // Build preview URL with section key
-      const previewUrl = `${publicSiteUrl}/?page=${pageSlug}&section=${sectionKey}&token=${data.token}`
+      // Build preview URL with business slug parameter (for luxivie landing page)
+      const params = new URLSearchParams()
+      params.set('page', pageSlug)
+      params.set('section', sectionKey)
+      params.set('token', data.token)
+      
+      // Use provided businessSlug or fetch it from orgId
+      let slugToUse = businessSlug
+      if (!slugToUse) {
+        try {
+          const businessResponse = await fetch(`/api/businesses/${orgId}`)
+          if (businessResponse.ok) {
+            const businessData = await businessResponse.json()
+            slugToUse = businessData.business?.slug || null
+          }
+        } catch (error) {
+          console.error('Error fetching business slug:', error)
+        }
+      }
+      
+      if (slugToUse) {
+        params.set('business', slugToUse)
+      }
+      
+      const previewUrl = `${publicSiteUrl}/?${params.toString()}`
       
       // Open in new tab
       window.open(previewUrl, '_blank')

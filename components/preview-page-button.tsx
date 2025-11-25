@@ -41,14 +41,17 @@ export function PreviewPageButton({ orgId, pageId, pageSlug, business, page }: P
         return
       }
 
-      // Get organization slug for public site URL
-      // Use orgId for public site URL (Business type doesn't have slug)
-      const orgSlug = orgId
       // Use page's base_url if available, then business site_base_url, then env var
       const publicSiteUrl = page?.base_url || business?.site_base_url || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
-      // Build preview URL using page slug
-      const previewUrl = `${publicSiteUrl}/?page=${pageSlug}&token=${data.token}`
+      // Build preview URL with business slug parameter (for luxivie landing page)
+      const params = new URLSearchParams()
+      params.set('page', pageSlug)
+      params.set('token', data.token)
+      if (business?.slug) {
+        params.set('business', business.slug)
+      }
+      const previewUrl = `${publicSiteUrl}/?${params.toString()}`
       
       // Open in new tab
       window.open(previewUrl, '_blank')

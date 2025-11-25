@@ -50,14 +50,17 @@ export function PagesListTable({ orgId, pages, organization }: PagesListTablePro
         return
       }
 
-      // Get organization slug for public site URL
-      // Use orgId for public site URL (Business type doesn't have slug)
-      const orgSlug = orgId
       // Use page's base_url if available, then business site_base_url, then env var
       const publicSiteUrl = page.base_url || organization?.site_base_url || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
-      // Build preview URL using page slug
-      const previewUrl = `${publicSiteUrl}/?page=${page.slug}&token=${data.token}`
+      // Build preview URL with business slug parameter (for luxivie landing page)
+      const params = new URLSearchParams()
+      params.set('page', page.slug)
+      params.set('token', data.token)
+      if (organization?.slug) {
+        params.set('business', organization.slug)
+      }
+      const previewUrl = `${publicSiteUrl}/?${params.toString()}`
       
       // Open in new tab
       window.open(previewUrl, '_blank')

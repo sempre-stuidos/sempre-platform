@@ -17,6 +17,7 @@ interface PageCanvasViewProps {
   pageSlug: string
   iframeKey: number
   isWidgetMode?: boolean
+  businessSlug?: string | null
   onSectionClick: (sectionId: string, sectionKey?: string) => void
   onComponentClick?: (sectionId: string, sectionKey: string, componentKey: string) => void
   onSectionHover: (sectionId: string | null) => void
@@ -34,6 +35,7 @@ export function PageCanvasView({
   pageSlug,
   iframeKey,
   isWidgetMode = false,
+  businessSlug,
   onSectionClick,
   onComponentClick,
   onSectionHover,
@@ -81,12 +83,52 @@ export function PageCanvasView({
 
   const getIframeSrc = () => {
     if (!pageSlug) return ''
+    // Priority: pageBaseUrl (which may include organization.site_base_url fallback) > env var > localhost
+    // pageBaseUrl is already resolved in PageCanvasEditor with organization fallback
     const baseUrl = pageBaseUrl || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
+    
+    // Log the URL source for debugging
+    if (typeof window !== 'undefined') {
+      console.log('[PageCanvasView] Iframe base URL resolution:', {
+        pageBaseUrl,
+        envVar: process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL,
+        finalBaseUrl: baseUrl,
+        isLocalhost: baseUrl.includes('localhost'),
+        isProduction: !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1'),
+      })
+    }
+    
+    // Build query parameters
+    const params = new URLSearchParams()
+    params.set('page', pageSlug)
+    
+    // Add business slug if available (for luxivie landing page)
+    if (businessSlug) {
+      params.set('business', businessSlug)
+    }
+    
     // For draft view, use preview token. For published view, don't use token (shows published content)
     if (viewMode === 'draft' && previewToken) {
-      return `${baseUrl}/?page=${pageSlug}&token=${previewToken}`
+      params.set('token', previewToken)
+      console.log('[PageCanvasView] Iframe URL with preview token:', {
+        viewMode,
+        hasToken: !!previewToken,
+        tokenPreview: previewToken.substring(0, 8) + '...',
+        businessSlug,
+        pageSlug,
+        fullUrl: `${baseUrl}/?${params.toString()}`,
+      })
+    } else {
+      console.log('[PageCanvasView] Iframe URL without preview token:', {
+        viewMode,
+        hasToken: !!previewToken,
+        businessSlug,
+        pageSlug,
+        fullUrl: `${baseUrl}/?${params.toString()}`,
+      })
     }
-    return `${baseUrl}/?page=${pageSlug}`
+    
+    return `${baseUrl}/?${params.toString()}`
   }
 
   const handleIframeLoad = () => {

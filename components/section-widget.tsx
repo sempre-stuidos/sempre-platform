@@ -15,6 +15,7 @@ interface SectionWidgetProps {
   pageSlug: string
   sectionKey: string
   pageBaseUrl?: string | null
+  businessSlug?: string | null
   draftContent: Record<string, unknown>
   selectedComponentKey?: string | null
   onContentChange: (content: Record<string, unknown> | string | number | boolean) => void
@@ -31,6 +32,7 @@ export function SectionWidget({
   pageSlug,
   sectionKey,
   pageBaseUrl,
+  businessSlug,
   draftContent,
   selectedComponentKey,
   onContentChange,
@@ -134,6 +136,7 @@ export function SectionWidget({
                 pageSlug={pageSlug}
                 sectionKey={sectionKey}
                 pageBaseUrl={pageBaseUrl}
+                businessSlug={businessSlug}
                 isWidgetMode={true}
                 hideButtons={true}
                 onSave={() => {

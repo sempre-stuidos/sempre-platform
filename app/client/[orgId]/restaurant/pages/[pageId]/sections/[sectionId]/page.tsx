@@ -299,6 +299,7 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
                     pageSlug={pageSlug}
                     sectionKey={section.key}
                     pageBaseUrl={pageBaseUrl}
+                    businessSlug={business?.slug ?? null}
                     onSave={handleSave}
                   />
                 </div>
@@ -332,7 +333,17 @@ export default function SectionEditPage({ params }: SectionEditPageProps) {
                       <iframe
                         key={iframeKey}
                         ref={iframeRef}
-                        src={`${pageBaseUrl || business?.site_base_url || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'}/?page=${pageSlug}&section=${section.key}&token=${previewToken}`}
+                        src={(() => {
+                          const baseUrl = pageBaseUrl || business?.site_base_url || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
+                          const params = new URLSearchParams()
+                          params.set('page', pageSlug)
+                          params.set('section', section.key)
+                          params.set('token', previewToken)
+                          if (business?.slug) {
+                            params.set('business', business.slug)
+                          }
+                          return `${baseUrl}/?${params.toString()}`
+                        })()}
                         className="w-full border-0"
                         style={{
                           height: '80vh',

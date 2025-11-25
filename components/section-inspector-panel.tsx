@@ -14,6 +14,7 @@ interface SectionInspectorPanelProps {
   pageSlug: string
   sectionKey: string
   pageBaseUrl?: string | null
+  businessSlug?: string | null
   draftContent: Record<string, unknown>
   onContentChange: (content: Record<string, unknown> | string | number | boolean) => void
   onClose: () => void
@@ -28,6 +29,7 @@ export function SectionInspectorPanel({
   pageSlug,
   sectionKey,
   pageBaseUrl,
+  businessSlug,
   draftContent,
   onContentChange,
   onClose,
@@ -69,6 +71,7 @@ export function SectionInspectorPanel({
             pageSlug={pageSlug}
             sectionKey={sectionKey}
             pageBaseUrl={pageBaseUrl}
+            businessSlug={businessSlug}
             onSave={() => {
               onSave?.()
               // Don't close on save, let user continue editing
