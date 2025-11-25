@@ -149,29 +149,89 @@ export function PageCanvasView({
         return
       }
 
-      // Accept messages from iframe - be permissive for development
+      // Accept messages from iframe - be permissive for cross-origin communication
+      // The iframe is on a different domain (luxivie-five.vercel.app) than the parent (se-hub.vercel.app)
+      // So we need to accept messages from the iframe's domain
       const publicSiteUrl = pageBaseUrl || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
-      // Accept messages from expected origin or localhost (for development)
-      const isValidOrigin = event.origin === publicSiteUrl || 
+      // Normalize URLs for comparison (extract just the host)
+      const normalizeUrl = (url: string) => {
+        try {
+          const urlObj = new URL(url)
+          return urlObj.host.toLowerCase()
+        } catch {
+          // If URL parsing fails, try to extract host manually
+          const match = url.match(/\/\/([^\/]+)/)
+          return match ? match[1].toLowerCase() : url.toLowerCase().replace(/\/$/, '')
+        }
+      }
+      
+      const normalizedPublicUrl = normalizeUrl(publicSiteUrl)
+      const normalizedOrigin = normalizeUrl(event.origin)
+      
+      // Accept messages from:
+      // 1. Expected origin (iframe's domain matches expected URL)
+      // 2. Localhost (for development)
+      // 3. Any vercel.app domain (for production cross-origin iframes)
+      // 4. If both are vercel.app domains, allow cross-origin communication
+      const isVercelApp = (url: string) => url.includes('vercel.app')
+      const isValidOrigin = normalizedOrigin === normalizedPublicUrl || 
                            event.origin.includes('localhost') || 
-                           event.origin.includes('127.0.0.1')
+                           event.origin.includes('127.0.0.1') ||
+                           (isVercelApp(event.origin) && isVercelApp(normalizedPublicUrl)) ||
+                           isVercelApp(event.origin) // Allow any vercel.app origin in production
       
       if (!isValidOrigin) {
+        console.warn('[PageCanvasView] Rejected message from origin:', {
+          eventOrigin: event.origin,
+          normalizedOrigin,
+          expectedUrl: publicSiteUrl,
+          normalizedExpected: normalizedPublicUrl,
+          messageType: event.data?.type,
+          messageData: event.data,
+        })
         return
       }
+      
+      console.log('[PageCanvasView] Accepting message from origin:', {
+        eventOrigin: event.origin,
+        normalizedOrigin,
+        expectedUrl: publicSiteUrl,
+        normalizedExpected: normalizedPublicUrl,
+        messageType: event.data?.type,
+        sectionId: event.data?.sectionId,
+        sectionKey: event.data?.sectionKey,
+        componentKey: event.data?.componentKey,
+      })
 
       // Handle component click (takes priority over section click)
-      if (event.data?.type === 'component-click' && event.data?.sectionId && event.data?.componentKey && onComponentClick) {
-        console.log('[PageCanvasView] Component clicked:', event.data.componentKey, 'in section:', event.data.sectionId)
-        onComponentClick(event.data.sectionId, event.data.sectionKey, event.data.componentKey)
+      if (event.data?.type === 'component-click' && event.data?.sectionId && event.data?.componentKey) {
+        console.log('[PageCanvasView] Component clicked:', {
+          componentKey: event.data.componentKey,
+          sectionId: event.data.sectionId,
+          sectionKey: event.data.sectionKey,
+          hasOnComponentClick: !!onComponentClick,
+        })
+        if (onComponentClick) {
+          onComponentClick(event.data.sectionId, event.data.sectionKey, event.data.componentKey)
+        } else {
+          console.warn('[PageCanvasView] onComponentClick handler not provided')
+        }
         return
       }
 
       // Handle section click
       if (event.data?.type === 'section-click' && event.data?.sectionId) {
-        console.log('[PageCanvasView] Section clicked:', event.data.sectionId, 'sectionKey:', event.data.sectionKey)
-        onSectionClick(event.data.sectionId, event.data.sectionKey)
+        console.log('[PageCanvasView] Section clicked:', {
+          sectionId: event.data.sectionId,
+          sectionKey: event.data.sectionKey,
+          hasOnSectionClick: !!onSectionClick,
+        })
+        if (onSectionClick) {
+          onSectionClick(event.data.sectionId, event.data.sectionKey)
+        } else {
+          console.warn('[PageCanvasView] onSectionClick handler not provided')
+        }
       }
     }
 
