@@ -15,6 +15,7 @@ interface SectionListPanelProps {
   onSelectSection: (sectionId: string) => void
   onSelectComponent?: (sectionId: string, componentKey: string) => void
   onScrollToSection: (sectionId: string) => void
+  onPublishSection?: (sectionId: string) => void
 }
 
 export function SectionListPanel({
@@ -24,6 +25,7 @@ export function SectionListPanel({
   onSelectSection,
   onSelectComponent,
   onScrollToSection,
+  onPublishSection,
 }: SectionListPanelProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [expandedSections, setExpandedSections] = React.useState<Set<string>>(new Set())
@@ -87,6 +89,31 @@ export function SectionListPanel({
     return (
       <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-[10px] px-1.5 py-0 h-4">
         Draft
+      </Badge>
+    )
+  }
+
+  // Check if a component is in draft status (differs from published)
+  const isComponentDraft = (section: PageSectionV2, componentKey: string): boolean => {
+    const draftValue = section.draft_content?.[componentKey]
+    const publishedValue = section.published_content?.[componentKey]
+    
+    // Compare using JSON.stringify for deep comparison
+    return JSON.stringify(draftValue) !== JSON.stringify(publishedValue)
+  }
+
+  // Get component status badge
+  const getComponentStatusBadge = (section: PageSectionV2, componentKey: string) => {
+    if (isComponentDraft(section, componentKey)) {
+      return (
+        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-[10px] px-1.5 py-0 h-4">
+          Draft
+        </Badge>
+      )
+    }
+    return (
+      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] px-1.5 py-0 h-4">
+        Pub
       </Badge>
     )
   }
@@ -169,6 +196,19 @@ export function SectionListPanel({
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium truncate">{section.label}</span>
                           {getStatusBadge(section)}
+                          {section.status === 'dirty' && onPublishSection && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 px-1.5 text-[10px] hover:bg-accent/50"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onPublishSection(section.id)
+                              }}
+                            >
+                              Publish All
+                            </Button>
+                          )}
                         </div>
                         <span className="text-[10px] text-muted-foreground truncate block mt-0.5">
                           {section.component}
@@ -193,9 +233,12 @@ export function SectionListPanel({
                             }
                           }}
                         >
-                          <span className="truncate">
-                            {componentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}
-                          </span>
+                          <div className="flex items-center gap-2 w-full">
+                            <span className="truncate">
+                              {componentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}
+                            </span>
+                            {getComponentStatusBadge(section, componentKey)}
+                          </div>
                         </Button>
                       )
                     })}

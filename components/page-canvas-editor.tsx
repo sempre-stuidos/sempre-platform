@@ -237,6 +237,13 @@ export function PageCanvasEditor({
     }
   }
 
+  const handleSilentSave = async () => {
+    // Regenerate preview token to ensure draft content is shown
+    await createPreviewToken()
+    // Force iframe reload with new token (silent - no page refresh)
+    setIframeKey(prev => prev + 1)
+  }
+
   const handleSave = async () => {
     // Regenerate preview token to ensure draft content is shown
     await createPreviewToken()
@@ -244,6 +251,29 @@ export function PageCanvasEditor({
     setIframeKey(prev => prev + 1)
     // Refresh the page to get updated sections from server
     router.refresh()
+  }
+
+  const handlePublishSection = async (sectionId: string) => {
+    try {
+      const response = await fetch(`/api/sections/${sectionId}/publish`, {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        toast.error(data.error || 'Failed to publish section')
+        return
+      }
+
+      toast.success('Section published successfully')
+      // Reload iframe silently and refresh sections
+      await handleSilentSave()
+      router.refresh()
+    } catch (error) {
+      console.error('Error publishing section:', error)
+      toast.error('Failed to publish section')
+    }
   }
 
   const handlePreview = async () => {
@@ -360,6 +390,7 @@ export function PageCanvasEditor({
               handleComponentClick(sectionId, sections.find(s => s.id === sectionId)?.key || '', componentKey)
             }}
             onScrollToSection={handleScrollToSection}
+            onPublishSection={handlePublishSection}
           />
         )}
 
@@ -432,7 +463,7 @@ export function PageCanvasEditor({
               setSelectedSectionId(null)
               setSelectedComponentKey(null)
             }}
-            onSave={handleSave}
+            onSave={handleSilentSave}
             onExpand={() => setIsWidgetMode(false)}
             getLatestContent={() => draftContents[selectedSection.id] || {}}
           />
