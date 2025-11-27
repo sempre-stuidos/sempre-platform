@@ -49,17 +49,20 @@ export function ImagePicker({ value, onChange, label = "Image", placeholder = "/
   const loadGalleryImages = async () => {
     setIsLoadingGallery(true)
     try {
-      // Extract orgId from current path or use a default
-      const pathParts = window.location.pathname.split('/')
-      const orgIdIndex = pathParts.indexOf('client')
-      const orgId = orgIdIndex !== -1 ? pathParts[orgIdIndex + 1] : null
+      // Use orgId prop if provided, otherwise extract from URL
+      let effectiveOrgId: string | undefined = orgId
+      if (!effectiveOrgId) {
+        const pathParts = window.location.pathname.split('/')
+        const orgIdIndex = pathParts.indexOf('client')
+        effectiveOrgId = orgIdIndex !== -1 ? pathParts[orgIdIndex + 1] : undefined
+      }
 
-      if (!orgId) {
+      if (!effectiveOrgId) {
         toast.error('Unable to determine organization')
         return
       }
 
-      const response = await fetch(`/api/businesses/${orgId}/gallery-images`)
+      const response = await fetch(`/api/businesses/${effectiveOrgId}/gallery-images`)
       if (response.ok) {
         const data = await response.json()
         setGalleryImages((data.images || []).map((img: Record<string, unknown>) => ({
@@ -67,6 +70,10 @@ export function ImagePicker({ value, onChange, label = "Image", placeholder = "/
           url: img.url || img.image_url,
           name: img.name || img.filename || 'Untitled'
         })))
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to fetch gallery images' }))
+        console.error('Error fetching gallery images:', errorData)
+        toast.error(errorData.error || 'Failed to load gallery images')
       }
     } catch (error) {
       console.error('Error loading gallery:', error)

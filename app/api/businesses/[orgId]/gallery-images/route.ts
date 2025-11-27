@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 import { getUserRoleInOrg } from '@/lib/businesses';
 import { getGalleryImages, createGalleryImage } from '@/lib/gallery';
 import { getBusinessById } from '@/lib/businesses';
+import { getGalleryImagesForBusiness, getFilePublicUrl } from '@/lib/files-assets';
+import { getGalleryImagePublicUrl } from '@/lib/gallery-images';
 
 interface RouteParams {
   params: Promise<{
@@ -44,26 +46,39 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get client linked to this business
+    // Get business to retrieve slug
     const business = await getBusinessById(orgId, supabase);
     if (!business) {
       return NextResponse.json({ error: 'Business not found' }, { status: 404 });
     }
 
-    const { data: clients } = await supabase
-      .from('clients')
-      .select('id')
-      .eq('business_id', orgId)
-      .limit(1)
-      .single();
+    // Use the new gallery images function that works with files_assets table
+    const galleryImages = await getGalleryImagesForBusiness(business.slug || undefined);
 
-    if (!clients) {
-      return NextResponse.json({ error: 'Client not found' }, { status: 404 });
-    }
+    // Transform to the format expected by the image picker
+    const images = galleryImages.map((img) => {
+      let imageUrl = '';
+      if (img.file_url) {
+        // Check if it's a gallery image
+        if (img.file_url.includes('/gallery/') || img.project === 'Gallery') {
+          imageUrl = getGalleryImagePublicUrl(img.file_url);
+        } else {
+          imageUrl = getFilePublicUrl(img.file_url);
+        }
+      } else if (img.google_drive_web_view_link) {
+        imageUrl = img.google_drive_web_view_link;
+      }
 
-    const galleryImages = await getGalleryImages(clients.id, supabase);
+      return {
+        id: img.id,
+        url: imageUrl,
+        name: img.name || 'Untitled',
+        image_url: imageUrl,
+        filename: img.name,
+      };
+    });
 
-    return NextResponse.json({ images: galleryImages });
+    return NextResponse.json({ images });
   } catch (error) {
     console.error('Error in GET /api/businesses/[orgId]/gallery-images:', error);
     return NextResponse.json(
