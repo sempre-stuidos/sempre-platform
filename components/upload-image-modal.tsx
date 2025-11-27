@@ -12,10 +12,10 @@ import {
   formatFileSize, 
   getFileFormat 
 } from "@/lib/files-assets"
-import { uploadGalleryImage, getGalleryImagePublicUrl } from "@/lib/gallery-images"
+import { uploadGalleryImage } from "@/lib/gallery-images"
 import { getBusinessById } from "@/lib/businesses"
-import { FilesAssets } from "@/lib/types"
 import { toast } from "sonner"
+import Image from "next/image"
 
 interface UploadImageModalProps {
   isOpen: boolean
@@ -157,9 +157,6 @@ export function UploadImageModal({ isOpen, onClose, onUploadSuccess, orgId }: Up
       const fileFormat = getFileFormat(file.name)
       const uploadedDate = new Date().toISOString().split('T')[0]
 
-      // Get public URL for the file
-      const publicUrl = getGalleryImagePublicUrl(filePath)
-
       // Create database record
       const newFileAsset = await createFilesAssets({
         name: formData.name,
@@ -279,10 +276,12 @@ export function UploadImageModal({ isOpen, onClose, onUploadSuccess, orgId }: Up
               ) : (
                 <div className="relative w-full h-full min-h-[300px] rounded-lg overflow-hidden group">
                   {/* Image Preview - fills container */}
-                  <img
+                  <Image
                     src={URL.createObjectURL(file)}
                     alt="Preview"
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                   {/* Remove button overlay */}
                   {!isUploading && (

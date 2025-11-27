@@ -292,7 +292,7 @@ export async function getGalleryImagesForBusiness(
   businessSlug?: string
 ): Promise<FilesAssets[]> {
   try {
-    let query = supabase
+    const query = supabase
       .from('files_assets')
       .select('*')
       .eq('type', 'Images')
@@ -315,7 +315,7 @@ export async function getGalleryImagesForBusiness(
     // Filter by business slug if provided
     if (businessSlug) {
       const sanitizedSlug = businessSlug.replace(/[^a-zA-Z0-9-_]/g, '-');
-      galleryImages = galleryImages.filter(file => 
+      galleryImages = galleryImages.filter((file: FilesAssets) => 
         file.file_url?.includes(`${sanitizedSlug}/gallery/`)
       );
     }

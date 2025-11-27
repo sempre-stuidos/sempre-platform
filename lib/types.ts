@@ -356,3 +356,43 @@ export interface Event {
   created_at: string;
   updated_at: string;
 }
+
+export type FeedbackStatus = 'open' | 'in_progress' | 'resolved';
+export type FeedbackPriority = 'high' | 'medium' | 'low';
+
+export interface FeedbackComment {
+  id: string;
+  feedbackId: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface FeedbackItem {
+  id: string;
+  pageId: string;
+  orgId: string;
+  sectionId: string;
+  sectionKey: string;
+  componentKey: string | null;
+  x: number;
+  y: number;
+  xRatio: number;
+  yRatio: number;
+  status: FeedbackStatus;
+  priority: FeedbackPriority;
+  title: string;
+  body: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  assigneeId: string;
+  assigneeName: string;
+  assigneeAvatar: string;
+  createdAt: string;
+  updatedAt: string;
+  commentCount: number;
+  comments: FeedbackComment[];
+}
