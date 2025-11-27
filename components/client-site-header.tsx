@@ -23,6 +23,8 @@ export function ClientSiteHeader() {
     pageName = "Analytics"
   } else if (pathname?.includes("/restaurant/pages")) {
     pageName = "Pages"
+  } else if (pathname?.includes("/retail/products")) {
+    pageName = "Products"
   } else if (pathname?.includes("/menu")) {
     pageName = "Menu"
   } else if (pathname?.includes("/gallery")) {

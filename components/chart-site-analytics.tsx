@@ -33,7 +33,8 @@ import {
 export interface SiteAnalyticsData {
   date: string;
   visits: number;
-  bookings: number;
+  bookings?: number;
+  sales?: number;
 }
 
 interface ChartSiteAnalyticsProps {
@@ -41,6 +42,7 @@ interface ChartSiteAnalyticsProps {
   title?: string;
   description?: string;
   descriptionShort?: string;
+  businessType?: 'agency' | 'restaurant' | 'hotel' | 'retail' | 'service' | 'other';
 }
 
 const chartConfig = {
@@ -52,6 +54,10 @@ const chartConfig = {
     label: "Bookings",
     color: "#22c55e", // Green color for bookings
   },
+  sales: {
+    label: "Sales",
+    color: "#22c55e", // Green color for sales
+  },
 } satisfies ChartConfig
 
 export function ChartSiteAnalytics({
@@ -59,7 +65,17 @@ export function ChartSiteAnalytics({
   title = "Site Analytics",
   description = "Website visits and bookings for the last 3 months",
   descriptionShort = "Last 3 months",
+  businessType = 'restaurant',
 }: ChartSiteAnalyticsProps) {
+  const isRetail = businessType === 'retail';
+  const metricKey = isRetail ? 'sales' : 'bookings';
+  const defaultDescription = isRetail 
+    ? "Website visits and sales for the last 3 months"
+    : "Website visits and bookings for the last 3 months";
+  
+  const finalDescription = description === "Website visits and bookings for the last 3 months" 
+    ? defaultDescription 
+    : description;
   const isMobile = useIsMobile()
   const [timeRange, setTimeRange] = React.useState("90d")
 
@@ -89,7 +105,7 @@ export function ChartSiteAnalytics({
         <CardTitle>{title}</CardTitle>
         <CardDescription>
           <span className="hidden @[540px]/card:block">
-            {description}
+            {finalDescription}
           </span>
           <span className="@[540px]/card:hidden">{descriptionShort}</span>
         </CardDescription>
@@ -146,15 +162,15 @@ export function ChartSiteAnalytics({
                   stopOpacity={0.1}
                 />
               </linearGradient>
-              <linearGradient id="fillBookings" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={`fill${metricKey.charAt(0).toUpperCase() + metricKey.slice(1)}`} x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--color-bookings)"
+                  stopColor={`var(--color-${metricKey})`}
                   stopOpacity={0.8}
                 />
                 <stop
                   offset="95%"
-                  stopColor="var(--color-bookings)"
+                  stopColor={`var(--color-${metricKey})`}
                   stopOpacity={0.1}
                 />
               </linearGradient>
@@ -196,10 +212,10 @@ export function ChartSiteAnalytics({
               strokeWidth={2}
             />
             <Area
-              dataKey="bookings"
+              dataKey={metricKey}
               type="natural"
-              fill="url(#fillBookings)"
-              stroke="var(--color-bookings)"
+              fill={`url(#fill${metricKey.charAt(0).toUpperCase() + metricKey.slice(1)})`}
+              stroke={`var(--color-${metricKey})`}
               strokeWidth={2}
             />
           </AreaChart>
