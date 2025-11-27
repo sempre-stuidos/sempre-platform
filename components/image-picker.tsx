@@ -9,18 +9,26 @@ import { IconUpload, IconPhoto, IconX } from "@tabler/icons-react"
 import Image from "next/image"
 import { toast } from "sonner"
 
+// Data URI for error fallback image (prevents infinite loop from 404s)
+const ERROR_IMG_SRC =
+  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODgiIGhlaWdodD0iODgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBvcGFjaXR5PSIuMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIzLjciPjxyZWN0IHg9IjE2IiB5PSIxNiIgd2lkdGg9IjU2IiBoZWlnaHQ9IjU2IiByeD0iNiIvPjxwYXRoIGQ9Im0xNiA1OCAxNi0xOCAzMiAzMiIvPjxjaXJjbGUgY3g9IjUzIiBjeT0iMzUiIHI9IjciLz48L3N2Zz4KCg=='
+
 interface ImagePickerProps {
   value: string
   onChange: (url: string) => void
   label?: string
   placeholder?: string
   compact?: boolean
+  orgId?: string
+  businessSlug?: string | null
 }
 
-export function ImagePicker({ value, onChange, label = "Image", placeholder = "/image.jpg", compact = false }: ImagePickerProps) {
+export function ImagePicker({ value, onChange, label = "Image", placeholder = "/image.jpg", compact = false, orgId, businessSlug }: ImagePickerProps) {
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false)
   const [galleryImages, setGalleryImages] = React.useState<Array<{ id: number; url: string; name: string }>>([])
   const [isLoadingGallery, setIsLoadingGallery] = React.useState(false)
+  const [isUploading, setIsUploading] = React.useState(false)
+  const [imageError, setImageError] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   // Extract image name from URL
@@ -68,7 +76,7 @@ export function ImagePicker({ value, onChange, label = "Image", placeholder = "/
     }
   }
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -84,11 +92,47 @@ export function ImagePicker({ value, onChange, label = "Image", placeholder = "/
       return
     }
 
-    // For now, we'll create a local object URL
-    // In production, you'd upload to a server/storage
-    const objectUrl = URL.createObjectURL(file)
-    onChange(objectUrl)
-    toast.success('Image selected (upload to server not implemented yet)')
+    // If orgId is provided, upload to server
+    if (orgId) {
+      setIsUploading(true)
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+
+        const response = await fetch(`/api/businesses/${orgId}/page-images/upload`, {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null)
+          throw new Error(errorData?.error || 'Failed to upload image')
+        }
+
+        const data = await response.json()
+        if (!data?.imageUrl) {
+          throw new Error('Upload did not return an image URL')
+        }
+
+        // Immediately update with uploaded URL - this will show in widget
+        onChange(data.imageUrl)
+        toast.success('Image uploaded successfully')
+      } catch (error) {
+        console.error('Error uploading image:', error)
+        toast.error(error instanceof Error ? error.message : 'Failed to upload image')
+      } finally {
+        setIsUploading(false)
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+      }
+    } else {
+      // Fallback: create local object URL if no orgId provided
+      const objectUrl = URL.createObjectURL(file)
+      onChange(objectUrl)
+      toast.success('Image selected')
+    }
   }
 
   const handleGallerySelect = (imageUrl: string) => {
@@ -110,17 +154,27 @@ export function ImagePicker({ value, onChange, label = "Image", placeholder = "/
         
         {value ? (
           <div className="relative group rounded-lg overflow-hidden border bg-muted/30 aspect-video">
-            <Image
-              src={value || '/placeholder.svg'}
-              alt="Selected image"
-              fill
-              className="object-cover"
-              unoptimized
-              onError={(e) => {
-                const target = e.target as HTMLImageElement
-                target.src = '/placeholder.svg'
-              }}
-            />
+            {isUploading ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
+                <p className="text-sm text-muted-foreground">Uploading...</p>
+              </div>
+            ) : (
+              <Image
+                src={imageError ? ERROR_IMG_SRC : value}
+                alt="Selected image"
+                fill
+                className="object-cover"
+                unoptimized
+                onError={() => {
+                  if (!imageError) {
+                    setImageError(true)
+                  }
+                }}
+                onLoad={() => {
+                  setImageError(false)
+                }}
+              />
+            )}
             {/* Overlay with Replace button */}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
               <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -342,18 +396,27 @@ export function ImagePicker({ value, onChange, label = "Image", placeholder = "/
         <div className="relative border rounded-lg p-4 bg-muted/50">
           <div className="flex items-start gap-4">
             <div className="relative w-24 h-24 rounded-md overflow-hidden border bg-background">
-              <Image
-                src={value || '/placeholder.svg'}
-                alt="Selected image"
-                fill
-                className="object-cover"
-                unoptimized
-                onError={(e) => {
-                  // Fallback if image fails to load
-                  const target = e.target as HTMLImageElement
-                  target.src = '/placeholder.svg'
-                }}
-              />
+              {isUploading ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Uploading...</p>
+                </div>
+              ) : (
+                <Image
+                  src={imageError ? ERROR_IMG_SRC : value}
+                  alt="Selected image"
+                  fill
+                  className="object-cover"
+                  unoptimized
+                  onError={() => {
+                    if (!imageError) {
+                      setImageError(true)
+                    }
+                  }}
+                  onLoad={() => {
+                    setImageError(false)
+                  }}
+                />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{getImageName(value)}</p>

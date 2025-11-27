@@ -455,6 +455,8 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
                 onChange={(url) => handleFieldChange(key, url)}
                 label=""
                 compact={isWidgetMode}
+                orgId={orgId}
+                businessSlug={businessSlug}
               />
             </div>
           )
@@ -498,6 +500,8 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
               onChange={(url) => handleFieldChange(key, url)}
               label=""
               compact={isWidgetMode}
+              orgId={orgId}
+              businessSlug={businessSlug}
             />
           </div>
         )
@@ -597,6 +601,8 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
                                     onChange={(url) => handleArrayItemChange(key, index, url)}
                                     label=""
                                     compact={isWidgetMode}
+                                    orgId={orgId}
+                                    businessSlug={businessSlug}
                                   />
                                 ) : (
                                   <Textarea
@@ -930,6 +936,8 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
               label="Hero Image"
               placeholder="https://images.unsplash.com/..."
               compact={isWidgetMode}
+              orgId={orgId}
+              businessSlug={businessSlug}
             />
 
             {/* Accent Image */}
@@ -939,6 +947,8 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
               label="Accent Image"
               placeholder="https://images.unsplash.com/..."
               compact={isWidgetMode}
+              orgId={orgId}
+              businessSlug={businessSlug}
             />
           </div>
         )
@@ -997,6 +1007,8 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
               label="Promo Image"
               placeholder="/gourmet-breakfast.png"
               compact={isWidgetMode}
+              orgId={orgId}
+              businessSlug={businessSlug}
             />
           </div>
         )
@@ -1078,6 +1090,8 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
                     label=""
                     placeholder="Image URL"
                     compact={isWidgetMode}
+                    orgId={orgId}
+                    businessSlug={businessSlug}
                   />
                 </div>
               ))}
@@ -1107,6 +1121,8 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
                       handleFieldChange('images', newImages)
                     }}
                     label={`Image ${index + 1}`}
+                    orgId={orgId}
+                    businessSlug={businessSlug}
                     placeholder="/image.jpg"
                     compact={isWidgetMode}
                   />
