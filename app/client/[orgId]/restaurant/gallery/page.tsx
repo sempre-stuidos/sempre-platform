@@ -6,45 +6,12 @@ import { GalleryImagesGrid } from "@/components/gallery-images-grid"
 import { UploadImageModal } from "@/components/upload-image-modal"
 import { GoogleDriveImportModal } from "@/components/google-drive-import-modal"
 import { FilesAssets } from "@/lib/types"
+import { getGalleryImagesForBusiness } from "@/lib/files-assets"
+import { getBusinessById } from "@/lib/businesses"
 import { toast } from "sonner"
 
-// Dummy data for restaurant/retail gallery images
-const createDummyGalleryData = (): FilesAssets[] => {
-  const today = new Date()
-  const getDateString = (daysAgo: number) => {
-    const date = new Date(today)
-    date.setDate(date.getDate() - daysAgo)
-    return date.toISOString().split('T')[0]
-  }
-
-  const restaurantImages = [
-    { name: "Dining Room Interior", size: "2.5 MB", format: "JPG", daysAgo: 2, status: "Active" as const },
-    { name: "Signature Dish Photo", size: "3.2 MB", format: "PNG", daysAgo: 3, status: "Active" as const },
-    { name: "Bar Area", size: "2.1 MB", format: "JPG", daysAgo: 5, status: "Review" as const },
-    { name: "Outdoor Patio", size: "2.8 MB", format: "JPG", daysAgo: 6, status: "Active" as const },
-    { name: "Chef in Kitchen", size: "3.5 MB", format: "PNG", daysAgo: 8, status: "Active" as const },
-    { name: "Menu Board", size: "1.8 MB", format: "JPG", daysAgo: 10, status: "Draft" as const },
-    { name: "Happy Hour Specials", size: "2.3 MB", format: "JPG", daysAgo: 12, status: "Active" as const },
-    { name: "Dessert Display", size: "2.7 MB", format: "PNG", daysAgo: 15, status: "Active" as const },
-    { name: "Storefront Display", size: "2.4 MB", format: "JPG", daysAgo: 18, status: "Active" as const },
-    { name: "Product Showcase", size: "3.1 MB", format: "JPG", daysAgo: 20, status: "Review" as const },
-  ]
-
-  return restaurantImages.map((img, index) => ({
-    id: index + 1,
-    name: img.name,
-    type: "Images" as const,
-    category: "Client Assets" as const,
-    project: "",
-    size: img.size,
-    format: img.format,
-    uploaded: getDateString(img.daysAgo),
-    status: img.status,
-  }))
-}
-
-// Calculate dummy stats from dummy data
-const calculateDummyStats = (data: FilesAssets[]) => {
+// Calculate stats from data
+const calculateStats = (data: FilesAssets[]) => {
   const totalFiles = data.length
   const filesThisWeek = data.filter(file => {
     const uploadDate = new Date(file.uploaded)
@@ -100,37 +67,63 @@ export default function GalleryPage() {
   const [isGoogleDriveImportModalOpen, setIsGoogleDriveImportModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Initialize with dummy data
+  // Fetch gallery images from database
   useEffect(() => {
-    setIsLoading(true)
-    // Simulate loading delay
-    setTimeout(() => {
-      const dummyData = createDummyGalleryData()
-      setData(dummyData)
-      setStats(calculateDummyStats(dummyData))
-      setIsLoading(false)
-    }, 300)
-  }, [])
+    const fetchGalleryImages = async () => {
+      setIsLoading(true)
+      try {
+        // Get business to retrieve slug
+        const business = await getBusinessById(orgId)
+        if (!business) {
+          toast.error("Business not found")
+          setData([])
+          setStats(calculateStats([]))
+          setIsLoading(false)
+          return
+        }
 
-  const handleUploadSuccess = () => {
+        // Fetch gallery images for this business
+        const galleryImages = await getGalleryImagesForBusiness(business.slug || undefined)
+        setData(galleryImages)
+        setStats(calculateStats(galleryImages))
+      } catch (error) {
+        console.error("Error fetching gallery images:", error)
+        toast.error("Failed to load gallery images")
+        setData([])
+        setStats(calculateStats([]))
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (orgId) {
+      fetchGalleryImages()
+    }
+  }, [orgId])
+
+  const handleUploadSuccess = async () => {
     // Refresh data after successful upload
-    const dummyData = createDummyGalleryData()
-    setData(dummyData)
-    setStats(calculateDummyStats(dummyData))
-    toast.success("Image uploaded successfully!")
+    try {
+      const business = await getBusinessById(orgId)
+      if (business) {
+        const galleryImages = await getGalleryImagesForBusiness(business.slug || undefined)
+        setData(galleryImages)
+        setStats(calculateStats(galleryImages))
+      }
+    } catch (error) {
+      console.error("Error refreshing gallery images:", error)
+    }
   }
 
   const handleGoogleDriveImportSuccess = () => {
-    // Dummy: just show a toast, don't actually update data
-    toast.success("Google Drive import initiated (demo mode)")
-    // In real implementation, would refresh data here
+    toast.success("Google Drive import initiated")
+    // Refresh data after import
+    handleUploadSuccess()
   }
 
-  const handleDataChange = () => {
-    // Dummy: refresh with same dummy data
-    const dummyData = createDummyGalleryData()
-    setData(dummyData)
-    setStats(calculateDummyStats(dummyData))
+  const handleDataChange = async () => {
+    // Refresh data
+    await handleUploadSuccess()
   }
 
   const handleFolderClick = (folder: string) => {

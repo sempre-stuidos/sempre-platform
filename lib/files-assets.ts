@@ -284,6 +284,49 @@ export async function getFilesAssetsByProject(project: string): Promise<FilesAss
   }
 }
 
+/**
+ * Get gallery images for a business
+ * Filters by type="Images" and project="Gallery", and optionally by business slug in file path
+ */
+export async function getGalleryImagesForBusiness(
+  businessSlug?: string
+): Promise<FilesAssets[]> {
+  try {
+    let query = supabase
+      .from('files_assets')
+      .select('*')
+      .eq('type', 'Images')
+      .eq('project', 'Gallery')
+      .order('uploaded', { ascending: false });
+
+    const { data: filesAssets, error } = await query;
+
+    if (error) {
+      console.error('Error fetching gallery images:', error);
+      throw error;
+    }
+
+    if (!filesAssets || filesAssets.length === 0) {
+      return [];
+    }
+
+    let galleryImages = filesAssets.map(transformFilesAssetsRecord);
+
+    // Filter by business slug if provided
+    if (businessSlug) {
+      const sanitizedSlug = businessSlug.replace(/[^a-zA-Z0-9-_]/g, '-');
+      galleryImages = galleryImages.filter(file => 
+        file.file_url?.includes(`${sanitizedSlug}/gallery/`)
+      );
+    }
+
+    return galleryImages;
+  } catch (error) {
+    console.error('Error in getGalleryImagesForBusiness:', error);
+    return [];
+  }
+}
+
 // Storage functions for file uploads
 
 /**

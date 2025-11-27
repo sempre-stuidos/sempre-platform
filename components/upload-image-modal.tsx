@@ -6,13 +6,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { useState, useRef, DragEvent } from "react"
+import { useState, useRef, DragEvent, useEffect } from "react"
 import { 
-  uploadFileToStorage, 
   createFilesAssets, 
   formatFileSize, 
   getFileFormat 
 } from "@/lib/files-assets"
+import { uploadGalleryImage, getGalleryImagePublicUrl } from "@/lib/gallery-images"
+import { getBusinessById } from "@/lib/businesses"
 import { FilesAssets } from "@/lib/types"
 import { toast } from "sonner"
 
@@ -32,11 +33,32 @@ export function UploadImageModal({ isOpen, onClose, onUploadSuccess, orgId }: Up
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [businessSlug, setBusinessSlug] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
     name: "",
   })
+
+  // Fetch business slug when modal opens
+  useEffect(() => {
+    if (isOpen && orgId) {
+      getBusinessById(orgId)
+        .then((business) => {
+          if (business?.slug) {
+            setBusinessSlug(business.slug)
+          } else {
+            toast.error("Business slug not found. Please set a slug for this business.")
+            setBusinessSlug(null)
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching business:", error)
+          toast.error("Failed to load business information")
+          setBusinessSlug(null)
+        })
+    }
+  }, [isOpen, orgId])
 
   const handleFileSelect = (selectedFile: File) => {
     // Validate file type
@@ -112,15 +134,17 @@ export function UploadImageModal({ isOpen, onClose, onUploadSuccess, orgId }: Up
       return
     }
 
+    if (!businessSlug) {
+      toast.error("Business slug is required. Please set a slug for this business.")
+      return
+    }
+
     setIsUploading(true)
     setUploadProgress(10)
 
     try {
-      // Use a default project name for gallery images
-      const projectName = "Gallery"
-      
-      // Upload file to Supabase storage
-      const filePath = await uploadFileToStorage(file, projectName)
+      // Upload file to Supabase gallery bucket
+      const filePath = await uploadGalleryImage(file, businessSlug)
       
       if (!filePath) {
         throw new Error("Failed to upload image to storage")
@@ -133,17 +157,20 @@ export function UploadImageModal({ isOpen, onClose, onUploadSuccess, orgId }: Up
       const fileFormat = getFileFormat(file.name)
       const uploadedDate = new Date().toISOString().split('T')[0]
 
+      // Get public URL for the file
+      const publicUrl = getGalleryImagePublicUrl(filePath)
+
       // Create database record
       const newFileAsset = await createFilesAssets({
         name: formData.name,
         type: "Images",
         category: "Client Assets",
-        project: projectName,
+        project: "Gallery",
         size: fileSize,
         format: fileFormat,
         uploaded: uploadedDate,
         status: "Active",
-        file_url: filePath,
+        file_url: filePath, // Store the path, not the full URL
       })
 
       setUploadProgress(100)

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select"
 import { FilesAssets } from "@/lib/types"
 import { getFilePublicUrl } from "@/lib/files-assets"
+import { getGalleryImagePublicUrl } from "@/lib/gallery-images"
 import { toast } from "sonner"
 import Image from "next/image"
 
@@ -89,19 +90,33 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
   const endIndex = startIndex + ITEMS_PER_PAGE
   const currentPageData = filteredData.slice(startIndex, endIndex)
 
-  const handleDownload = (file: FilesAssets) => {
+  const getFileUrl = (file: FilesAssets): string | null => {
     if (file.file_url) {
-      const publicUrl = getFilePublicUrl(file.file_url)
-      window.open(publicUrl, '_blank')
+      // Check if it's a gallery image
+      if (file.file_url.includes('/gallery/') || file.project === 'Gallery') {
+        return getGalleryImagePublicUrl(file.file_url)
+      }
+      return getFilePublicUrl(file.file_url)
+    }
+    if (file.google_drive_web_view_link) {
+      return file.google_drive_web_view_link
+    }
+    return null
+  }
+
+  const handleDownload = (file: FilesAssets) => {
+    const url = getFileUrl(file)
+    if (url) {
+      window.open(url, '_blank')
     } else {
       toast.error("No file URL available for download")
     }
   }
 
   const handlePreview = (file: FilesAssets) => {
-    if (file.file_url) {
-      const publicUrl = getFilePublicUrl(file.file_url)
-      window.open(publicUrl, '_blank')
+    const url = getFileUrl(file)
+    if (url) {
+      window.open(url, '_blank')
     } else {
       toast.error("No file URL available for preview")
     }
@@ -116,13 +131,7 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
   }
 
   const getImageUrl = (file: FilesAssets): string | null => {
-    if (file.file_url) {
-      return getFilePublicUrl(file.file_url)
-    }
-    if (file.google_drive_web_view_link) {
-      return file.google_drive_web_view_link
-    }
-    return null
+    return getFileUrl(file)
   }
 
   return (
