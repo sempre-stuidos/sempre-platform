@@ -6,14 +6,13 @@ import { AddProductModal } from "@/components/add-product-modal"
 import { useState } from "react"
 import { Product } from "@/lib/products"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
 
 interface AddProductButtonProps {
   orgId: string
+  onProductSaved?: (product: Product) => void
 }
 
-export function AddProductButton({ orgId }: AddProductButtonProps) {
-  const router = useRouter()
+export function AddProductButton({ orgId, onProductSaved }: AddProductButtonProps) {
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
@@ -39,12 +38,15 @@ export function AddProductButton({ orgId }: AddProductButtonProps) {
         throw new Error(error.error || 'Failed to save product')
       }
 
+      const { product } = await response.json()
       toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully')
       setIsAddProductModalOpen(false)
       setEditingProduct(null)
       
-      // Refresh the page to show the new/updated product
-      router.refresh()
+      // Call the callback to update the table immediately
+      if (onProductSaved) {
+        onProductSaved(product)
+      }
     } catch (error) {
       console.error('Error saving product:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to save product'

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserRoleInOrg } from '@/lib/businesses';
-import { uploadMenuItemImage } from '@/lib/menu-images';
+import { getGalleryImagePublicUrl } from '@/lib/gallery-images';
 
 interface RouteParams {
   params: Promise<{
@@ -68,14 +68,41 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const imageUrl = await uploadMenuItemImage(file, orgId, supabase);
+    // Sanitize org ID for folder structure
+    const sanitizedOrgId = orgId.replace(/[^a-zA-Z0-9-_]/g, '-');
+    
+    // Create unique filename to avoid collisions
+    const timestamp = Date.now();
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '-');
+    const fileName = `${timestamp}-${sanitizedFileName}`;
+    
+    // Storage path: org-id/filename (in gallery bucket)
+    const filePath = `${sanitizedOrgId}/${fileName}`;
 
-    if (!imageUrl) {
+    const { data, error: uploadError } = await supabase.storage
+      .from('gallery')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('Error uploading image to gallery bucket:', uploadError);
       return NextResponse.json(
         { error: 'Failed to upload image' },
         { status: 500 }
       );
     }
+
+    if (!data) {
+      return NextResponse.json(
+        { error: 'Failed to upload image' },
+        { status: 500 }
+      );
+    }
+
+    // Get public URL
+    const imageUrl = getGalleryImagePublicUrl(data.path, supabase);
 
     return NextResponse.json({ imageUrl });
   } catch (error) {

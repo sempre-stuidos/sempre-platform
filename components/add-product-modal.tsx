@@ -198,6 +198,12 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Prevent submission if we're still on step 1
+    if (step === 1) {
+      handleNext()
+      return
+    }
+    
     if (!validateStep2()) {
       return
     }
@@ -608,7 +614,14 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
                 Cancel
               </Button>
               {step === 1 ? (
-                <Button type="button" onClick={handleNext}>
+                <Button 
+                  type="button" 
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleNext()
+                  }}
+                >
                   Next
                   <IconChevronRight className="h-4 w-4 ml-2" />
                 </Button>

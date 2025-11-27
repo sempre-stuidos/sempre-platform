@@ -1,7 +1,6 @@
 import { cookies } from 'next/headers';
-import { ProductsDataTable } from '@/components/products-data-table';
 import { Product, transformProductRecord } from '@/lib/products';
-import { AddProductButton } from '@/components/add-product-button';
+import { ProductsPageClient } from '@/components/products-page-client';
 import { createServerClient } from '@supabase/ssr';
 
 interface ProductsPageProps {
@@ -32,9 +31,9 @@ async function getAllProducts(orgId: string): Promise<Product[]> {
   try {
     // Try to fetch from database first
     const { data, error } = await supabase
-      .from('products')
+      .from('retail_products_table')
       .select('*')
-      .eq('org_id', orgId)
+      .eq('business_id', orgId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -65,15 +64,7 @@ export default async function ProductsPage({ params }: ProductsPageProps) {
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="px-4 lg:px-6">
-          <div className="mb-6 flex items-start justify-between">
-            <div>
-              <p className="text-muted-foreground">
-                Manage your retail products
-              </p>
-            </div>
-            <AddProductButton orgId={orgId} />
-          </div>
-          <ProductsDataTable data={productsData} orgId={orgId} />
+          <ProductsPageClient initialData={productsData} orgId={orgId} />
         </div>
       </div>
     </div>

@@ -48,30 +48,40 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
     const { name, price, sku, status, category, stock, rating, image_url, description } = body;
 
+    // Validate name if provided (for updates, name is optional but if provided must not be empty)
+    if (name !== undefined && (!name || !name.trim())) {
+      return NextResponse.json(
+        { error: 'Product name cannot be empty' },
+        { status: 400 }
+      );
+    }
+
     // Verify the product belongs to this org
     const { data: existingProduct, error: fetchError } = await supabase
-      .from('products')
-      .select('org_id')
+      .from('retail_products_table')
+      .select('business_id')
       .eq('id', productId)
       .single();
 
-    if (fetchError || !existingProduct || existingProduct.org_id !== orgId) {
+    if (fetchError || !existingProduct || existingProduct.business_id !== orgId) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
+    // Build update object with only provided fields
+    const updateData: Record<string, unknown> = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (price !== undefined) updateData.price = price !== null ? price : null;
+    if (sku !== undefined) updateData.sku = sku || null;
+    if (status !== undefined) updateData.status = status;
+    if (category !== undefined) updateData.category = category || null;
+    if (stock !== undefined) updateData.stock = stock !== null ? stock : null;
+    if (rating !== undefined) updateData.rating = rating !== null ? rating : null;
+    if (image_url !== undefined) updateData.image_url = image_url || null;
+    if (description !== undefined) updateData.description = description || null;
+
     const { data, error } = await supabase
-      .from('products')
-      .update({
-        name,
-        price,
-        sku,
-        status,
-        category,
-        stock,
-        rating,
-        image_url,
-        description,
-      })
+      .from('retail_products_table')
+      .update(updateData)
       .eq('id', productId)
       .select()
       .single();
@@ -130,17 +140,17 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // Verify the product belongs to this org
     const { data: existingProduct, error: fetchError } = await supabase
-      .from('products')
-      .select('org_id')
+      .from('retail_products_table')
+      .select('business_id')
       .eq('id', productId)
       .single();
 
-    if (fetchError || !existingProduct || existingProduct.org_id !== orgId) {
+    if (fetchError || !existingProduct || existingProduct.business_id !== orgId) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
     const { error } = await supabase
-      .from('products')
+      .from('retail_products_table')
       .delete()
       .eq('id', productId);
 

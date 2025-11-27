@@ -45,9 +45,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const { data, error } = await supabase
-      .from('products')
+      .from('retail_products_table')
       .select('*')
-      .eq('org_id', orgId)
+      .eq('business_id', orgId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -103,26 +103,26 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
     const { name, price, sku, status, category, stock, rating, image_url, description } = body;
 
-    if (!name || price === undefined || !sku) {
+    if (!name || !name.trim()) {
       return NextResponse.json(
-        { error: 'Name, price, and SKU are required' },
+        { error: 'Product name is required' },
         { status: 400 }
       );
     }
 
     const { data, error } = await supabase
-      .from('products')
+      .from('retail_products_table')
       .insert({
-        org_id: orgId,
-        name,
-        price,
-        sku,
+        business_id: orgId,
+        name: name.trim(),
+        price: price !== undefined && price !== null ? price : null,
+        sku: sku || null,
         status: status || 'active',
-        category,
-        stock,
-        rating,
-        image_url,
-        description,
+        category: category || null,
+        stock: stock !== undefined && stock !== null ? stock : null,
+        rating: rating !== undefined && rating !== null ? rating : null,
+        image_url: image_url || null,
+        description: description || null,
       })
       .select()
       .single();

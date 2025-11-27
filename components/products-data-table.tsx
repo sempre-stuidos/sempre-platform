@@ -123,7 +123,7 @@ const createColumns = (
       const price = row.original.price
       return (
         <div className="text-sm font-medium">
-          ${price.toFixed(2)}
+          {price !== undefined && price !== null ? `$${price.toFixed(2)}` : '-'}
         </div>
       )
     },
@@ -245,11 +245,20 @@ const createColumns = (
 export function ProductsDataTable({
   data: initialData,
   orgId,
+  onProductUpdated,
+  onProductDeleted,
 }: {
   data: Product[]
   orgId: string
+  onProductUpdated?: (product: Product) => void
+  onProductDeleted?: (productId: string) => void
 }) {
   const [data, setData] = React.useState(() => initialData)
+
+  // Update data when initialData changes (from server refresh)
+  React.useEffect(() => {
+    setData(initialData)
+  }, [initialData])
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
@@ -315,6 +324,10 @@ export function ProductsDataTable({
 
       const { product: updatedProduct } = await response.json()
       setData(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p))
+      // Notify parent component
+      if (onProductUpdated) {
+        onProductUpdated(updatedProduct)
+      }
       toast.success('Product updated successfully')
       setEditingProduct(null)
       setIsAddProductModalOpen(false)
@@ -335,7 +348,11 @@ export function ProductsDataTable({
         throw new Error(error.error || 'Failed to delete product')
       }
 
-      setData(data.filter(product => product.id !== productId))
+      setData(prev => prev.filter(product => product.id !== productId))
+      // Notify parent component
+      if (onProductDeleted) {
+        onProductDeleted(productId)
+      }
       toast.success('Product deleted successfully')
       setDeleteDialogOpen(false)
       setProductToDelete(null)
@@ -370,7 +387,11 @@ export function ProductsDataTable({
       const successCount = results.filter(r => r.ok).length
       if (successCount > 0) {
         const deletedIds = selectedProducts.slice(0, successCount).map(p => p.id)
-        setData(data.filter(product => !deletedIds.includes(product.id)))
+        setData(prev => prev.filter(product => !deletedIds.includes(product.id)))
+        // Notify parent component for each deleted product
+        if (onProductDeleted) {
+          deletedIds.forEach(id => onProductDeleted(id))
+        }
         toast.success(`${successCount} product(s) deleted successfully`)
         table.resetRowSelection()
       }
@@ -501,7 +522,7 @@ export function ProductsDataTable({
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              product "{productToDelete?.name}".
+              product &quot;{productToDelete?.name}&quot;.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
