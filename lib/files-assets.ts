@@ -166,8 +166,15 @@ export async function deleteFilesAssets(id: number): Promise<boolean> {
     const fileAsset = await getFilesAssetsById(id);
     
     if (fileAsset?.file_url) {
-      // Delete from storage
-      await deleteFileFromStorage(fileAsset.file_url);
+      // Check if it's a gallery image (in gallery bucket)
+      if (fileAsset.file_url.includes('/gallery/') || fileAsset.project === 'Gallery') {
+        // Import deleteGalleryImage dynamically to avoid circular dependency
+        const { deleteGalleryImage } = await import('./gallery-images');
+        await deleteGalleryImage(fileAsset.file_url);
+      } else {
+        // Delete from files-assets bucket
+        await deleteFileFromStorage(fileAsset.file_url);
+      }
     }
 
     // Then delete from database

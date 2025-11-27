@@ -17,9 +17,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { FilesAssets } from "@/lib/types"
-import { getFilePublicUrl } from "@/lib/files-assets"
-import { getGalleryImagePublicUrl } from "@/lib/gallery-images"
+import { getFilePublicUrl, deleteFilesAssets, updateFilesAssets } from "@/lib/files-assets"
+import { getGalleryImagePublicUrl, deleteGalleryImage } from "@/lib/gallery-images"
 import { toast } from "sonner"
 import Image from "next/image"
 
@@ -28,15 +37,20 @@ interface GalleryImagesGridProps {
   onUploadClick?: () => void
   onGoogleDriveImportClick?: () => void
   onFolderClick?: (folder: string) => void
+  onDataChange?: () => void
 }
 
 const ITEMS_PER_PAGE = 6
-const IMAGES_PER_ROW = 3
 const RECENTS_FOLDER = "Recents"
 
-export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClick, onFolderClick }: GalleryImagesGridProps) {
+export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClick, onFolderClick, onDataChange }: GalleryImagesGridProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedFolder, setSelectedFolder] = useState<string>(RECENTS_FOLDER)
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false)
+  const [fileToRename, setFileToRename] = useState<FilesAssets | null>(null)
+  const [newFileName, setNewFileName] = useState("")
+  const [isRenaming, setIsRenaming] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Extract unique folders from data (using project field, or create folders)
   const folders = useMemo(() => {
@@ -107,7 +121,15 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
   const handleDownload = (file: FilesAssets) => {
     const url = getFileUrl(file)
     if (url) {
-      window.open(url, '_blank')
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a')
+      link.href = url
+      link.download = file.name
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      toast.success("Download started")
     } else {
       toast.error("No file URL available for download")
     }
@@ -122,12 +144,70 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
     }
   }
 
-  const handleDelete = () => {
-    toast.info("Delete functionality (demo mode)")
+  const handleDelete = async (file: FilesAssets) => {
+    if (!confirm(`Are you sure you want to delete "${file.name}"? This action cannot be undone.`)) {
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      // Delete from storage if it's a gallery image
+      if (file.file_url && (file.file_url.includes('/gallery/') || file.project === 'Gallery')) {
+        await deleteGalleryImage(file.file_url)
+      }
+
+      // Delete from database
+      const success = await deleteFilesAssets(file.id)
+      
+      if (success) {
+        toast.success("Image deleted successfully")
+        onDataChange?.()
+      } else {
+        toast.error("Failed to delete image")
+      }
+    } catch (error) {
+      console.error("Error deleting image:", error)
+      toast.error("Failed to delete image")
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
-  const handleRename = () => {
-    toast.info("Rename functionality (demo mode)")
+  const handleRename = (file: FilesAssets) => {
+    setFileToRename(file)
+    setNewFileName(file.name)
+    setRenameDialogOpen(true)
+  }
+
+  const handleRenameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!fileToRename || !newFileName.trim()) {
+      toast.error("Please enter a valid file name")
+      return
+    }
+
+    setIsRenaming(true)
+    try {
+      const success = await updateFilesAssets(fileToRename.id, {
+        name: newFileName.trim()
+      })
+
+      if (success) {
+        toast.success("Image renamed successfully")
+        setRenameDialogOpen(false)
+        setFileToRename(null)
+        setNewFileName("")
+        onDataChange?.()
+      } else {
+        toast.error("Failed to rename image")
+      }
+    } catch (error) {
+      console.error("Error renaming image:", error)
+      toast.error("Failed to rename image")
+    } finally {
+      setIsRenaming(false)
+    }
   }
 
   const getImageUrl = (file: FilesAssets): string | null => {
@@ -244,7 +324,7 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
                         <span>Download</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={handleRename}
+                        onClick={() => handleRename(file)}
                         className="cursor-pointer gap-2.5 px-3 py-2.5 rounded-md transition-colors"
                       >
                         <IconEdit className="size-4 text-muted-foreground" />
@@ -253,11 +333,12 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
                       <DropdownMenuSeparator className="my-1.5" />
                       <DropdownMenuItem 
                         variant="destructive" 
-                        onClick={handleDelete}
+                        onClick={() => handleDelete(file)}
+                        disabled={isDeleting}
                         className="cursor-pointer gap-2.5 px-3 py-2.5 rounded-md transition-colors"
                       >
                         <IconTrash className="size-4" />
-                        <span>Delete</span>
+                        <span>{isDeleting ? "Deleting..." : "Delete"}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -341,6 +422,48 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
           </div>
         </div>
       )}
+
+      {/* Rename Dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Image</DialogTitle>
+            <DialogDescription>
+              Enter a new name for the image file.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleRenameSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newFileName">File Name</Label>
+              <Input
+                id="newFileName"
+                value={newFileName}
+                onChange={(e) => setNewFileName(e.target.value)}
+                placeholder="Enter new file name"
+                disabled={isRenaming}
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setRenameDialogOpen(false)
+                  setFileToRename(null)
+                  setNewFileName("")
+                }}
+                disabled={isRenaming}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isRenaming || !newFileName.trim()}>
+                {isRenaming ? "Renaming..." : "Rename"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

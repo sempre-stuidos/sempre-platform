@@ -146,6 +146,7 @@ export default function GalleryPage() {
             onUploadClick={() => setIsUploadModalOpen(true)}
             onGoogleDriveImportClick={() => setIsGoogleDriveImportModalOpen(true)}
             onFolderClick={handleFolderClick}
+            onDataChange={handleDataChange}
           />
         )}
       </div>
