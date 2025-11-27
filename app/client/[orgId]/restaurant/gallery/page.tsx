@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import { ClientImagesTable } from "@/components/client-images-table"
-import { GalleryImagesScroll } from "@/components/gallery-images-scroll"
-import { UploadFileModal } from "@/components/upload-file-modal"
+import { GalleryImagesGrid } from "@/components/gallery-images-grid"
+import { UploadImageModal } from "@/components/upload-image-modal"
 import { GoogleDriveImportModal } from "@/components/google-drive-import-modal"
 import { FilesAssets } from "@/lib/types"
 import { toast } from "sonner"
@@ -114,9 +113,11 @@ export default function GalleryPage() {
   }, [])
 
   const handleUploadSuccess = () => {
-    // Dummy: just show a toast, don't actually update data
-    toast.success("File upload initiated (demo mode)")
-    // In real implementation, would refresh data here
+    // Refresh data after successful upload
+    const dummyData = createDummyGalleryData()
+    setData(dummyData)
+    setStats(calculateDummyStats(dummyData))
+    toast.success("Image uploaded successfully!")
   }
 
   const handleGoogleDriveImportSuccess = () => {
@@ -132,35 +133,35 @@ export default function GalleryPage() {
     setStats(calculateDummyStats(dummyData))
   }
 
+  const handleFolderClick = (folder: string) => {
+    // Navigate to folder details or filter
+    toast.info(`Viewing folder: ${folder}`)
+    // In a real implementation, you could navigate to a folder detail page
+    // router.push(`/client/${orgId}/restaurant/gallery/folder/${encodeURIComponent(folder)}`)
+  }
+
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-        {!isLoading && (
-          <GalleryImagesScroll 
-            data={data} 
-            onUploadClick={() => setIsUploadModalOpen(true)}
-            onGoogleDriveImportClick={() => setIsGoogleDriveImportModalOpen(true)}
-          />
-        )}
-        
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <p className="text-muted-foreground">Loading files...</p>
           </div>
         ) : (
-          <ClientImagesTable 
+          <GalleryImagesGrid 
             data={data} 
             onUploadClick={() => setIsUploadModalOpen(true)}
             onGoogleDriveImportClick={() => setIsGoogleDriveImportModalOpen(true)}
-            onDataChange={handleDataChange}
+            onFolderClick={handleFolderClick}
           />
-          )}
-        </div>
+        )}
+      </div>
 
-      <UploadFileModal
+      <UploadImageModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onUploadSuccess={handleUploadSuccess}
+        orgId={orgId}
       />
       
       <GoogleDriveImportModal
