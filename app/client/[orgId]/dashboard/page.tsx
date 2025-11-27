@@ -64,39 +64,59 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
   let sectionsCount = 0;
   let ordersCount = 0;
   let productsCount = 0;
+  let activeProductsCount = 0;
   let customersCount = 0;
 
-  if (clientId) {
-    if (isRestaurant) {
-      // Restaurant stats
-      const [menuResult, galleryResult, sectionsResult] = await Promise.all([
-        supabaseServer.from('menu_items').select('id', { count: 'exact', head: true }).eq('client_id', clientId),
-        supabaseServer.from('gallery_images').select('id', { count: 'exact', head: true }).eq('client_id', clientId),
-        supabaseServer.from('page_sections').select('id', { count: 'exact', head: true }).eq('client_id', clientId),
-      ]);
+  if (isRestaurant && clientId) {
+    // Restaurant stats - require clientId
+    const [menuResult, galleryResult, sectionsResult] = await Promise.all([
+      supabaseServer.from('menu_items').select('id', { count: 'exact', head: true }).eq('client_id', clientId),
+      supabaseServer.from('gallery_images').select('id', { count: 'exact', head: true }).eq('client_id', clientId),
+      supabaseServer.from('page_sections').select('id', { count: 'exact', head: true }).eq('client_id', clientId),
+    ]);
 
-      menuItemsCount = menuResult.count || 0;
-      galleryImagesCount = galleryResult.count || 0;
-      sectionsCount = sectionsResult.count || 0;
-    } else if (isRetail) {
-      // Retail stats - placeholder queries (these tables may not exist yet)
-      // For now, we'll use dummy data or check if tables exist
-      try {
-        const [ordersResult, productsResult, customersResult] = await Promise.all([
-          supabaseServer.from('orders').select('id', { count: 'exact', head: true }).eq('org_id', orgId),
-          supabaseServer.from('products').select('id', { count: 'exact', head: true }).eq('org_id', orgId),
-          supabaseServer.from('customers').select('id', { count: 'exact', head: true }).eq('org_id', orgId),
-        ]);
-
-        ordersCount = ordersResult?.count || 0;
-        productsCount = productsResult?.count || 0;
-        customersCount = customersResult?.count || 0;
-      } catch {
-        // Tables might not exist yet, use default values
-        ordersCount = 0;
+    menuItemsCount = menuResult.count || 0;
+    galleryImagesCount = galleryResult.count || 0;
+    sectionsCount = sectionsResult.count || 0;
+  } else if (isRetail) {
+    // Retail stats - query directly by business_id (orgId), no clientId needed
+    try {
+      // Query products from retail_products_table - use same pattern as products page
+      const { data: productsData, error: productsError, count: productsCountResult } = await supabaseServer
+        .from('retail_products_table')
+        .select('id, status', { count: 'exact' })
+        .eq('business_id', orgId);
+      
+      if (productsError) {
+        console.error('Error fetching products in dashboard:', productsError);
         productsCount = 0;
-        customersCount = 0;
+        activeProductsCount = 0;
+      } else {
+        // Get total count from count result or data length
+        productsCount = productsCountResult ?? productsData?.length ?? 0;
+        // Count active products from the data array
+        activeProductsCount = productsData?.filter((p: { status: string }) => p.status === 'active').length ?? 0;
       }
+
+      // Query orders and customers (these tables may not exist)
+      const ordersResponse = await supabaseServer
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('org_id', orgId);
+      ordersCount = ordersResponse.count || 0;
+
+      const customersResponse = await supabaseServer
+        .from('customers')
+        .select('id', { count: 'exact', head: true })
+        .eq('org_id', orgId);
+      customersCount = customersResponse.count || 0;
+    } catch (error) {
+      console.error('Error fetching retail stats:', error);
+      // Tables might not exist yet, use default values
+      ordersCount = 0;
+      productsCount = 0;
+      activeProductsCount = 0;
+      customersCount = 0;
     }
   }
 
@@ -241,7 +261,7 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
                   <CardAction>
                     <Badge variant="outline">
                       <IconPackage className="size-4" />
-                      Active products
+                      {activeProductsCount} Active
                     </Badge>
                   </CardAction>
                 </CardHeader>
