@@ -339,13 +339,13 @@ export function validateSectionContent(
     return { success: true, data: parsed };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errorMessage = error.errors
+      const errorMessage = error.issues
         .map((err) => `${err.path.join('.')}: ${err.message}`)
         .join('; ');
       return {
         success: false,
         error: `Validation failed for ${component}: ${errorMessage}`,
-        details: error.errors,
+        details: error.issues,
       };
     }
     return {
@@ -373,7 +373,7 @@ export function safeParseSectionContent(
   if (result.success) {
     return { success: true, data: result.data };
   } else {
-    const errorMessage = result.error.errors
+    const errorMessage = result.error.issues
       .map((err) => `${err.path.join('.')}: ${err.message}`)
       .join('; ');
     return {
