@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { getSectionById, updateSectionDraft } from '@/lib/page-sections-v2';
 import { getPageById } from '@/lib/pages';
 import { getUserRoleInOrg } from '@/lib/businesses';
+import { validateSectionContent } from '@/lib/section-schemas';
 
 interface RouteParams {
   params: Promise<{
@@ -112,8 +113,23 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Validate content structure against component schema
+    const validation = validateSectionContent(section.component, draftContent);
+    if (!validation.success) {
+      return NextResponse.json(
+        { 
+          error: validation.error,
+          details: validation.details 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Use validated content
+    const validatedContent = validation.data as Record<string, unknown>;
+
     // Update section draft
-    const result = await updateSectionDraft(sectionId, draftContent, supabase);
+    const result = await updateSectionDraft(sectionId, validatedContent, supabase);
 
     if (!result.success) {
       return NextResponse.json(

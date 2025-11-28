@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { publishSection, getSectionById } from '@/lib/page-sections-v2';
 import { getUserRoleInOrg } from '@/lib/businesses';
+import { validateSectionContent } from '@/lib/section-schemas';
 
 interface RouteParams {
   params: Promise<{
@@ -48,6 +49,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const role = await getUserRoleInOrg(user.id, section.org_id, supabase);
     if (!role) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Validate draft_content before publishing
+    const validation = validateSectionContent(section.component, section.draft_content);
+    if (!validation.success) {
+      return NextResponse.json(
+        { 
+          error: `Cannot publish: ${validation.error}`,
+          details: validation.details 
+        },
+        { status: 400 }
+      );
     }
 
     // Publish the section

@@ -16,6 +16,7 @@ import {
   type ComponentSchema,
   type FieldSchema 
 } from "@/lib/component-schemas"
+import { safeParseSectionContent } from "@/lib/section-schemas"
 
 interface SectionFormProps {
   component: string
@@ -48,13 +49,22 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
     try {
       setIsSaving(true)
       
+      // Validate content structure before saving
+      const validation = safeParseSectionContent(component, draftContent)
+      if (!validation.success) {
+        if (!silent) {
+          toast.error(validation.error)
+        }
+        return
+      }
+
       const response = await fetch(`/api/sections/${sectionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          draftContent,
+          draftContent: validation.data,
         }),
       })
 
@@ -88,6 +98,13 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
     try {
       setIsPublishing(true)
       
+      // Validate content structure before publishing
+      const validation = safeParseSectionContent(component, draftContent)
+      if (!validation.success) {
+        toast.error(`Cannot publish: ${validation.error}`)
+        return
+      }
+
       const response = await fetch(`/api/sections/${sectionId}/publish`, {
         method: 'POST',
       })

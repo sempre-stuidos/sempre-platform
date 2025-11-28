@@ -1,5 +1,6 @@
 import { supabase, supabaseAdmin } from './supabase';
 import type { PageSectionV2 } from './types';
+import { validateSectionContent } from './section-schemas';
 
 type SupabaseQueryClient = {
   from: typeof supabase.from;
@@ -78,15 +79,24 @@ export async function updateSectionDraft(
       return { success: false, error: 'Section not found' };
     }
 
+    // Validate content structure against component schema
+    const validation = validateSectionContent(currentSection.component, draftContent);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+
+    // Use validated content
+    const validatedContent = validation.data as Record<string, unknown>;
+
     // Determine new status
     const publishedContent = currentSection.published_content || {};
-    const isDirty = JSON.stringify(draftContent) !== JSON.stringify(publishedContent);
+    const isDirty = JSON.stringify(validatedContent) !== JSON.stringify(publishedContent);
     const newStatus = isDirty ? 'dirty' : 'published';
 
     const { data, error } = await client
       .from('page_sections_v2')
       .update({
-        draft_content: draftContent,
+        draft_content: validatedContent,
         status: newStatus,
       })
       .eq('id', sectionId)
@@ -128,10 +138,19 @@ export async function publishSection(
       return { success: false, error: 'Section not found' };
     }
 
+    // Validate draft_content before publishing
+    const validation = validateSectionContent(currentSection.component, currentSection.draft_content);
+    if (!validation.success) {
+      return { success: false, error: `Cannot publish: ${validation.error}` };
+    }
+
+    // Use validated content
+    const validatedContent = validation.data as Record<string, unknown>;
+
     const { data, error } = await client
       .from('page_sections_v2')
       .update({
-        published_content: currentSection.draft_content,
+        published_content: validatedContent,
         status: 'published',
       })
       .eq('id', sectionId)
