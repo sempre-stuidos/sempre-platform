@@ -151,7 +151,9 @@ export async function middleware(request: NextRequest) {
 
   // If user is authenticated and trying to access admin routes, check if they're a Client
   // Client users should be redirected to their client dashboard
-  if (user && !isClientRoute && !isPublicRoute) {
+  // Exception: Allow Client users to access /account routes
+  const isAccountRoute = pathname.startsWith('/account')
+  if (user && !isClientRoute && !isPublicRoute && !isAccountRoute) {
     try {
       const { data: userRole } = await supabaseAdmin
         .from('user_roles')

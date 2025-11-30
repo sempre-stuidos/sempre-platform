@@ -228,7 +228,11 @@ export function AccountContent() {
                   }
                   required
                   disabled={isUpdatingPassword}
+                  placeholder="Enter your current password"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Enter your current password to verify your identity.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
