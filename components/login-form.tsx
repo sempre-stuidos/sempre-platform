@@ -292,7 +292,7 @@ export function LoginForm({
       <div className={cn("flex flex-col gap-6", className)} {...props}>
         <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl text-white">You&apos;re already signed in</CardTitle>
+            <CardTitle className="text-xl text-white">You&apos;re now signed in</CardTitle>
             <CardDescription className="text-white/60">
               {accessCheckResult.role === "Admin"
                 ? "Access your admin dashboard"
