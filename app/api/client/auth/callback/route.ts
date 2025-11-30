@@ -3,20 +3,21 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserBusinesses } from '@/lib/businesses';
 import { ensureProfileExists, syncProfileWithAuthUser } from '@/lib/profiles';
+import { supabaseAdmin } from '@/lib/supabase';
 
+/**
+ * Client auth callback route - handles redirects for authenticated client users
+ * This route is primarily for backward compatibility and edge cases.
+ * Email/password login happens directly in the login components.
+ */
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
   const error = requestUrl.searchParams.get('error');
 
   if (error) {
     const errorUrl = new URL('/client/login', requestUrl.origin);
     errorUrl.searchParams.set('error', error);
     return NextResponse.redirect(errorUrl.toString());
-  }
-
-  if (!code) {
-    return NextResponse.redirect(new URL('/client/login?error=missing_code', requestUrl.origin));
   }
 
   const cookieStore = await cookies();
@@ -37,11 +38,11 @@ export async function GET(request: NextRequest) {
     }
   );
 
-  // Exchange code for session
-  const { data: { session }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+  // Get current user session
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
   if (sessionError || !session?.user) {
-    console.error('Error exchanging code for session:', sessionError);
+    // No session - redirect to login
     const errorUrl = new URL('/client/login', requestUrl.origin);
     errorUrl.searchParams.set('error', 'authentication_failed');
     return NextResponse.redirect(errorUrl.toString());
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
     await syncProfileWithAuthUser(user.id);
 
     // Get user's organizations
-    const organizations = await getUserBusinesses(user.id);
+    const organizations = await getUserBusinesses(user.id, supabaseAdmin);
 
     if (organizations.length === 0) {
       // User has no organizations - redirect to login with error
@@ -76,4 +77,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(errorUrl.toString());
   }
 }
-
