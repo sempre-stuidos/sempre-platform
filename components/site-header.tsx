@@ -34,13 +34,13 @@ export function SiteHeader({
         )}
         <div className="ml-auto flex items-center gap-2">
           {!hideSearch && (
-            <div className="relative hidden sm:flex">
-              <IconSearch className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search..."
-                className="pl-8 w-64"
-              />
-            </div>
+          <div className="relative hidden sm:flex">
+            <IconSearch className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search..."
+              className="pl-8 w-64"
+            />
+          </div>
           )}
           {showDashboardLink ? (
             <Link
@@ -51,7 +51,7 @@ export function SiteHeader({
               Go to Dashboard
             </Link>
           ) : (
-            <QuickActionsModal />
+          <QuickActionsModal />
           )}
         </div>
       </div>

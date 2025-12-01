@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js"
 
 /**
  * Client-side client password reset page
@@ -21,7 +22,7 @@ export default function ClientResetPasswordPage() {
         
         // Listen for auth state changes to catch when the token is processed
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
+          async (event: AuthChangeEvent, session: Session | null) => {
             if (event === 'PASSWORD_RECOVERY' || (session && session.user)) {
               // Token was processed successfully
               if (session && session.user?.email) {

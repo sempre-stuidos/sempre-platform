@@ -35,8 +35,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register', '/client/login']
+  const publicRoutes = ['/login', '/register', '/client/login', '/auth/reset-password']
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+  
+  // Auth routes that should be accessible even when user has a recovery session
+  const isAuthRoute = pathname.startsWith('/auth/')
 
   // Client routes
   const isClientRoute = pathname.startsWith('/client')
@@ -62,7 +65,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // If user is logged in and trying to access login/register, redirect appropriately
-  if (user && isPublicRoute) {
+  // BUT allow access to /auth/reset-password even if user has a session (recovery session)
+  if (user && isPublicRoute && !isAuthRoute) {
     const redirectTo = request.nextUrl.searchParams.get('redirectTo')
     const redirectUrl = request.nextUrl.clone()
     
@@ -151,9 +155,9 @@ export async function middleware(request: NextRequest) {
 
   // If user is authenticated and trying to access admin routes, check if they're a Client
   // Client users should be redirected to their client dashboard
-  // Exception: Allow Client users to access /account routes
+  // Exception: Allow Client users to access /account routes and /auth routes (for password reset)
   const isAccountRoute = pathname.startsWith('/account')
-  if (user && !isClientRoute && !isPublicRoute && !isAccountRoute) {
+  if (user && !isClientRoute && !isPublicRoute && !isAccountRoute && !isAuthRoute) {
     try {
       const { data: userRole } = await supabaseAdmin
         .from('user_roles')

@@ -47,8 +47,24 @@ export function LoginForm({
   const [accessCheckResult, setAccessCheckResult] = useState<AccessCheckResult | null>(null)
   const [resetEmailSent, setResetEmailSent] = useState(false)
   const [isResettingPassword, setIsResettingPassword] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   useEffect(() => {
+    // Check for code parameter FIRST (from password reset link) - handle this before anything else
+    const codeParam = searchParams.get('code')
+    const redirectToParam = searchParams.get('redirectTo')
+    const isResetPasswordRedirect = redirectToParam === '/auth/reset-password' || redirectToParam?.includes('reset-password')
+    
+    // If we have a code and it should go to reset-password, redirect there immediately
+    if (codeParam && isResetPasswordRedirect) {
+      // Set states to show redirecting state
+      setCheckingAuth(false)
+      setIsRedirecting(true)
+      // Redirect to the reset-password page which will handle the code
+      router.replace(`/auth/reset-password?code=${codeParam}`)
+      return
+    }
+
     // Normalize redirectTo - convert '/' to '/dashboard'
     const rawRedirect = searchParams.get('redirectTo') || '/dashboard'
     const normalizedRedirect = rawRedirect === '/' ? '/dashboard' : rawRedirect
@@ -56,17 +72,200 @@ export function LoginForm({
 
     // Check for error messages
     const error = searchParams.get('error')
+    const errorDescription = searchParams.get('error_description')
     if (error) {
-      toast.error(decodeURIComponent(error))
-      // Clean up the URL by removing the error param
+      const errorMsg = decodeURIComponent(error)
+      const descMsg = errorDescription ? decodeURIComponent(errorDescription) : ''
+      
+      // If it's an access_denied error, show helpful message about using code
+      if (errorMsg.includes('access_denied') || descMsg.includes('invalid') || descMsg.includes('expired')) {
+        toast.error(descMsg || errorMsg, {
+          description: "You can use the verification code from your email instead. If you're on the password reset page, enter the code in the code field.",
+          duration: 8000,
+        })
+      } else {
+        toast.error(errorMsg)
+      }
+      
+      // Clean up the URL by removing the error params
       const newUrl = new URL(window.location.href)
       newUrl.searchParams.delete('error')
+      newUrl.searchParams.delete('error_description')
+      newUrl.searchParams.delete('error_code')
       window.history.replaceState({}, '', newUrl.toString())
     }
-
+    
     // Check for reset callback in URL
     const resetParam = searchParams.get('reset')
-    if (resetParam === 'true') {
+    const useCodeParam = searchParams.get('useCode')
+    const emailParam = searchParams.get('email')
+    
+    // Handle code parameter from password reset link (if not redirected above)
+    if (codeParam && !isResetPasswordRedirect) {
+      const verifyResetCode = async () => {
+        try {
+          setIsLoading(true)
+          
+          // Wait a bit for Supabase to potentially process the code
+          await new Promise(resolve => setTimeout(resolve, 500))
+          
+          // Listen for auth state changes - Supabase may process the code automatically
+          const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            async (event: AuthChangeEvent, session: Session | null) => {
+              if (event === 'PASSWORD_RECOVERY' || (session && session.user)) {
+                if (session && session.user?.email) {
+                  const userEmail = session.user.email.toLowerCase().trim()
+                  setEmail(userEmail)
+                  
+                  const response = await fetch("/api/auth/check-access", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: userEmail }),
+                  })
+                  
+                  const result: AccessCheckResult = await response.json()
+                  setAccessCheckResult(result)
+                  setStep("password_setup")
+                  
+                  // Clean up URL
+                  const newUrl = new URL(window.location.href)
+                  newUrl.searchParams.delete('code')
+                  newUrl.searchParams.delete('redirectTo')
+                  window.history.replaceState({}, '', newUrl.toString())
+                  
+                  subscription.unsubscribe()
+                  setIsLoading(false)
+                }
+              }
+            }
+          )
+          
+          // Also check session directly
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (session && session.user?.email) {
+            const userEmail = session.user.email.toLowerCase().trim()
+            setEmail(userEmail)
+            
+            const response = await fetch("/api/auth/check-access", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: userEmail }),
+            })
+            
+            const result: AccessCheckResult = await response.json()
+            setAccessCheckResult(result)
+            setStep("password_setup")
+            
+            // Clean up URL
+            const newUrl = new URL(window.location.href)
+            newUrl.searchParams.delete('code')
+            newUrl.searchParams.delete('redirectTo')
+            window.history.replaceState({}, '', newUrl.toString())
+            
+            subscription.unsubscribe()
+            setIsLoading(false)
+          } else {
+            // Try to verify the code as an OTP token
+            try {
+              const { data, error } = await supabase.auth.verifyOtp({
+                token: codeParam,
+                type: 'recovery'
+              })
+
+              if (!error && data.session && data.user?.email) {
+                const userEmail = data.user.email.toLowerCase().trim()
+                setEmail(userEmail)
+                
+                const response = await fetch("/api/auth/check-access", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email: userEmail }),
+                })
+                
+                const result: AccessCheckResult = await response.json()
+                setAccessCheckResult(result)
+                setStep("password_setup")
+                
+                // Clean up URL
+                const newUrl = new URL(window.location.href)
+                newUrl.searchParams.delete('code')
+                newUrl.searchParams.delete('redirectTo')
+                window.history.replaceState({}, '', newUrl.toString())
+                
+                subscription.unsubscribe()
+                setIsLoading(false)
+              } else {
+                // Wait a bit more and check session again
+                setTimeout(async () => {
+                  const { data: { session: retrySession } } = await supabase.auth.getSession()
+                  if (retrySession && retrySession.user?.email) {
+                    const userEmail = retrySession.user.email.toLowerCase().trim()
+                    setEmail(userEmail)
+                    
+                    const response = await fetch("/api/auth/check-access", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ email: userEmail }),
+                    })
+                    
+                    const result: AccessCheckResult = await response.json()
+                    setAccessCheckResult(result)
+                    setStep("password_setup")
+                    
+                    // Clean up URL
+                    const newUrl = new URL(window.location.href)
+                    newUrl.searchParams.delete('code')
+                    newUrl.searchParams.delete('redirectTo')
+                    window.history.replaceState({}, '', newUrl.toString())
+                  } else {
+                    toast.error("Invalid or expired reset code. Please request a new password reset.")
+                  }
+                  subscription.unsubscribe()
+                  setIsLoading(false)
+                }, 1000)
+              }
+            } catch (verifyError) {
+              console.error("Error verifying code:", verifyError)
+              // Fall through to wait and check session
+              setTimeout(async () => {
+                const { data: { session: retrySession } } = await supabase.auth.getSession()
+                if (retrySession && retrySession.user?.email) {
+                  const userEmail = retrySession.user.email.toLowerCase().trim()
+                  setEmail(userEmail)
+                  
+                  const response = await fetch("/api/auth/check-access", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: userEmail }),
+                  })
+                  
+                  const result: AccessCheckResult = await response.json()
+                  setAccessCheckResult(result)
+                  setStep("password_setup")
+                  
+                  // Clean up URL
+                  const newUrl = new URL(window.location.href)
+                  newUrl.searchParams.delete('code')
+                  newUrl.searchParams.delete('redirectTo')
+                  window.history.replaceState({}, '', newUrl.toString())
+                } else {
+                  toast.error("Invalid or expired reset code. Please request a new password reset.")
+                }
+                subscription.unsubscribe()
+                setIsLoading(false)
+              }, 1000)
+            }
+          }
+        } catch (error) {
+          console.error("Error verifying reset code:", error)
+          toast.error("Failed to verify reset code. Please request a new password reset.")
+          setIsLoading(false)
+        }
+      }
+      
+      verifyResetCode()
+    } else if (resetParam === 'true') {
       // User came back from reset email - check if we have a session
       // Supabase will have processed the token from the hash
       const checkResetSession = async () => {
@@ -75,6 +274,21 @@ export function LoginForm({
           if (session && session.user?.email) {
             // User has a valid reset session, set their email and show password setup
             const userEmail = session.user.email.toLowerCase().trim()
+            setEmail(userEmail)
+            
+            // Fetch access info to get user_id and user_role_id for password setup
+            const response = await fetch("/api/auth/check-access", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: userEmail }),
+            })
+            
+            const result: AccessCheckResult = await response.json()
+            setAccessCheckResult(result)
+            setStep("password_setup")
+          } else if (useCodeParam === 'true' && emailParam) {
+            // No session but user should use code - set email and show password setup (which will show OTP input)
+            const userEmail = decodeURIComponent(emailParam).toLowerCase().trim()
             setEmail(userEmail)
             
             // Fetch access info to get user_id and user_role_id for password setup
@@ -272,6 +486,18 @@ export function LoginForm({
     } finally {
       setIsResettingPassword(false)
     }
+  }
+
+  if (isRedirecting) {
+    return (
+      <div className={cn("flex flex-col gap-6", className)} {...props}>
+        <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
+          <CardContent className="pt-6">
+            <div className="text-center text-white/60">Redirecting to password reset...</div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   if (checkingAuth) {
@@ -497,23 +723,25 @@ export function LoginForm({
                     </div>
                   )}
                 </div>
-                <Button
-                  type="submit"
-                  variant="outline"
-                  className="w-full bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Signing in..." : "Log In"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full text-white/60 hover:text-white"
-                  onClick={handleBack}
-                  disabled={isLoading}
-                >
-                  Back
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="flex-1 text-white/60 hover:text-white"
+                    onClick={handleBack}
+                    disabled={isLoading}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    className="flex-1 bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Signing in..." : "Log In"}
+                  </Button>
+                </div>
               </div>
             </form>
           </CardContent>

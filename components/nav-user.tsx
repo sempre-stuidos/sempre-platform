@@ -112,8 +112,8 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
                 <Link href="/account" className="flex items-center gap-2">
-                  <IconUserCircle />
-                  Account
+                <IconUserCircle />
+                Account
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
