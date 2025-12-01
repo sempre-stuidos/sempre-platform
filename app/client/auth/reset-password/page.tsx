@@ -1,73 +1,124 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Eye, EyeOff } from "lucide-react"
 
 /**
  * Client-side client password reset page
- * Handles the redirect from Supabase password reset email for client portal
+ * Handles the redirect from Supabase password reset email and allows user to set new password
  */
-export default function ClientResetPasswordPage() {
+function ClientResetPasswordPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isProcessing, setIsProcessing] = useState(true)
+  const [hasSession, setHasSession] = useState(false)
+  const [email, setEmail] = useState<string>("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     const processResetToken = async () => {
       try {
-        // Wait a bit for Supabase to process the hash token
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // Check for code in query string (from redirect)
+        const codeFromQuery = searchParams.get('code')
         
-        // Listen for auth state changes to catch when the token is processed
+        // Extract token from URL hash if available
+        let tokenFromHash: string | null = null
+        if (typeof window !== 'undefined') {
+          const hash = window.location.hash
+          if (hash) {
+            const hashParams = new URLSearchParams(hash.substring(1))
+            tokenFromHash = hashParams.get('access_token') || hashParams.get('code') || null
+          }
+        }
+
+        // Use code from query string or hash
+        const codeToProcess = codeFromQuery || tokenFromHash
+
+        // Listen for auth state changes - Supabase might process the code automatically
+        let authStateResolved = false
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event: AuthChangeEvent, session: Session | null) => {
-            if (event === 'PASSWORD_RECOVERY' || (session && session.user)) {
-              // Token was processed successfully
+            if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' || (session && session.user)) {
               if (session && session.user?.email) {
-                router.push("/client/login?reset=true")
+                authStateResolved = true
+                setEmail(session.user.email)
+                setHasSession(true)
+                setIsProcessing(false)
+                subscription.unsubscribe()
               }
             }
           }
         )
 
-        // Also check session directly
+        // If we have a code, try to exchange it for a session
+        if (codeToProcess) {
+          try {
+            // Try exchangeCodeForSession (available in newer Supabase versions)
+            const authClient = supabase.auth as any
+            if (typeof authClient.exchangeCodeForSession === 'function') {
+              const { data, error } = await authClient.exchangeCodeForSession(codeToProcess)
+              
+              if (!error && data?.session && data?.user?.email) {
+                setEmail(data.user.email)
+                setHasSession(true)
+                setIsProcessing(false)
+                subscription.unsubscribe()
+                return
+              }
+            }
+          } catch (error) {
+            console.error("Error exchanging code:", error)
+          }
+        }
+
+        // Wait a bit for Supabase to process the hash token
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
+        // Check session directly
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-        if (sessionError) {
-          console.error("Error getting session:", sessionError)
-          // Check if it's an access denied error
-          if (sessionError.message?.includes('access_denied') || sessionError.message?.includes('403')) {
-            toast.error("Password reset link was rejected. Please make sure Supabase has been restarted with the updated config.")
-            router.push("/client/login?error=" + encodeURIComponent("Reset link rejected. Please contact support or try requesting a new reset email."))
-          } else {
-            toast.error("Password reset link is invalid or has expired")
-            router.push("/client/login?error=" + encodeURIComponent("Password reset link is invalid or has expired"))
-          }
-          subscription.unsubscribe()
+        if (session && session.user?.email) {
+          setEmail(session.user.email)
+          setHasSession(true)
           setIsProcessing(false)
+          subscription.unsubscribe()
           return
         }
 
-        if (session && session.user?.email) {
-          // User has a valid reset session - redirect to client login with reset flag
-          router.push("/client/login?reset=true")
-          subscription.unsubscribe()
-          setIsProcessing(false)
-        } else {
-          // Wait a bit more and check again (token might still be processing)
+        // If no session yet, wait a bit longer
+        if (!authStateResolved && !session) {
           setTimeout(async () => {
+            if (authStateResolved) {
+              subscription.unsubscribe()
+              return
+            }
+            
             const { data: { session: retrySession } } = await supabase.auth.getSession()
             if (retrySession && retrySession.user?.email) {
-              router.push("/client/login?reset=true")
+              setEmail(retrySession.user.email)
+              setHasSession(true)
+              setIsProcessing(false)
+              subscription.unsubscribe()
             } else {
+              // Show error
+              subscription.unsubscribe()
               toast.error("Password reset link is invalid or has expired")
               router.push("/client/login?error=" + encodeURIComponent("Password reset link is invalid or has expired"))
+              setIsProcessing(false)
             }
-            subscription.unsubscribe()
-            setIsProcessing(false)
-          }, 1000)
+          }, 2000)
         }
       } catch (error) {
         console.error("Error processing reset token:", error)
@@ -78,18 +129,235 @@ export default function ClientResetPasswordPage() {
     }
 
     processResetToken()
-  }, [router])
+  }, [router, searchParams])
+
+  const validatePassword = (pwd: string): string | null => {
+    if (pwd.length < 6) {
+      return "Password must be at least 6 characters"
+    }
+    return null
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    // Validate passwords
+    const passwordError = validatePassword(password)
+    if (passwordError) {
+      toast.error(passwordError)
+      return
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match")
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      // Update password using the reset session
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password,
+      })
+
+      if (updateError) {
+        throw updateError
+      }
+
+      toast.success("Password reset successfully! Redirecting to login...")
+      
+      // Redirect to client login after a short delay
+      setTimeout(() => {
+        router.push("/client/login")
+      }, 1500)
+    } catch (error: unknown) {
+      console.error("Error resetting password:", error)
+      const errorMessage = error instanceof Error ? error.message : "Failed to reset password"
+      toast.error(errorMessage)
+      setIsLoading(false)
+    }
+  }
 
   if (isProcessing) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <div className="text-center text-white">
-          <div className="text-lg mb-2">Processing password reset...</div>
-          <div className="text-sm text-white/60">Please wait</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Client Portal</h1>
+            <p className="text-white/60">Processing password reset...</p>
+          </div>
+          <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
+            <CardContent className="pt-6">
+              <div className="text-center text-white">
+                <div className="text-lg mb-2">Please wait</div>
+                <div className="text-sm text-white/60">Verifying your reset link</div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     )
   }
 
-  return null
+  if (!hasSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Client Portal</h1>
+            <p className="text-white/60">Password Reset</p>
+          </div>
+          <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl text-white">Invalid Reset Link</CardTitle>
+              <CardDescription className="text-white/60">
+                The password reset link is invalid or has expired.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                onClick={() => router.push("/client/login")}
+                variant="outline"
+                className="w-full bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white"
+              >
+                Go to Login
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">Client Portal</h1>
+          <p className="text-white/60">Reset your password to access your organization dashboard</p>
+        </div>
+        <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl text-white">Reset Your Password</CardTitle>
+            <CardDescription className="text-white/60">
+              Enter your new password below. Make sure it's at least 6 characters long.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="email" className="text-white">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  disabled
+                  className="bg-white/5 border-white/20 text-white/60"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="password" className="text-white">
+                  New Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your new password"
+                    className="bg-white/5 border-white/20 text-white pr-10"
+                    required
+                    minLength={6}
+                    disabled={isLoading}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                {password && validatePassword(password) && (
+                  <p className="text-sm text-red-400">{validatePassword(password)}</p>
+                )}
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="confirmPassword" className="text-white">
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your new password"
+                    className="bg-white/5 border-white/20 text-white pr-10"
+                    required
+                    minLength={6}
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                {confirmPassword &&
+                  password !== confirmPassword &&
+                  confirmPassword.length > 0 && (
+                    <p className="text-sm text-red-400">Passwords do not match</p>
+                  )}
+              </div>
+
+              <Button
+                type="submit"
+                variant="outline"
+                className="w-full bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? "Updating Password..." : "Update Password"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+export default function ClientResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+          <div className="w-full max-w-md">
+            <div className="text-center text-white">
+              <div className="text-lg mb-2">Loading...</div>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <ClientResetPasswordPageContent />
+    </Suspense>
+  )
 }

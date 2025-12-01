@@ -101,170 +101,11 @@ export function LoginForm({
     const emailParam = searchParams.get('email')
     
     // Handle code parameter from password reset link (if not redirected above)
+    // Redirect all reset codes to the reset password page
     if (codeParam && !isResetPasswordRedirect) {
-      const verifyResetCode = async () => {
-        try {
-          setIsLoading(true)
-          
-          // Wait a bit for Supabase to potentially process the code
-          await new Promise(resolve => setTimeout(resolve, 500))
-          
-          // Listen for auth state changes - Supabase may process the code automatically
-          const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event: AuthChangeEvent, session: Session | null) => {
-              if (event === 'PASSWORD_RECOVERY' || (session && session.user)) {
-                if (session && session.user?.email) {
-                  const userEmail = session.user.email.toLowerCase().trim()
-                  setEmail(userEmail)
-                  
-                  const response = await fetch("/api/auth/check-access", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: userEmail }),
-                  })
-                  
-                  const result: AccessCheckResult = await response.json()
-                  setAccessCheckResult(result)
-                  setStep("password_setup")
-                  
-                  // Clean up URL
-                  const newUrl = new URL(window.location.href)
-                  newUrl.searchParams.delete('code')
-                  newUrl.searchParams.delete('redirectTo')
-                  window.history.replaceState({}, '', newUrl.toString())
-                  
-                  subscription.unsubscribe()
-                  setIsLoading(false)
-                }
-              }
-            }
-          )
-          
-          // Also check session directly
-          const { data: { session } } = await supabase.auth.getSession()
-          
-          if (session && session.user?.email) {
-            const userEmail = session.user.email.toLowerCase().trim()
-            setEmail(userEmail)
-            
-            const response = await fetch("/api/auth/check-access", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: userEmail }),
-            })
-            
-            const result: AccessCheckResult = await response.json()
-            setAccessCheckResult(result)
-            setStep("password_setup")
-            
-            // Clean up URL
-            const newUrl = new URL(window.location.href)
-            newUrl.searchParams.delete('code')
-            newUrl.searchParams.delete('redirectTo')
-            window.history.replaceState({}, '', newUrl.toString())
-            
-            subscription.unsubscribe()
-            setIsLoading(false)
-          } else {
-            // Try to verify the code as an OTP token
-            try {
-              const { data, error } = await supabase.auth.verifyOtp({
-                token: codeParam,
-                type: 'recovery'
-              })
-
-              if (!error && data.session && data.user?.email) {
-                const userEmail = data.user.email.toLowerCase().trim()
-                setEmail(userEmail)
-                
-                const response = await fetch("/api/auth/check-access", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ email: userEmail }),
-                })
-                
-                const result: AccessCheckResult = await response.json()
-                setAccessCheckResult(result)
-                setStep("password_setup")
-                
-                // Clean up URL
-                const newUrl = new URL(window.location.href)
-                newUrl.searchParams.delete('code')
-                newUrl.searchParams.delete('redirectTo')
-                window.history.replaceState({}, '', newUrl.toString())
-                
-                subscription.unsubscribe()
-                setIsLoading(false)
-              } else {
-                // Wait a bit more and check session again
-                setTimeout(async () => {
-                  const { data: { session: retrySession } } = await supabase.auth.getSession()
-                  if (retrySession && retrySession.user?.email) {
-                    const userEmail = retrySession.user.email.toLowerCase().trim()
-                    setEmail(userEmail)
-                    
-                    const response = await fetch("/api/auth/check-access", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ email: userEmail }),
-                    })
-                    
-                    const result: AccessCheckResult = await response.json()
-                    setAccessCheckResult(result)
-                    setStep("password_setup")
-                    
-                    // Clean up URL
-                    const newUrl = new URL(window.location.href)
-                    newUrl.searchParams.delete('code')
-                    newUrl.searchParams.delete('redirectTo')
-                    window.history.replaceState({}, '', newUrl.toString())
-                  } else {
-                    toast.error("Invalid or expired reset code. Please request a new password reset.")
-                  }
-                  subscription.unsubscribe()
-                  setIsLoading(false)
-                }, 1000)
-              }
-            } catch (verifyError) {
-              console.error("Error verifying code:", verifyError)
-              // Fall through to wait and check session
-              setTimeout(async () => {
-                const { data: { session: retrySession } } = await supabase.auth.getSession()
-                if (retrySession && retrySession.user?.email) {
-                  const userEmail = retrySession.user.email.toLowerCase().trim()
-                  setEmail(userEmail)
-                  
-                  const response = await fetch("/api/auth/check-access", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: userEmail }),
-                  })
-                  
-                  const result: AccessCheckResult = await response.json()
-                  setAccessCheckResult(result)
-                  setStep("password_setup")
-                  
-                  // Clean up URL
-                  const newUrl = new URL(window.location.href)
-                  newUrl.searchParams.delete('code')
-                  newUrl.searchParams.delete('redirectTo')
-                  window.history.replaceState({}, '', newUrl.toString())
-                } else {
-                  toast.error("Invalid or expired reset code. Please request a new password reset.")
-                }
-                subscription.unsubscribe()
-                setIsLoading(false)
-              }, 1000)
-            }
-          }
-        } catch (error) {
-          console.error("Error verifying reset code:", error)
-          toast.error("Failed to verify reset code. Please request a new password reset.")
-          setIsLoading(false)
-        }
-      }
-      
-      verifyResetCode()
+      // Redirect to reset password page to handle the code
+      router.replace(`/auth/reset-password?code=${codeParam}`)
+      return
     } else if (resetParam === 'true') {
       // User came back from reset email - check if we have a session
       // Supabase will have processed the token from the hash
@@ -286,21 +127,10 @@ export function LoginForm({
             const result: AccessCheckResult = await response.json()
             setAccessCheckResult(result)
             setStep("password_setup")
-          } else if (useCodeParam === 'true' && emailParam) {
-            // No session but user should use code - set email and show password setup (which will show OTP input)
-            const userEmail = decodeURIComponent(emailParam).toLowerCase().trim()
-            setEmail(userEmail)
-            
-            // Fetch access info to get user_id and user_role_id for password setup
-            const response = await fetch("/api/auth/check-access", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: userEmail }),
-            })
-            
-            const result: AccessCheckResult = await response.json()
-            setAccessCheckResult(result)
-            setStep("password_setup")
+          } else {
+            // No session - redirect to request a new reset link
+            toast.error("Password reset session expired. Please request a new password reset.")
+            router.push("/login")
           }
         } catch (error) {
           console.error("Error checking reset session:", error)

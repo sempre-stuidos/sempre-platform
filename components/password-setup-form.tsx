@@ -29,9 +29,6 @@ export function PasswordSetupForm({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasResetSession, setHasResetSession] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [showOtpInput, setShowOtpInput] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
   // Check if user has a session from password reset email
   useEffect(() => {
@@ -40,56 +37,13 @@ export function PasswordSetupForm({
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           setHasResetSession(true);
-        } else {
-          // If no session, show OTP input option
-          setShowOtpInput(true);
         }
       } catch (error) {
         console.error("Error checking session:", error);
-        // On error, show OTP input as fallback
-        setShowOtpInput(true);
       }
     };
     checkSession();
-  }, []);
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!otpCode || otpCode.length < 6) {
-      toast.error("Please enter a valid 6-digit code");
-      return;
-    }
-
-    setIsVerifyingOtp(true);
-
-    try {
-      // Verify OTP code for password recovery
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: email,
-        token: otpCode,
-        type: 'recovery'
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data.session) {
-        setHasResetSession(true);
-        setShowOtpInput(false);
-        toast.success("Code verified! Please set your new password.");
-      } else {
-        throw new Error("Failed to verify code");
-      }
-    } catch (error: unknown) {
-      console.error("Error verifying OTP:", error);
-      const errorMessage = error instanceof Error ? error.message : "Invalid or expired code";
-      toast.error(errorMessage);
-    } finally {
-      setIsVerifyingOtp(false);
-    }
-  };
+  }, [email]);
 
   const validatePassword = (pwd: string): string | null => {
     if (pwd.length < 6) {
@@ -205,55 +159,14 @@ export function PasswordSetupForm({
     }
   };
 
-  // Show OTP input if no session and OTP input is enabled
-  if (showOtpInput && !hasResetSession) {
-    return (
-      <div className={className}>
-        <form onSubmit={handleVerifyOtp} className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="otpCode" className="text-white">
-              Enter Verification Code
-            </Label>
-            <Input
-              id="otpCode"
-              type="text"
-              value={otpCode}
-              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="Enter 6-digit code"
-              className="bg-white/5 border-white/20 text-white text-center text-2xl tracking-widest"
-              required
-              maxLength={6}
-              disabled={isVerifyingOtp}
-              autoFocus
-            />
-            <p className="text-xs text-white/60 text-center">
-              Alternatively, enter the code from your email
-            </p>
-          </div>
-          <Button
-            type="submit"
-            className="w-full bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white"
-            disabled={isVerifyingOtp || otpCode.length !== 6}
-          >
-            {isVerifyingOtp ? "Verifying..." : "Verify Code"}
-          </Button>
-        </form>
-      </div>
-    );
-  }
-
   return (
     <div className={className}>
       {!hasResetSession && (
-        <div className="mb-4 p-3 bg-white/5 border border-white/20 rounded-md">
-          <p className="text-xs text-white/80 mb-2">Link didn't work?</p>
-          <button
-            type="button"
-            onClick={() => setShowOtpInput(true)}
-            className="text-xs text-white/60 hover:text-white underline"
-          >
-            Enter verification code instead
-          </button>
+        <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
+          <p className="text-sm text-white/90 font-medium mb-2">⚠️ No active reset session</p>
+          <p className="text-xs text-white/70">
+            Please click the password reset link from your email to continue. The link will verify your email and allow you to set a new password.
+          </p>
         </div>
       )}
       <form onSubmit={handleSubmit} className="grid gap-4">
