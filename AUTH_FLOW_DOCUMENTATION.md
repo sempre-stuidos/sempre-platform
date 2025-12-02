@@ -362,3 +362,4 @@ Google redirects to: /auth/callback?code=xxx
 4. **Account Recovery**: Additional recovery methods
 5. **Social Login**: More OAuth providers
 6. **Magic Link Only**: Remove password option (passwordless)
+

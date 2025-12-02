@@ -248,16 +248,38 @@ export function ClientLoginForm({
     setIsResettingPassword(true)
     try {
       const baseUrl = getBaseUrl()
+      const redirectUrl = `${baseUrl}/client/auth/reset-password`
+      
+      // Log the redirect URL for debugging
+      console.log('Attempting password reset with redirect URL:', redirectUrl)
+      console.log('Base URL:', baseUrl)
+      
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         email.toLowerCase().trim(),
         {
-          redirectTo: `${baseUrl}/client/auth/reset-password`,
+          redirectTo: redirectUrl,
         }
       )
 
       if (resetError) {
         console.error("Error sending reset email:", resetError)
-        toast.error("Failed to send reset email. Please try again.")
+        
+        // Check for specific error types
+        if (resetError.message?.includes('500') || resetError.message?.includes('Error sending recovery email')) {
+          toast.error(
+            "Password reset email failed. The redirect URL may not be configured in Supabase. Please contact support.",
+            {
+              duration: 8000,
+              description: `URL: ${redirectUrl}`,
+            }
+          )
+        } else if (resetError.message?.includes('rate limit') || resetError.message?.includes('too many')) {
+          toast.error("Too many requests. Please wait a moment before trying again.", {
+            duration: 5000,
+          })
+        } else {
+          toast.error(resetError.message || "Failed to send reset email. Please try again.")
+        }
         setIsResettingPassword(false)
         return
       }
@@ -266,7 +288,8 @@ export function ClientLoginForm({
       setResetEmailSent(true)
     } catch (error) {
       console.error("Error in forgot password:", error)
-      toast.error("Something went wrong. Please try again.")
+      const errorMessage = error instanceof Error ? error.message : "Something went wrong"
+      toast.error(errorMessage || "Something went wrong. Please try again.")
     } finally {
       setIsResettingPassword(false)
     }
