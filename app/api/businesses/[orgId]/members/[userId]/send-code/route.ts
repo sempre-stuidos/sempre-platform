@@ -27,7 +27,20 @@ function generateLoginCode(): string {
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const { orgId, userId } = await params
+    let orgId: string
+    let userId: string
+    
+    try {
+      const resolvedParams = await params
+      orgId = resolvedParams.orgId
+      userId = resolvedParams.userId
+    } catch (paramError) {
+      console.error('Error resolving params:', paramError)
+      return NextResponse.json(
+        { success: false, error: 'Invalid request parameters' },
+        { status: 400 }
+      )
+    }
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,22 +62,47 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
+      console.error('Auth error in send-code:', authError)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Check if user is Admin or has permission to manage members
-    const userRole = await getUserRole(user.id, supabaseAdmin)
-    const isAdmin = userRole === 'Admin'
-    
-    const role = await getUserRoleInOrg(user.id, orgId, supabase)
-    if (!isAdmin && (!role || (role !== 'owner' && role !== 'admin'))) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    let userRole: string | null = null
+    let role: string | null = null
+    try {
+      userRole = await getUserRole(user.id, supabaseAdmin)
+      const isAdmin = userRole === 'Admin'
+      
+      role = await getUserRoleInOrg(user.id, orgId, supabase)
+      if (!isAdmin && (!role || (role !== 'owner' && role !== 'admin'))) {
+        console.error('Permission denied:', { userRole, role, userId: user.id, orgId })
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    } catch (roleError) {
+      console.error('Error checking user role:', roleError)
+      return NextResponse.json(
+        { error: 'Failed to verify permissions' },
+        { status: 500 }
+      )
     }
 
     // Get user information
-    const { data: targetUser, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId)
+    let targetUser
+    let userError
+    try {
+      const result = await supabaseAdmin.auth.admin.getUserById(userId)
+      targetUser = result.data
+      userError = result.error
+    } catch (err) {
+      console.error('Error fetching user:', err)
+      return NextResponse.json(
+        { error: 'Failed to fetch user information' },
+        { status: 500 }
+      )
+    }
     
-    if (userError || !targetUser.user) {
+    if (userError || !targetUser?.user) {
+      console.error('User not found:', { userError, userId })
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -73,6 +111,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const userEmail = targetUser.user.email
     if (!userEmail) {
+      console.error('User email not found:', { userId, user: targetUser.user })
       return NextResponse.json(
         { error: 'User email not found' },
         { status: 400 }
@@ -80,21 +119,32 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get user profile for name
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('full_name')
-      .eq('id', userId)
-      .single()
+    let userName: string | undefined
+    try {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('full_name')
+        .eq('id', userId)
+        .single()
 
-    const userName = profile?.full_name || undefined
+      userName = profile?.full_name || undefined
+    } catch (profileError) {
+      console.error('Error fetching profile (non-critical):', profileError)
+      userName = undefined
+    }
 
     // Invalidate any existing unused codes for this user
-    await supabaseAdmin
-      .from('login_codes')
-      .update({ used_at: new Date().toISOString() })
-      .eq('user_id', userId)
-      .is('used_at', null)
-      .gt('expires_at', new Date().toISOString())
+    try {
+      await supabaseAdmin
+        .from('login_codes')
+        .update({ used_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .is('used_at', null)
+        .gt('expires_at', new Date().toISOString())
+    } catch (invalidateError) {
+      console.error('Error invalidating existing codes (non-critical):', invalidateError)
+      // Continue anyway - we'll generate a new code
+    }
 
     // Generate new code
     let code: string
@@ -104,15 +154,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Ensure code is unique
     do {
       code = generateLoginCode()
-      const { data: existing } = await supabaseAdmin
-        .from('login_codes')
-        .select('id')
-        .eq('code', code)
-        .is('used_at', null)
-        .gt('expires_at', new Date().toISOString())
-        .maybeSingle()
+      try {
+        const { data: existing } = await supabaseAdmin
+          .from('login_codes')
+          .select('id')
+          .eq('code', code)
+          .is('used_at', null)
+          .gt('expires_at', new Date().toISOString())
+          .maybeSingle()
 
-      if (!existing) {
+        if (!existing) {
+          break
+        }
+      } catch (checkError) {
+        console.error('Error checking code uniqueness (non-critical):', checkError)
+        // Assume code is unique and break
         break
       }
       attempts++
@@ -151,11 +207,32 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Send email via Brevo
-    const emailResult = await sendLoginCodeEmail({
-      email: userEmail,
-      code,
-      name: userName,
-    })
+    let emailResult
+    try {
+      emailResult = await sendLoginCodeEmail({
+        email: userEmail,
+        code,
+        name: userName,
+      })
+    } catch (emailError) {
+      console.error('Exception while sending email:', emailError)
+      console.error('Email error details:', {
+        error: emailError instanceof Error ? emailError.message : String(emailError),
+        stack: emailError instanceof Error ? emailError.stack : undefined,
+        userEmail,
+        code,
+        userName,
+      })
+      
+      // Still return success for code generation, but log the email error
+      // The code is still valid and can be manually shared if needed
+      return NextResponse.json({
+        success: true,
+        message: 'Login code generated successfully, but email sending failed',
+        error: emailError instanceof Error ? emailError.message : 'Failed to send email',
+        code: process.env.NODE_ENV === 'development' ? code : undefined, // Only return code in dev
+      })
+    }
 
     if (!emailResult.success) {
       console.error('Failed to send email:', emailResult.error)
@@ -188,14 +265,32 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const errorDetails = error instanceof Error ? error.stack : String(error)
     
     console.error('Error details:', errorDetails)
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error)
+    console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)))
     
-    return NextResponse.json(
-      { 
-        success: false,
-        error: errorMessage,
-        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
-      },
-      { status: 500 }
-    )
+    // Always return JSON, even on unexpected errors
+    try {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: errorMessage,
+          details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+        },
+        { status: 500 }
+      )
+    } catch (jsonError) {
+      // If even JSON serialization fails, return a plain text response
+      console.error('Failed to serialize error to JSON:', jsonError)
+      return new NextResponse(
+        JSON.stringify({ 
+          success: false,
+          error: 'Internal server error'
+        }),
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
+    }
   }
 }

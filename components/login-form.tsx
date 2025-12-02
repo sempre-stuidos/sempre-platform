@@ -37,14 +37,37 @@ export function LoginForm({
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [redirectTo, setRedirectTo] = useState("/dashboard")
-  const [checkingAuth, setCheckingAuth] = useState(true)
   
+  // Check URL params immediately to set initial state
+  const initialCodeParam = searchParams.get('loginCode') || searchParams.get('code')
+  const initialEmailParam = searchParams.get('email')
+  const redirectToParam = searchParams.get('redirectTo')
+  const isResetPasswordRedirect = redirectToParam === '/auth/reset-password' || redirectToParam?.includes('reset-password')
+  const isOurLoginCode = initialCodeParam && initialCodeParam.length === 8 && !isResetPasswordRedirect
+  
+  // Initialize email and code from URL if present
+  const initialEmail = initialEmailParam 
+    ? (() => {
+        try {
+          return decodeURIComponent(initialEmailParam).toLowerCase().trim()
+        } catch {
+          return initialEmailParam.toLowerCase().trim()
+        }
+      })()
+    : ""
+  
+  const initialLoginCode = isOurLoginCode ? initialCodeParam.toUpperCase().trim() : ""
+  const initialStep: LoginStep = isOurLoginCode ? "code_verification" : "email"
+  // If we have a code, skip auth check
+  const initialCheckingAuth = isOurLoginCode ? false : true
+
   // Email/password flow state
-  const [step, setStep] = useState<LoginStep>("email")
-  const [email, setEmail] = useState("")
+  const [checkingAuth, setCheckingAuth] = useState(initialCheckingAuth)
+  const [step, setStep] = useState<LoginStep>(initialStep)
+  const [email, setEmail] = useState(initialEmail)
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [loginCode, setLoginCode] = useState("")
+  const [loginCode, setLoginCode] = useState(initialLoginCode)
   const [isVerifyingCode, setIsVerifyingCode] = useState(false)
   const [accessCheckResult, setAccessCheckResult] = useState<AccessCheckResult | null>(null)
   const [resetEmailSent, setResetEmailSent] = useState(false)
@@ -52,18 +75,62 @@ export function LoginForm({
   const [isRedirecting, setIsRedirecting] = useState(false)
 
   useEffect(() => {
-    // Check for code parameter FIRST (from password reset link) - handle this before anything else
-    const codeParam = searchParams.get('code')
+    // If we're already on code verification step (from initial state), clean up URL and skip auth check
+    if (step === "code_verification" && loginCode) {
+      setCheckingAuth(false)
+      // Clean up URL by removing code/loginCode param (but keep email if present)
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('code')
+      newUrl.searchParams.delete('loginCode')
+      window.history.replaceState({}, '', newUrl.toString())
+      // Don't continue with auth check - we're showing code verification
+      return
+    }
+    
+    // Check for loginCode or code parameter (in case it was added after initial render)
+    const loginCodeParam = searchParams.get('loginCode') || searchParams.get('code')
+    const emailParam = searchParams.get('email')
     const redirectToParam = searchParams.get('redirectTo')
     const isResetPasswordRedirect = redirectToParam === '/auth/reset-password' || redirectToParam?.includes('reset-password')
     
-    // If we have a code and it should go to reset-password, redirect there immediately
-    if (codeParam && isResetPasswordRedirect) {
+    // If we have a code from email link and it's NOT a Supabase redirect, show code verification step
+    // Supabase codes are typically longer UUIDs, our codes are 8 characters
+    const isOurLoginCodeNow = loginCodeParam && loginCodeParam.length === 8 && !isResetPasswordRedirect
+    
+    if (isOurLoginCodeNow && step !== "code_verification") {
+      // Set these immediately to prevent showing the email step
+      setCheckingAuth(false)
+      // Prepopulate the code
+      setLoginCode(loginCodeParam.toUpperCase().trim())
+      // If email is in URL, set it too (decode it first)
+      if (emailParam) {
+        try {
+          const decodedEmail = decodeURIComponent(emailParam).toLowerCase().trim()
+          setEmail(decodedEmail)
+        } catch (e) {
+          // If decoding fails, use the raw value
+          setEmail(emailParam.toLowerCase().trim())
+        }
+      }
+      // Show code verification step immediately - this must happen before any other logic
+      setStep("code_verification")
+      // Clean up URL by removing code/loginCode param (but keep email if present)
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('code')
+      newUrl.searchParams.delete('loginCode')
+      window.history.replaceState({}, '', newUrl.toString())
+      // Don't continue with auth check - we're showing code verification
+      return
+    }
+    
+    // Handle Supabase auth code (for OAuth callbacks, etc.) - redirect to reset-password if needed
+    // Supabase codes are typically longer UUIDs, not 8-character codes
+    if (loginCodeParam && isResetPasswordRedirect) {
       // Set states to show redirecting state
       setCheckingAuth(false)
       setIsRedirecting(true)
       // Redirect to the reset-password page which will handle the code
-      router.replace(`/auth/reset-password?code=${codeParam}`)
+      router.replace(`/auth/reset-password?code=${loginCodeParam}`)
       return
     }
 
@@ -99,16 +166,8 @@ export function LoginForm({
     
     // Check for reset callback in URL
     const resetParam = searchParams.get('reset')
-    const useCodeParam = searchParams.get('useCode')
-    const emailParam = searchParams.get('email')
     
-    // Handle code parameter from password reset link (if not redirected above)
-    // Redirect all reset codes to the reset password page
-    if (codeParam && !isResetPasswordRedirect) {
-      // Redirect to reset password page to handle the code
-      router.replace(`/auth/reset-password?code=${codeParam}`)
-      return
-    } else if (resetParam === 'true') {
+    if (resetParam === 'true') {
       // User came back from reset email - check if we have a session
       // Supabase will have processed the token from the hash
       const checkResetSession = async () => {
@@ -359,6 +418,11 @@ export function LoginForm({
       return
     }
 
+    if (!email || !email.includes("@")) {
+      toast.error("Please enter your email address")
+      return
+    }
+
     setIsVerifyingCode(true)
     try {
       const response = await fetch("/api/auth/verify-login-code", {
@@ -571,6 +635,24 @@ export function LoginForm({
           <CardContent>
             <form onSubmit={handleCodeVerification}>
               <div className="grid gap-4">
+                {!email && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="email" className="text-white">
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your email"
+                      className="bg-white/5 border-white/20 text-white"
+                      required
+                      disabled={isVerifyingCode}
+                      autoFocus
+                    />
+                  </div>
+                )}
                 <div className="grid gap-2">
                   <Label htmlFor="loginCode" className="text-white">
                     Login Code
@@ -588,7 +670,7 @@ export function LoginForm({
                     className="bg-white/5 border-white/20 text-white text-center text-2xl tracking-widest font-mono"
                     maxLength={8}
                     disabled={isVerifyingCode}
-                    autoFocus
+                    autoFocus={!!email}
                   />
                 </div>
                 <div className="flex gap-2">
@@ -605,7 +687,7 @@ export function LoginForm({
                     type="submit"
                     variant="outline"
                     className="flex-1 bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white"
-                    disabled={isVerifyingCode || loginCode.length !== 8}
+                    disabled={isVerifyingCode || loginCode.length !== 8 || !email}
                   >
                     {isVerifyingCode ? "Verifying..." : "Verify Code"}
                   </Button>

@@ -19,14 +19,28 @@ function getBaseUrlForEmail(): string {
   if (process.env.NEXT_PUBLIC_APP_URL) {
     return process.env.NEXT_PUBLIC_APP_URL
   }
+  // Check if we're in production (Vercel)
   if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
+    // If it's a preview deployment, use the preview URL
+    if (process.env.VERCEL_ENV === 'preview') {
+      return `https://${process.env.VERCEL_URL}`
+    }
+    // Production deployment
+    return 'https://se-hub.vercel.app'
+  }
+  // Check NODE_ENV for production
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://se-hub.vercel.app'
+  }
+  // Development fallback
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:3000'
   }
   // Fallback for client-side
   if (typeof window !== 'undefined') {
     return window.location.origin
   }
-  // Default fallback
+  // Default fallback to production
   return 'https://se-hub.vercel.app'
 }
 
@@ -34,9 +48,11 @@ function getBaseUrlForEmail(): string {
  * Generate HTML email template for login code
  */
 function generateLoginCodeEmailHTML(params: SendLoginCodeEmailParams): string {
-  const { code, name } = params
+  const { code, name, email } = params
   const baseUrl = getBaseUrlForEmail()
-  const clientLoginUrl = `${baseUrl}/client/login`
+  const encodedEmail = email ? encodeURIComponent(email) : ''
+  // Use 'code' parameter - login form will detect 8-character codes as our login codes (vs Supabase's longer UUIDs)
+  const loginUrl = email ? `${baseUrl}/login?code=${code}&email=${encodedEmail}` : `${baseUrl}/login?code=${code}`
   
   return `
 <!DOCTYPE html>
@@ -48,7 +64,7 @@ function generateLoginCodeEmailHTML(params: SendLoginCodeEmailParams): string {
 </head>
 <body style="font-family: system-ui, sans-serif, Arial; font-size: 14px; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="font-family: system-ui, sans-serif, Arial; font-size: 14px">
-    <a style="text-decoration: none; outline: none" href="${clientLoginUrl}" target="_blank">
+    <a style="text-decoration: none; outline: none" href="${baseUrl}/login" target="_blank">
       <h1 style="color: #667eea; margin: 0 0 20px 0;">Sempre Studios</h1>
     </a>
     
@@ -57,7 +73,7 @@ function generateLoginCodeEmailHTML(params: SendLoginCodeEmailParams): string {
     </p>
     
     <p>
-      To authenticate, please use the following Login Code:
+      To reset your password, please use the following Login Code:
     </p>
     
     <p style="font-size: 22px"><strong>${code}</strong></p>
@@ -65,7 +81,11 @@ function generateLoginCodeEmailHTML(params: SendLoginCodeEmailParams): string {
     <p>This code will be valid for 7 days.</p>
     
     <p>
-      Visit <a href="${clientLoginUrl}" style="color: #667eea; text-decoration: none;">${clientLoginUrl}</a> to use this code.
+      <a href="${loginUrl}" style="display: inline-block; padding: 12px 24px; background-color: #667eea; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">Enter Your Code</a>
+    </p>
+    
+    <p style="color: #666; font-size: 12px;">
+      Or visit <a href="${baseUrl}/login" style="color: #667eea; text-decoration: none;">${baseUrl}/login</a> and enter the code: <strong>${code}</strong>
     </p>
     
     <p>
@@ -84,20 +104,22 @@ function generateLoginCodeEmailHTML(params: SendLoginCodeEmailParams): string {
  * Generate plain text email template for login code
  */
 function generateLoginCodeEmailText(params: SendLoginCodeEmailParams): string {
-  const { code, name } = params
+  const { code, name, email } = params
   const baseUrl = getBaseUrlForEmail()
-  const clientLoginUrl = `${baseUrl}/client/login`
+  const encodedEmail = email ? encodeURIComponent(email) : ''
+  // Use 'code' parameter - login form will detect 8-character codes as our login codes (vs Supabase's longer UUIDs)
+  const loginUrl = email ? `${baseUrl}/login?code=${code}&email=${encodedEmail}` : `${baseUrl}/login?code=${code}`
   
   return `
 Hello ${name || 'User'},
 
-To authenticate, please use the following Login Code:
+To reset your password, please use the following Login Code:
 
 ${code}
 
 This code will be valid for 7 days.
 
-Visit ${clientLoginUrl} to use this code.
+Visit ${loginUrl} to use this code.
 
 Do not share this code with anyone. If you didn't make this request, you can safely ignore this email.
 
@@ -127,6 +149,21 @@ function getSenderName(): string {
 export async function sendLoginCodeEmail(params: SendLoginCodeEmailParams): Promise<{ success: boolean; error?: string }> {
   try {
     const { email, code, name } = params
+    
+    // Validate required parameters
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return {
+        success: false,
+        error: 'Invalid email address provided'
+      }
+    }
+    
+    if (!code || typeof code !== 'string' || code.length !== 8) {
+      return {
+        success: false,
+        error: 'Invalid code provided'
+      }
+    }
     
     // Get Brevo API key from environment variables
     const apiKey = process.env.BREVO_API_KEY
@@ -169,8 +206,18 @@ export async function sendLoginCodeEmail(params: SendLoginCodeEmailParams): Prom
     }
     
     // Prepare email content
-    const htmlContent = generateLoginCodeEmailHTML(params)
-    const textContent = generateLoginCodeEmailText(params)
+    let htmlContent: string
+    let textContent: string
+    try {
+      htmlContent = generateLoginCodeEmailHTML(params)
+      textContent = generateLoginCodeEmailText(params)
+    } catch (templateError) {
+      console.error('Error generating email templates:', templateError)
+      return {
+        success: false,
+        error: `Failed to generate email template: ${templateError instanceof Error ? templateError.message : 'Unknown error'}`
+      }
+    }
     
     // Get sender email and validate
     const senderEmail = getSenderEmail()
