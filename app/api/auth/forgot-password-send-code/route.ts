@@ -84,19 +84,11 @@ export async function POST(request: NextRequest) {
 
     const userName = profile?.full_name || undefined
 
-    // Clear the user's password so they can set a new one
-    // This ensures the user status becomes "needs_password" for password setup flow
-    const { error: passwordClearError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-      encrypted_password: '',
-    })
-
-    if (passwordClearError) {
-      console.error('Error clearing user password:', passwordClearError)
-      // Continue anyway - the code will still be generated and sent
-      // The user might already not have a password
-    } else {
-      console.log('User password cleared successfully for password reset')
-    }
+    // Note: We don't clear the password here because:
+    // 1. Supabase Admin API doesn't support clearing passwords directly
+    // 2. The code verification flow will work regardless
+    // 3. When the user sets a new password after code verification, it will replace the old one
+    // The code verification bypasses the password check, so the old password becomes irrelevant
 
     // Invalidate any existing unused codes for this user (same as send-code endpoint)
     await supabaseAdmin

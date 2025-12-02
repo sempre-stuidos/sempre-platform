@@ -62,10 +62,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         try {
           const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(member.user_id);
           
-          // Check if user needs password (no encrypted_password means they need to set one)
-          // Also check if they have Client role and no password
-          const needsPassword = !user?.encrypted_password || 
-            (member.role === 'client' && !user?.encrypted_password);
+          // Check if user needs password
+          // A user needs a password if they don't have email provider in their providers array
+          // or if they're a client role (clients use login codes for first-time setup)
+          // Note: providers is not in the TypeScript type but exists on the user object
+          const userWithProviders = user as any;
+          const hasEmailProvider = userWithProviders?.providers?.includes('email') || false;
+          const needsPassword = !hasEmailProvider || 
+            (member.role === 'client' && !hasEmailProvider);
           
           return {
             ...member,
