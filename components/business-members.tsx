@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { IconTrash, IconEdit } from "@tabler/icons-react"
+import { IconTrash, IconEdit, IconMail } from "@tabler/icons-react"
 import { toast } from "sonner"
 import { EditMemberModal } from "@/components/edit-member-modal"
 
@@ -27,6 +27,7 @@ interface Member {
   user_id: string
   role: 'owner' | 'admin' | 'staff' | 'client'
   email?: string
+  needs_password?: boolean
   profile?: {
     id: string
     full_name?: string
@@ -39,6 +40,7 @@ export function BusinessMembers({ orgId, canManage, isAdmin = false }: BusinessM
   const [isLoading, setIsLoading] = useState(true)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
+  const [sendingCodes, setSendingCodes] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -106,6 +108,57 @@ export function BusinessMembers({ orgId, canManage, isAdmin = false }: BusinessM
     }
   }
 
+  const handleSendCode = async (member: Member) => {
+    if (!member.email) {
+      toast.error('Member email not available')
+      return
+    }
+
+    setSendingCodes(prev => new Set(prev).add(member.user_id))
+
+    try {
+      const response = await fetch(`/api/businesses/${orgId}/members/${member.user_id}/send-code`, {
+        method: 'POST',
+      })
+
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get('content-type')
+      let data: any
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json()
+      } else {
+        // If not JSON, get text response
+        const text = await response.text()
+        console.error('Non-JSON response:', text)
+        throw new Error(`Server error: ${response.status} ${response.statusText}`)
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to send code')
+      }
+
+      // Check if email sending failed but code was generated
+      if (data.error && data.success) {
+        toast.warning(data.message || 'Code generated but email failed to send')
+        if (data.code) {
+          console.log('Login code (dev mode):', data.code)
+        }
+      } else {
+        toast.success(data.message || 'Login code sent successfully!')
+      }
+    } catch (error) {
+      console.error('Error sending code:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to send login code')
+    } finally {
+      setSendingCodes(prev => {
+        const next = new Set(prev)
+        next.delete(member.user_id)
+        return next
+      })
+    }
+  }
+
   if (isLoading) {
     return (
       <Card>
@@ -164,6 +217,18 @@ export function BusinessMembers({ orgId, canManage, isAdmin = false }: BusinessM
                       >
                         <IconEdit className="h-4 w-4" />
                       </Button>
+                      {/* Show Send Code button for members who need password setup */}
+                      {member.needs_password && member.email && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleSendCode(member)}
+                          disabled={sendingCodes.has(member.user_id)}
+                          title="Send login code"
+                        >
+                          <IconMail className={`h-4 w-4 ${sendingCodes.has(member.user_id) ? 'animate-pulse' : ''}`} />
+                        </Button>
+                      )}
                       {/* Allow Admins to delete owners, but regular users cannot delete owners */}
                       {(isAdmin || member.role !== 'owner') && (
                         <Button

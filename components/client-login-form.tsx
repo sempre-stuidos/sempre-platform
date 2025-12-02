@@ -27,7 +27,7 @@ type AccessCheckResult = {
   user_role_id: number | null
 }
 
-type LoginStep = "email" | "password" | "password_setup" | "post_auth"
+type LoginStep = "email" | "code_verification" | "password" | "password_setup" | "post_auth"
 
 export function ClientLoginForm({
   className,
@@ -43,6 +43,8 @@ export function ClientLoginForm({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [loginCode, setLoginCode] = useState("")
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false)
   const [accessCheckResult, setAccessCheckResult] = useState<AccessCheckResult | null>(null)
   const [resetEmailSent, setResetEmailSent] = useState(false)
   const [isResettingPassword, setIsResettingPassword] = useState(false)
@@ -163,6 +165,14 @@ export function ClientLoginForm({
       const result: AccessCheckResult = await response.json()
       setAccessCheckResult(result)
 
+      // Debug logging
+      console.log('Access check result:', {
+        status: result.status,
+        role: result.role,
+        user_id: result.user_id,
+        user_role_id: result.user_role_id,
+      })
+
       if (result.status === "not_found") {
         toast.error("We couldn't find you in the system. Please contact Sempre Studios admin.")
         setIsLoading(false)
@@ -170,9 +180,20 @@ export function ClientLoginForm({
       }
 
       if (result.status === "needs_password") {
-        setStep("password_setup")
+        // For Client role, show code verification step first
+        if (result.role === "Client") {
+          console.log('Client needs password - showing code verification')
+          setStep("code_verification")
+        } else {
+          console.log('Non-Client needs password - showing password setup')
+          setStep("password_setup")
+        }
       } else if (result.status === "has_password") {
+        console.log('User has password - showing password entry')
         setStep("password")
+      } else {
+        console.log('Unknown status:', result.status)
+        toast.error("Unable to determine account status. Please contact support.")
       }
     } catch (error) {
       console.error("Error checking access:", error)
@@ -232,8 +253,80 @@ export function ClientLoginForm({
     }
   }
 
+  const handleCodeVerification = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!loginCode || loginCode.length !== 8) {
+      toast.error("Please enter a valid 8-character code")
+      return
+    }
+
+    setIsVerifyingCode(true)
+    try {
+      const response = await fetch("/api/auth/verify-login-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: loginCode.toUpperCase().trim(),
+          email: email.toLowerCase().trim(),
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        toast.error(data.error || "Invalid or expired code")
+        setIsVerifyingCode(false)
+        return
+      }
+
+      // Code verified successfully - proceed to password setup
+      // This works for both first-time setup and password reset
+      toast.success("Code verified! Please create your new password.")
+      
+      // Update access check result with verified user info
+      // If we don't have accessCheckResult, create one from the verification response
+      if (!accessCheckResult) {
+        // Fetch full access info
+        const accessResponse = await fetch("/api/auth/check-access", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.toLowerCase().trim() }),
+        })
+        const accessData: AccessCheckResult = await accessResponse.json()
+        setAccessCheckResult(accessData)
+      } else {
+        // Update existing accessCheckResult with verified user_id
+        setAccessCheckResult({
+          ...accessCheckResult,
+          user_id: data.user_id || accessCheckResult.user_id,
+          user_role_id: data.user_role_id || accessCheckResult.user_role_id,
+        })
+      }
+      
+      setStep("password_setup")
+    } catch (error) {
+      console.error("Error verifying code:", error)
+      toast.error("Failed to verify code. Please try again.")
+    } finally {
+      setIsVerifyingCode(false)
+    }
+  }
+
   const handleBack = () => {
-    setStep("email")
+    if (step === "code_verification") {
+      setStep("email")
+      setLoginCode("")
+    } else if (step === "password_setup") {
+      // If coming from code verification, go back to code step
+      if (accessCheckResult?.role === "Client" && accessCheckResult?.status === "needs_password") {
+        setStep("code_verification")
+      } else {
+        setStep("email")
+      }
+    } else {
+      setStep("email")
+    }
     setPassword("")
     setAccessCheckResult(null)
     setResetEmailSent(false)
@@ -247,49 +340,45 @@ export function ClientLoginForm({
 
     setIsResettingPassword(true)
     try {
-      const baseUrl = getBaseUrl()
-      const redirectUrl = `${baseUrl}/client/auth/reset-password`
-      
-      // Log the redirect URL for debugging
-      console.log('Attempting password reset with redirect URL:', redirectUrl)
-      console.log('Base URL:', baseUrl)
-      
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        email.toLowerCase().trim(),
-        {
-          redirectTo: redirectUrl,
-        }
-      )
+      // Generate and send login code for password reset
+      const response = await fetch('/api/auth/forgot-password-send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase().trim() }),
+      })
 
-      if (resetError) {
-        console.error("Error sending reset email:", resetError)
-        
-        // Check for specific error types
-        if (resetError.message?.includes('500') || resetError.message?.includes('Error sending recovery email')) {
-          toast.error(
-            "Password reset email failed. The redirect URL may not be configured in Supabase. Please contact support.",
-            {
-              duration: 8000,
-              description: `URL: ${redirectUrl}`,
-            }
-          )
-        } else if (resetError.message?.includes('rate limit') || resetError.message?.includes('too many')) {
-          toast.error("Too many requests. Please wait a moment before trying again.", {
-            duration: 5000,
-          })
-        } else {
-          toast.error(resetError.message || "Failed to send reset email. Please try again.")
-        }
-        setIsResettingPassword(false)
-        return
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to send reset code')
       }
 
-      toast.success("Password reset email sent! Check your inbox.")
-      setResetEmailSent(true)
+      // Show success message
+      toast.success(data.message || "If an account exists with this email, a code has been sent.")
+      
+      // Check if user exists and needs password reset
+      // Fetch access info to determine if we should show code verification
+      const accessResponse = await fetch("/api/auth/check-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.toLowerCase().trim() }),
+      })
+
+      const accessResult: AccessCheckResult = await accessResponse.json()
+      
+      if (accessResult.status !== "not_found") {
+        // User exists - show code verification step
+        setAccessCheckResult(accessResult)
+        setStep("code_verification")
+        setResetEmailSent(true)
+      } else {
+        // User doesn't exist - just show success message
+        setResetEmailSent(true)
+      }
     } catch (error) {
       console.error("Error in forgot password:", error)
       const errorMessage = error instanceof Error ? error.message : "Something went wrong"
-      toast.error(errorMessage || "Something went wrong. Please try again.")
+      toast.error(errorMessage || "Failed to send reset code. Please try again.")
     } finally {
       setIsResettingPassword(false)
     }
@@ -376,6 +465,70 @@ export function ClientLoginForm({
     )
   }
 
+  // Code verification step (for Clients needing password)
+  if (step === "code_verification") {
+    return (
+      <div className={cn("flex flex-col gap-6", className)} {...props}>
+        <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl text-white">Enter Your Login Code</CardTitle>
+            <CardDescription className="text-white/60">
+              Check your email for the 8-character code sent by your administrator
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCodeVerification}>
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="loginCode" className="text-white">
+                    Login Code
+                  </Label>
+                  <Input
+                    id="loginCode"
+                    type="text"
+                    value={loginCode}
+                    onChange={(e) => {
+                      // Only allow alphanumeric, uppercase, max 8 characters
+                      const value = e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 8)
+                      setLoginCode(value)
+                    }}
+                    placeholder="Enter 8-character code"
+                    className="bg-white/5 border-white/20 text-white text-center text-2xl tracking-widest font-mono"
+                    maxLength={8}
+                    disabled={isVerifyingCode}
+                    autoFocus
+                  />
+                  <p className="text-xs text-white/50 text-center">
+                    Enter the code you received via email. It expires in 7 days.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="flex-1 text-white/60 hover:text-white"
+                    onClick={handleBack}
+                    disabled={isVerifyingCode}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    className="flex-1 bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white"
+                    disabled={isVerifyingCode || loginCode.length !== 8}
+                  >
+                    {isVerifyingCode ? "Verifying..." : "Verify Code"}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   // Email entry step
   if (step === "email") {
     return (
@@ -424,13 +577,21 @@ export function ClientLoginForm({
 
   // Password setup step
   if (step === "password_setup" && accessCheckResult) {
+    // Determine if this is password reset (user had password) or first-time setup
+    const isPasswordReset = accessCheckResult.status === "has_password" || resetEmailSent
+    
     return (
       <div className={cn("flex flex-col gap-6", className)} {...props}>
         <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl text-white">Create Your Password</CardTitle>
+            <CardTitle className="text-xl text-white">
+              {isPasswordReset ? "Reset Your Password" : "Create Your Password"}
+            </CardTitle>
             <CardDescription className="text-white/60">
-              Set a password for {email}
+              {isPasswordReset 
+                ? "Enter a new password for your account"
+                : `Set a password for ${email}`
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>

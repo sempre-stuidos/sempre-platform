@@ -56,18 +56,28 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Use supabaseAdmin for Admins to bypass RLS and see all members including owner
     const members = await getBusinessMembers(orgId, isAdmin ? supabaseAdmin : supabase);
 
-    // Enrich with email addresses from auth
+    // Enrich with email addresses and password status from auth
     const membersWithEmails = await Promise.all(
       members.map(async (member) => {
         try {
           const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(member.user_id);
+          
+          // Check if user needs password (no encrypted_password means they need to set one)
+          // Also check if they have Client role and no password
+          const needsPassword = !user?.encrypted_password || 
+            (member.role === 'client' && !user?.encrypted_password);
+          
           return {
             ...member,
             email: user?.email || undefined,
+            needs_password: needsPassword,
           };
         } catch (error) {
           console.error('Error fetching user email:', error);
-          return member;
+          return {
+            ...member,
+            needs_password: false,
+          };
         }
       })
     );

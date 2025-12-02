@@ -45,7 +45,7 @@ function ClientResetPasswordPageContent() {
 
         // Use code from query string or hash
         const codeToProcess = codeFromQuery || tokenFromHash
-
+        
         // Listen for auth state changes - Supabase might process the code automatically
         let authStateResolved = false
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -189,7 +189,7 @@ function ClientResetPasswordPageContent() {
           </div>
           <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
             <CardContent className="pt-6">
-              <div className="text-center text-white">
+        <div className="text-center text-white">
                 <div className="text-lg mb-2">Please wait</div>
                 <div className="text-sm text-white/60">Verifying your reset link</div>
               </div>

@@ -84,7 +84,7 @@ function ResetPasswordPageContent() {
             console.error("Error exchanging code:", error)
           }
         }
-
+        
         // Wait a bit for Supabase to process the hash token
         await new Promise(resolve => setTimeout(resolve, 1000))
 
@@ -115,10 +115,10 @@ function ResetPasswordPageContent() {
               subscription.unsubscribe()
             } else {
               // Show error
-              subscription.unsubscribe()
+                  subscription.unsubscribe()
               toast.error("Password reset link is invalid or has expired")
               router.push("/login?error=" + encodeURIComponent("Password reset link is invalid or has expired"))
-              setIsProcessing(false)
+            setIsProcessing(false)
             }
           }, 2000)
         }
@@ -207,9 +207,9 @@ function ResetPasswordPageContent() {
             </a>
             <Card className="bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl">
               <CardContent className="pt-6">
-                <div className="text-center text-white">
-                  <div className="text-lg mb-2">Processing password reset...</div>
-                  <div className="text-sm text-white/60">Please wait</div>
+        <div className="text-center text-white">
+          <div className="text-lg mb-2">Processing password reset...</div>
+          <div className="text-sm text-white/60">Please wait</div>
                 </div>
               </CardContent>
             </Card>
@@ -411,8 +411,8 @@ export default function ResetPasswordPage() {
           />
           <div className="relative z-20 flex min-h-screen flex-col items-center justify-center gap-6 p-6 md:p-10">
             <div className="flex w-full max-w-sm flex-col gap-6">
-              <div className="text-center text-white">
-                <div className="text-lg mb-2">Loading...</div>
+          <div className="text-center text-white">
+            <div className="text-lg mb-2">Loading...</div>
               </div>
             </div>
           </div>
