@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" style="margin:0;padding:0;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to SS Hub!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap');
+      
+      /* Mobile Responsive Styles */
+      @media only screen and (max-width: 600px) {
+        .email-container {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+        .mobile-padding {
+          padding: 40px 20px !important;
+        }
+        .mobile-text-large {
+          font-size: 28px !important;
+        }
+        .mobile-text-base {
+          font-size: 15px !important;
+        }
+        .mobile-text-small {
+          font-size: 13px !important;
+        }
+        .mobile-code-box {
+          padding: 20px 16px !important;
+        }
+        .mobile-code-text {
+          font-size: 24px !important;
+          letter-spacing: 4px !important;
+        }
+        .mobile-button {
+          padding: 14px 32px !important;
+          width: 100% !important;
+          max-width: 280px !important;
+        }
+        .mobile-spacing {
+          padding-bottom: 32px !important;
+        }
+        .mobile-header {
+          font-size: 18px !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body style="margin:0; padding:0; background-color:#171717; font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+    <table width="100%" cellspacing="0" cellpadding="0" style="background:#171717; padding:60px 20px;">
+      <tr>
+        <td align="center" class="mobile-padding" style="padding:60px 20px;">
+
+          <!-- Email Container -->
+          <table width="100%" cellpadding="0" cellspacing="0" class="email-container" style="max-width:560px; background:#171717; padding:0; width:100%;">
+
+            <!-- Brand Header -->
+            <tr>
+              <td style="padding:0 0 48px 0;" class="mobile-spacing">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center">
+                      <h1 class="mobile-header" style="margin:0; font-size:20px; font-weight:500; color:#ffffff; letter-spacing:-0.3px; text-align:center; font-family:'Orbitron', system-ui, -apple-system, sans-serif;">
+                        Sempre Studios
+                      </h1>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Content Area -->
+            <tr>
+              <td>
+                
+                <!-- Title -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" class="mobile-text-large" style="font-size:32px; font-weight:500; color:#ffffff; line-height:1.2; padding-bottom:24px; letter-spacing:-0.5px; text-align:center;">
+                      Welcome to <span style="font-family:'Orbitron', system-ui, -apple-system, sans-serif;">SS Hub</span>!
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Welcome Message -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" class="mobile-text-base mobile-spacing" style="font-size:16px; color:#737373; line-height:1.6; padding-bottom:32px; text-align:center;">
+                      Use the code below to create your password and get started:
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Setup Code Box -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" class="mobile-spacing" style="padding-bottom:40px;">
+                      <table cellpadding="0" cellspacing="0" class="mobile-code-box" style="background:#171717; border-radius:8px; padding:24px 40px; border:1px solid #737373; width:100%; max-width:100%;">
+                        <tr>
+                          <td class="mobile-code-text" style="font-size:32px; font-weight:600; letter-spacing:8px; color:#d1ff75; font-family:'Courier New', monospace; text-align:center;">
+                            {{ params.setup_code }}
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Button -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" class="mobile-spacing" style="padding-bottom:48px;">
+                      <a href="{{ params.create_password_url }}" 
+                        class="mobile-button"
+                        style="
+                          text-decoration:none;
+                          background:#d1ff75;
+                          color:#171717;
+                          padding:16px 40px;
+                          border-radius:6px;
+                          font-size:16px;
+                          font-weight:500;
+                          display:inline-block;
+                        ">
+                        Create Password
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Divider -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="border-top:1px solid #737373; height:1px; padding-bottom:32px;"></td>
+                  </tr>
+                </table>
+
+                <!-- About Section -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" style="padding-bottom:24px;">
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td align="center" class="mobile-text-base" style="font-size:18px; font-weight:500; color:#ffffff; line-height:1.3; padding-bottom:16px; text-align:center;">
+                            What is <span style="font-family:'Orbitron', system-ui, -apple-system, sans-serif;">SS Hub</span>?
+                          </td>
+                        </tr>
+                        <tr>
+                          <td align="center" class="mobile-text-base" style="font-size:16px; color:#737373; line-height:1.6; text-align:center; padding-left:10px; padding-right:10px;">
+                            <span style="font-family:'Orbitron', system-ui, -apple-system, sans-serif;">SS Hub</span> is your centralized platform for managing your business's digital presence. It provides you with powerful tools to streamline operations, track performance, and grow your business.
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Benefits Section -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" class="mobile-spacing" style="padding-bottom:32px;">
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td align="center" class="mobile-text-base" style="font-size:18px; font-weight:500; color:#ffffff; line-height:1.3; padding-bottom:16px; text-align:center;">
+                            Why It's Beneficial for Your Business
+                          </td>
+                        </tr>
+                        <tr>
+                          <td align="center" class="mobile-text-base" style="font-size:16px; color:#737373; line-height:1.6; text-align:center; padding-left:10px; padding-right:10px;">
+                            • Centralized management of all your digital assets<br>
+                            • Real-time analytics and performance tracking<br>
+                            • Streamlined workflows to save time<br>
+                            • Enhanced collaboration with your team<br>
+                            • Secure and reliable platform for your business data
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Divider -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="border-top:1px solid #737373; height:1px; padding-bottom:32px;"></td>
+                  </tr>
+                </table>
+
+                <!-- Instructions -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" class="mobile-text-small mobile-spacing" style="font-size:14px; color:#737373; line-height:1.6; padding-bottom:32px; text-align:center; padding-left:10px; padding-right:10px;">
+                      Or copy and paste this link:<br>
+                      <a href="{{ params.create_password_url }}" style="color:#d1ff75; text-decoration:none; word-break:break-all; font-size:13px;">
+                        {{ params.create_password_url }}
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Notice -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" style="padding-top:32px; border-top:1px solid #737373;">
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td align="center" class="mobile-text-small" style="font-size:13px; color:#737373; line-height:1.6; text-align:center; padding-left:10px; padding-right:10px;">
+                            This code expires in 7 days. If you have any questions, please contact your administrator.
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding-top:64px;" class="mobile-spacing">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" class="mobile-text-small" style="font-size:12px; color:#737373; line-height:1.6;">
+                      <p style="margin:0; font-family:'Orbitron', system-ui, -apple-system, sans-serif;">
+                        Sempre Studios
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
