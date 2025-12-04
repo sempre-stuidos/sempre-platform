@@ -230,6 +230,48 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
       // Get the field schema to understand what type of field this is
       const fieldSchema = getFieldSchema(component, selectedComponentKey)
       
+      // Handle nested paths with dot notation (e.g., "day.description")
+      if (selectedComponentKey.includes('.')) {
+        const pathSegments = selectedComponentKey.split('.')
+        const [parentKey, ...nestedKeys] = pathSegments
+        const nestedFieldKey = nestedKeys[nestedKeys.length - 1] // Last segment is the field name
+        
+        // Get parent object from draftContent
+        const parentObject = draftContent[parentKey]
+        if (parentObject && typeof parentObject === 'object' && !Array.isArray(parentObject)) {
+          const parentObj = parentObject as Record<string, unknown>
+          
+          // Navigate to nested value
+          let nestedValue = parentObj
+          for (const key of nestedKeys) {
+            if (nestedValue && typeof nestedValue === 'object' && !Array.isArray(nestedValue)) {
+              nestedValue = (nestedValue as Record<string, unknown>)[key]
+            } else {
+              nestedValue = undefined
+              break
+            }
+          }
+          
+          if (nestedValue !== undefined && nestedValue !== null) {
+            // Wrap the nested value in an object with the nested field key
+            return { [nestedFieldKey]: nestedValue }
+          } else {
+            // Nested value not found - initialize from schema
+            if (fieldSchema) {
+              return { [nestedFieldKey]: fieldSchema.default ?? '' }
+            }
+            return { [nestedFieldKey]: '' }
+          }
+        } else {
+          // Parent object not found - initialize from schema
+          if (fieldSchema) {
+            return { [nestedFieldKey]: fieldSchema.default ?? '' }
+          }
+          return { [nestedFieldKey]: '' }
+        }
+      }
+      
+      // Handle top-level keys (backward compatibility)
       // Check if the component key exists directly in draftContent
       if (draftContent[selectedComponentKey] !== undefined) {
         const content = draftContent[selectedComponentKey]
@@ -275,6 +317,34 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
 
   const handleFieldChange = (field: string, value: unknown) => {
     if (selectedComponentKey) {
+      // Handle nested paths with dot notation (e.g., "day.description")
+      if (selectedComponentKey.includes('.')) {
+        const pathSegments = selectedComponentKey.split('.')
+        const [parentKey, ...nestedKeys] = pathSegments
+        const nestedFieldKey = nestedKeys[nestedKeys.length - 1]
+        
+        // For nested paths, the field parameter should match the nested field key
+        // (e.g., field="description" when selectedComponentKey="day.description")
+        const fieldToUpdate = field === nestedFieldKey ? nestedFieldKey : field
+        
+        // Get parent object from draftContent
+        const parentObject = draftContent[parentKey]
+        const parentObj = (parentObject && typeof parentObject === 'object' && !Array.isArray(parentObject))
+          ? { ...(parentObject as Record<string, unknown>) }
+          : {}
+        
+        // Update the nested field
+        const updatedParentObj = {
+          ...parentObj,
+          [fieldToUpdate]: value,
+        }
+        
+        // Return the updated parent object
+        onContentChange(updatedParentObj)
+        return
+      }
+      
+      // Handle top-level keys (backward compatibility)
       // Get the original component value
       const originalValue = draftContent[selectedComponentKey]
       const isPrimitive = originalValue !== null && originalValue !== undefined && 
@@ -380,6 +450,23 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
     // Get schema for current component or nested component
     const getSchemaForContext = (): ComponentSchema | null => {
       if (selectedComponentKey) {
+        // Handle nested paths with dot notation (e.g., "day.description")
+        if (selectedComponentKey.includes('.')) {
+          const pathSegments = selectedComponentKey.split('.')
+          const nestedFieldKey = pathSegments[pathSegments.length - 1]
+          const fieldSchema = getFieldSchema(component, selectedComponentKey)
+          
+          if (fieldSchema) {
+            // Create a schema with just this nested field
+            // This allows us to render the field with proper type, label, and placeholder
+            return {
+              [nestedFieldKey]: fieldSchema
+            }
+          }
+          return null
+        }
+        
+        // Handle top-level keys (backward compatibility)
         // Check if this is a nested object component (like badge) or a primitive field (like title)
         const fieldSchema = getFieldSchema(component, selectedComponentKey)
         
@@ -758,6 +845,33 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
     // If a component is selected, show only that component's fields using dynamic form
     if (selectedComponentKey) {
       return renderDynamicForm(componentContent, (content) => {
+        // Handle nested paths with dot notation (e.g., "day.description")
+        if (selectedComponentKey.includes('.')) {
+          const pathSegments = selectedComponentKey.split('.')
+          const [parentKey, ...nestedKeys] = pathSegments
+          const nestedFieldKey = nestedKeys[nestedKeys.length - 1]
+          
+          // Get parent object from draftContent
+          const parentObject = draftContent[parentKey]
+          const parentObj = (parentObject && typeof parentObject === 'object' && !Array.isArray(parentObject))
+            ? { ...(parentObject as Record<string, unknown>) }
+            : {}
+          
+          // Extract the value from content (content will be { [nestedFieldKey]: value })
+          const extractedValue = content[nestedFieldKey]
+          
+          // Update the nested field in parent object
+          const updatedParentObj = {
+            ...parentObj,
+            [nestedFieldKey]: extractedValue,
+          }
+          
+          // Return the updated parent object
+          onContentChange(updatedParentObj)
+          return
+        }
+        
+        // Handle top-level keys (backward compatibility)
         // Get the original component value to check if it's a primitive
         const originalValue = draftContent[selectedComponentKey]
         const isPrimitive = originalValue !== null && originalValue !== undefined && 

@@ -341,6 +341,107 @@ export const componentSchemas: ComponentSchemas = {
       placeholder: 'Book Your Reservation',
     },
   },
+
+  HomeHeroSection: {
+    address: {
+      type: 'string',
+      default: '478 PARLIAMENT ST',
+      label: 'Address',
+      placeholder: '478 PARLIAMENT ST',
+    },
+    title: {
+      type: 'string',
+      default: "JOHNNY G's",
+      label: 'Title',
+      placeholder: "JOHNNY G's",
+    },
+    subtitle: {
+      type: 'string',
+      default: 'Brunch',
+      label: 'Subtitle',
+      placeholder: 'Brunch',
+    },
+    established: {
+      type: 'string',
+      default: 'EST 1975',
+      label: 'Established',
+      placeholder: 'EST 1975',
+    },
+    daysLabel: {
+      type: 'string',
+      default: 'MONDAY - SUNDAY',
+      label: 'Days Label',
+      placeholder: 'MONDAY - SUNDAY',
+    },
+    day: {
+      type: 'object',
+      default: {
+        description: 'Have brunch at one of the oldest Restaurants in Cabbagetown',
+        hours: '7AM - 4PM',
+        heroImage: '/home/brunch-frame-bg.jpg',
+      },
+      nestedSchema: {
+        description: {
+          type: 'textarea',
+          default: 'Have brunch at one of the oldest Restaurants in Cabbagetown',
+          label: 'Day Description',
+          placeholder: 'Have brunch at one of the oldest Restaurants in Cabbagetown',
+        },
+        hours: {
+          type: 'string',
+          default: '7AM - 4PM',
+          label: 'Day Hours',
+          placeholder: '7AM - 4PM',
+        },
+        heroImage: {
+          type: 'image',
+          default: '/home/brunch-frame-bg.jpg',
+          label: 'Day Hero Image',
+          placeholder: '/home/brunch-frame-bg.jpg',
+        },
+      },
+    },
+    night: {
+      type: 'object',
+      default: {
+        description: 'Have dinner at one of the oldest Restaurants in Cabbagetown',
+        hours: '7PM - 12AM',
+        heroImage: '/home/jazz-frame.jpg',
+      },
+      nestedSchema: {
+        description: {
+          type: 'textarea',
+          default: 'Have dinner at one of the oldest Restaurants in Cabbagetown',
+          label: 'Night Description',
+          placeholder: 'Have dinner at one of the oldest Restaurants in Cabbagetown',
+        },
+        hours: {
+          type: 'string',
+          default: '7PM - 12AM',
+          label: 'Night Hours',
+          placeholder: '7PM - 12AM',
+        },
+        heroImage: {
+          type: 'image',
+          default: '/home/jazz-frame.jpg',
+          label: 'Night Hero Image',
+          placeholder: '/home/jazz-frame.jpg',
+        },
+      },
+    },
+    reservationPhone: {
+      type: 'string',
+      default: '+16473683877',
+      label: 'Reservation Phone',
+      placeholder: '+16473683877',
+    },
+    reservationLabel: {
+      type: 'string',
+      default: 'Reservation',
+      label: 'Reservation Label',
+      placeholder: 'Reservation',
+    },
+  },
 }
 
 /**
@@ -352,10 +453,44 @@ export function getComponentSchema(componentName: string): ComponentSchema | nul
 
 /**
  * Get field schema for a specific field in a component
+ * Supports nested paths with dot notation (e.g., "day.description")
  */
 export function getFieldSchema(componentName: string, fieldKey: string): FieldSchema | null {
   const schema = getComponentSchema(componentName)
-  return schema?.[fieldKey] || null
+  if (!schema) return null
+  
+  // Handle nested paths with dot notation (e.g., "day.description")
+  if (fieldKey.includes('.')) {
+    const pathSegments = fieldKey.split('.')
+    
+    // Navigate through the path
+    let currentSchema: ComponentSchema = schema
+    
+    for (let i = 0; i < pathSegments.length; i++) {
+      const segment = pathSegments[i]
+      const fieldSchema = currentSchema[segment] as FieldSchema | undefined
+      
+      if (!fieldSchema) return null
+      
+      // If this is the last segment, return the field schema
+      if (i === pathSegments.length - 1) {
+        return fieldSchema
+      }
+      
+      // If it's an object with nested schema, continue navigation
+      if (fieldSchema.type === 'object' && fieldSchema.nestedSchema) {
+        currentSchema = fieldSchema.nestedSchema
+      } else {
+        // Can't navigate further
+        return null
+      }
+    }
+    
+    return null
+  }
+  
+  // Backward compatibility: handle top-level keys
+  return schema[fieldKey] || null
 }
 
 /**

@@ -202,11 +202,66 @@ export function PageCanvasEditor({
 
   const handleContentChange = (content: Record<string, unknown> | string | number | boolean) => {
     if (selectedSectionId) {
-      // If a component is selected, always treat it as a component update
+      const selectedSection = sections.find(s => s.id === selectedSectionId)
+      const componentName = selectedSection?.component
+      
+      // Check if content is a full section update (after save) vs component update
+      // Full section content will have multiple top-level keys matching the schema
+      // For HomeHeroSection, check for specific fields; for others, check for common fields
+      const isFullSectionUpdate = typeof content === 'object' && content !== null && !Array.isArray(content) && 
+        Object.keys(content).length > 1 && 
+        // Check if it has section-level fields (not just a component value)
+        (componentName === 'HomeHeroSection' 
+          ? Object.keys(content).some(key => ['address', 'title', 'subtitle', 'established', 'daysLabel', 'day', 'night', 'reservationPhone', 'reservationLabel'].includes(key))
+          : Object.keys(content).some(key => ['badge', 'title', 'subtitle', 'heroImage', 'accentImage', 'primaryCta', 'secondaryCta'].includes(key)))
+      
+      // If it's a full section update (e.g., after save), update entire section regardless of selectedComponentKey
+      if (isFullSectionUpdate) {
+        const contentObj = content as Record<string, unknown>
+        setDraftContents(prev => ({
+          ...prev,
+          [selectedSectionId]: contentObj,
+        }))
+        return
+      }
+      
+      // If a component is selected, treat it as a component update
       // (even if it's a nested object like badge with multiple keys)
       if (selectedComponentKey) {
         setDraftContents(prev => {
           const currentSectionContent = prev[selectedSectionId] || {}
+          
+          // Handle nested paths with dot notation (e.g., "day.description")
+          if (selectedComponentKey.includes('.')) {
+            const pathSegments = selectedComponentKey.split('.')
+            const [parentKey, ...nestedKeys] = pathSegments
+            const nestedFieldKey = nestedKeys[nestedKeys.length - 1]
+            
+            // Get parent object from current section content
+            const parentObject = currentSectionContent[parentKey]
+            const parentObj = (parentObject && typeof parentObject === 'object' && !Array.isArray(parentObject))
+              ? { ...(parentObject as Record<string, unknown>) }
+              : {}
+            
+            // Extract the value from content
+            // For nested paths, content will be the updated parent object
+            const updatedParentObj = typeof content === 'object' && content !== null && !Array.isArray(content)
+              ? content as Record<string, unknown>
+              : { [nestedFieldKey]: content }
+            
+            // Update the section content with the updated parent object
+            const updatedContent = {
+              ...currentSectionContent,
+              [parentKey]: updatedParentObj,
+            }
+            
+            return {
+              ...prev,
+              [selectedSectionId]: updatedContent,
+            }
+          }
+          
+          // Handle top-level keys (backward compatibility)
           const updatedContent = {
             ...currentSectionContent,
             [selectedComponentKey]: content,
