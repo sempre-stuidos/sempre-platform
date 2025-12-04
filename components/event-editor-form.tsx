@@ -329,7 +329,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2" data-tour="title">
-                <Label htmlFor="title">Title *</Label>
+                <Label htmlFor="title">Event Name *</Label>
                 <Input
                   id="title"
                   value={formData.title}
@@ -338,16 +338,6 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
                   className={errors.title ? "border-red-500" : ""}
                 />
                 {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
-              </div>
-
-              <div className="space-y-2" data-tour="short-description">
-                <Label htmlFor="short_description">Short Description</Label>
-                <Input
-                  id="short_description"
-                  value={formData.short_description}
-                  onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
-                  placeholder="1-2 line teaser shown in lists"
-                />
               </div>
 
               <div className="space-y-2" data-tour="description">
@@ -580,26 +570,6 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
             </CardContent>
           </Card>
         </div>
-
-        {/* Section D - Highlight Options */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Highlight Options</CardTitle>
-            <CardDescription>Feature this event on your homepage</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="is_featured"
-                checked={formData.is_featured}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked === true })}
-              />
-              <Label htmlFor="is_featured" className="cursor-pointer">
-                Feature this event
-              </Label>
-            </div>
-          </CardContent>
-        </Card>
 
         <Separator />
 
