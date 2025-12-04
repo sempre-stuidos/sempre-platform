@@ -5,10 +5,13 @@
 
 import { TransactionalEmailsApi, SendSmtpEmail } from '@getbrevo/brevo'
 
+type EmailType = 'welcome' | 'password_reset'
+
 interface SendLoginCodeEmailParams {
   email: string
   code: string
   name?: string
+  emailType?: EmailType
 }
 
 /**
@@ -144,11 +147,43 @@ function getSenderName(): string {
 }
 
 /**
+ * Get the Brevo template ID for welcome emails
+ */
+function getWelcomeEmailTemplateId(): number | null {
+  const templateId = process.env.BREVO_WELCOME_EMAIL_TEMPLATE_ID
+  if (!templateId) {
+    return null
+  }
+  const parsedId = parseInt(templateId, 10)
+  if (isNaN(parsedId)) {
+    console.warn('BREVO_WELCOME_EMAIL_TEMPLATE_ID is not a valid number, falling back to hard-coded templates')
+    return null
+  }
+  return parsedId
+}
+
+/**
+ * Get the Brevo template ID for password reset emails
+ */
+function getPasswordResetTemplateId(): number | null {
+  const templateId = process.env.BREVO_PASSWORD_RESET_TEMPLATE_ID
+  if (!templateId) {
+    return null
+  }
+  const parsedId = parseInt(templateId, 10)
+  if (isNaN(parsedId)) {
+    console.warn('BREVO_PASSWORD_RESET_TEMPLATE_ID is not a valid number, falling back to hard-coded templates')
+    return null
+  }
+  return parsedId
+}
+
+/**
  * Send login code email using Brevo
  */
 export async function sendLoginCodeEmail(params: SendLoginCodeEmailParams): Promise<{ success: boolean; error?: string }> {
   try {
-    const { email, code, name } = params
+    const { email, code, name, emailType = 'password_reset' } = params
     
     // Validate required parameters
     if (!email || typeof email !== 'string' || !email.includes('@')) {
@@ -205,36 +240,37 @@ export async function sendLoginCodeEmail(params: SendLoginCodeEmailParams): Prom
       }
     }
     
-    // Prepare email content
-    let htmlContent: string
-    let textContent: string
-    try {
-      htmlContent = generateLoginCodeEmailHTML(params)
-      textContent = generateLoginCodeEmailText(params)
-    } catch (templateError) {
-      console.error('Error generating email templates:', templateError)
-      return {
-        success: false,
-        error: `Failed to generate email template: ${templateError instanceof Error ? templateError.message : 'Unknown error'}`
-      }
-    }
-    
     // Get sender email and validate
     const senderEmail = getSenderEmail()
     const senderName = getSenderName()
+    
+    // Get the appropriate template ID based on email type
+    const templateId = emailType === 'welcome' 
+      ? getWelcomeEmailTemplateId() 
+      : getPasswordResetTemplateId()
+    
+    const baseUrl = getBaseUrlForEmail()
+    const encodedEmail = email ? encodeURIComponent(email) : ''
+    const loginUrl = email ? `${baseUrl}/login?code=${code}&email=${encodedEmail}` : `${baseUrl}/login?code=${code}`
+    
+    // Determine subject based on email type
+    const subject = emailType === 'welcome' 
+      ? 'Welcome to SS Hub!' 
+      : 'Password Reset - Sempre Studios'
     
     console.log('Email configuration:', {
       senderEmail,
       senderName,
       recipientEmail: email,
       recipientName: name,
+      emailType,
+      usingTemplate: !!templateId,
+      templateId: templateId,
     })
     
     // Create email object
     const sendSmtpEmail = new SendSmtpEmail()
-    sendSmtpEmail.subject = 'Your Sempre Studios Login Code'
-    sendSmtpEmail.htmlContent = htmlContent
-    sendSmtpEmail.textContent = textContent
+    sendSmtpEmail.subject = subject
     sendSmtpEmail.sender = {
       name: senderName,
       email: senderEmail,
@@ -246,10 +282,63 @@ export async function sendLoginCodeEmail(params: SendLoginCodeEmailParams): Prom
       },
     ]
     
+    // Use Brevo template if template ID is configured
+    if (templateId) {
+      sendSmtpEmail.templateId = templateId
+      
+      // Set template parameters based on email type
+      if (emailType === 'welcome') {
+        // Welcome email template expects: setup_code, create_password_url
+        sendSmtpEmail.params = {
+          setup_code: code,
+          create_password_url: loginUrl,
+          name: name || 'User',
+          baseUrl: baseUrl,
+          email: email,
+        }
+      } else {
+        // Password reset email template expects: reset_code, reset_url
+        sendSmtpEmail.params = {
+          reset_code: code,
+          reset_url: loginUrl,
+          name: name || 'User',
+          baseUrl: baseUrl,
+          email: email,
+        }
+      }
+      
+      console.log('Using Brevo template:', {
+        templateId: templateId,
+        emailType: emailType,
+        params: sendSmtpEmail.params,
+      })
+    } else {
+      // Fall back to hard-coded templates if template ID is not set
+      let htmlContent: string
+      let textContent: string
+      try {
+        htmlContent = generateLoginCodeEmailHTML(params)
+        textContent = generateLoginCodeEmailText(params)
+      } catch (templateError) {
+        console.error('Error generating email templates:', templateError)
+        return {
+          success: false,
+          error: `Failed to generate email template: ${templateError instanceof Error ? templateError.message : 'Unknown error'}`
+        }
+      }
+      sendSmtpEmail.htmlContent = htmlContent
+      sendSmtpEmail.textContent = textContent
+      const templateEnvVar = emailType === 'welcome' 
+        ? 'BREVO_WELCOME_EMAIL_TEMPLATE_ID' 
+        : 'BREVO_PASSWORD_RESET_TEMPLATE_ID'
+      console.log(`Using hard-coded email templates (${templateEnvVar} not set)`)
+    }
+    
     console.log('Sending email with Brevo:', {
       from: `${senderName} <${senderEmail}>`,
       to: email,
       subject: sendSmtpEmail.subject,
+      usingTemplate: !!templateId,
     })
     
     // Send email via Brevo
@@ -259,6 +348,7 @@ export async function sendLoginCodeEmail(params: SendLoginCodeEmailParams): Prom
         from: getSenderEmail(),
         fromName: getSenderName(),
         subject: sendSmtpEmail.subject,
+        templateId: templateId || 'none (using hard-coded)',
       })
       
       const response = await apiInstance.sendTransacEmail(sendSmtpEmail)

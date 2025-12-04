@@ -164,6 +164,7 @@ export async function POST(request: NextRequest) {
       email: normalizedEmail,
       code,
       name: userName,
+      emailType: 'password_reset',
     })
 
     if (!emailResult.success) {

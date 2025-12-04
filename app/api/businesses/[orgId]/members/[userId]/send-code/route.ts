@@ -206,13 +206,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Send email via Brevo
+    // Send email via Brevo (welcome email for new members)
     let emailResult
     try {
       emailResult = await sendLoginCodeEmail({
         email: userEmail,
         code,
         name: userName,
+        emailType: 'welcome',
       })
     } catch (emailError) {
       console.error('Exception while sending email:', emailError)
