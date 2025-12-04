@@ -18,6 +18,11 @@ import {
 } from "@/lib/component-schemas"
 import { safeParseSectionContent } from "@/lib/section-schemas"
 
+// Type guard to check if a value is a Record<string, unknown>
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 interface SectionFormProps {
   component: string
   draftContent: Record<string, unknown>
@@ -242,10 +247,10 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
           const parentObj = parentObject as Record<string, unknown>
           
           // Navigate to nested value
-          let nestedValue = parentObj
+          let nestedValue: unknown = parentObj
           for (const key of nestedKeys) {
-            if (nestedValue && typeof nestedValue === 'object' && !Array.isArray(nestedValue)) {
-              nestedValue = (nestedValue as Record<string, unknown>)[key]
+            if (isRecord(nestedValue)) {
+              nestedValue = nestedValue[key]
             } else {
               nestedValue = undefined
               break
