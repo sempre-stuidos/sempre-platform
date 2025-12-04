@@ -1,6 +1,4 @@
 "use client"
-
-import { useState } from "react"
 import {
   Table,
   TableBody,
@@ -14,85 +12,44 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { IconPlus, IconEdit, IconTrash, IconEye } from "@tabler/icons-react"
 
+import { Page } from "@/lib/types"
+
 interface BusinessSiteProps {
   orgId: string
   canManage: boolean
+  pages: Page[]
 }
 
-interface SitePage {
-  id: number
-  name: string
-  path: string
-  status: 'Published' | 'Draft' | 'Archived'
-  lastUpdated: string
-  views: number
-}
-
-// Dummy data for now
-const dummySitePages: SitePage[] = [
-  {
-    id: 1,
-    name: 'Home',
-    path: '/',
-    status: 'Published',
-    lastUpdated: '2024-01-15',
-    views: 1250,
-  },
-  {
-    id: 2,
-    name: 'About',
-    path: '/about',
-    status: 'Published',
-    lastUpdated: '2024-01-14',
-    views: 890,
-  },
-  {
-    id: 3,
-    name: 'Menu',
-    path: '/menu',
-    status: 'Published',
-    lastUpdated: '2024-01-13',
-    views: 2100,
-  },
-  {
-    id: 4,
-    name: 'Gallery',
-    path: '/gallery',
-    status: 'Published',
-    lastUpdated: '2024-01-12',
-    views: 1560,
-  },
-  {
-    id: 5,
-    name: 'Contact',
-    path: '/contact',
-    status: 'Draft',
-    lastUpdated: '2024-01-10',
-    views: 0,
-  },
-  {
-    id: 6,
-    name: 'Events',
-    path: '/events',
-    status: 'Archived',
-    lastUpdated: '2024-01-05',
-    views: 450,
-  },
-]
-
-export function BusinessSite({ orgId, canManage }: BusinessSiteProps) {
-  const [pages, setPages] = useState<SitePage[]>(dummySitePages)
+export function BusinessSite({ orgId, canManage, pages }: BusinessSiteProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Published':
+      case 'published':
         return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
-      case 'Draft':
+      case 'draft':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800'
-      case 'Archived':
-        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400 dark:border-gray-800'
+      case 'dirty':
+        return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800'
       default:
         return ''
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  }
+
+  const formatStatus = (status: string) => {
+    switch (status) {
+      case 'published':
+        return 'Published'
+      case 'draft':
+        return 'Draft'
+      case 'dirty':
+        return 'Has Unpublished Changes'
+      default:
+        return status
     }
   }
 
@@ -132,27 +89,28 @@ export function BusinessSite({ orgId, canManage }: BusinessSiteProps) {
               {pages.map((page) => (
                 <TableRow key={page.id}>
                   <TableCell className="font-medium">{page.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{page.path}</TableCell>
+                  <TableCell className="text-muted-foreground">/{page.slug}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={getStatusColor(page.status)}>
-                      {page.status}
+                      {formatStatus(page.status)}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <IconEye className="h-4 w-4 text-muted-foreground" />
-                      {page.views.toLocaleString()}
+                      <span className="text-muted-foreground">-</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{page.lastUpdated}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDate(page.updated_at)}</TableCell>
                   {canManage && (
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => window.location.href = `/client/${orgId}/restaurant/pages`}
+                        >
                           <IconEdit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                          <IconTrash className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </TableCell>

@@ -9,6 +9,7 @@ import { BusinessMembers } from "@/components/business-members"
 import { BusinessSite } from "@/components/business-site"
 import { BusinessSectionCards } from "@/components/business-section-cards"
 import { AddMemberModal } from "@/components/add-member-modal"
+import { Page } from "@/lib/types"
 
 interface BusinessStats {
   totalMembers: number
@@ -25,9 +26,10 @@ interface BusinessDetailsProps {
   userRole: 'owner' | 'admin' | 'staff' | 'client'
   isAdmin?: boolean
   stats: BusinessStats
+  pages?: Page[]
 }
 
-export function BusinessDetails({ orgId, business, userRole, isAdmin = false, stats }: BusinessDetailsProps) {
+export function BusinessDetails({ orgId, business, userRole, isAdmin = false, stats, pages = [] }: BusinessDetailsProps) {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
   const canManage = userRole === 'owner' || userRole === 'admin' || isAdmin
 
@@ -57,7 +59,7 @@ export function BusinessDetails({ orgId, business, userRole, isAdmin = false, st
           </TabsContent>
           
           <TabsContent value="site" className="mt-6">
-            <BusinessSite orgId={orgId} canManage={canManage} />
+            <BusinessSite orgId={orgId} canManage={canManage} pages={pages} />
           </TabsContent>
         </Tabs>
       </div>

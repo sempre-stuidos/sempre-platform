@@ -9,6 +9,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getBusinessById, getUserRoleInOrg } from '@/lib/businesses';
 import { getUserRole } from '@/lib/invitations';
+import { getPagesForOrg } from '@/lib/pages';
 import { redirect } from 'next/navigation';
 
 interface BusinessPageProps {
@@ -100,9 +101,10 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
   // Active members (simplified - all members are considered active)
   const activeMembers = totalMembers;
 
-  // Dummy site pages stats for now
-  const totalSitePages = 6;
-  const publishedPages = 4;
+  // Get actual pages for this business
+  const pages = await getPagesForOrg(orgId, isAdmin ? supabaseAdmin : supabase);
+  const totalSitePages = pages.length;
+  const publishedPages = pages.filter(p => p.status === 'published').length;
 
   const stats = {
     totalMembers,
@@ -134,6 +136,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
                 userRole={effectiveRole || 'staff'}
                 isAdmin={isAdmin}
                 stats={stats}
+                pages={pages}
               />
             </div>
           </div>
