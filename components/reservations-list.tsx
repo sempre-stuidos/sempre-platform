@@ -460,7 +460,7 @@ function ReservationsTable({
               <TableHead>Date & Time</TableHead>
               <TableHead>Party Size</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Special Requests</TableHead>
+              <TableHead>Contacts</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -472,13 +472,7 @@ function ReservationsTable({
               onClick={() => onReservationClick(reservation)}
             >
               <TableCell>
-                <div className="flex flex-col">
-                  <span className="font-medium text-foreground">{reservation.customer_name}</span>
-                  <span className="text-sm text-muted-foreground">{reservation.customer_email}</span>
-                  {reservation.customer_phone && (
-                    <span className="text-sm text-muted-foreground">{reservation.customer_phone}</span>
-                  )}
-                </div>
+                <span className="font-medium text-foreground">{reservation.customer_name}</span>
               </TableCell>
               <TableCell>
                 <div className="flex flex-col">
@@ -493,11 +487,12 @@ function ReservationsTable({
               </TableCell>
               <TableCell>{getStatusBadge(reservation.status)}</TableCell>
               <TableCell>
-                {reservation.special_requests ? (
-                  <span className="text-sm text-muted-foreground">{reservation.special_requests}</span>
-                ) : (
-                  <span className="text-sm text-muted-foreground">—</span>
-                )}
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">{reservation.customer_email}</span>
+                  {reservation.customer_phone && (
+                    <span className="text-sm text-muted-foreground">{reservation.customer_phone}</span>
+                  )}
+                </div>
               </TableCell>
               <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                 {reservation.status === 'pending' && (
