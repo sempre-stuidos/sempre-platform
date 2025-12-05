@@ -5,7 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // Transform database record to match Menu interface
 function transformMenuRecord(record: Record<string, unknown>): Menu {
   return {
-    id: record.id as number,
+    id: record.id as string, // UUID
     organizationId: record.business_id as string,
     name: record.name as string,
     description: record.description as string | undefined,
@@ -61,7 +61,7 @@ export async function getMenus(
 /**
  * Get menu by ID
  */
-export async function getMenuById(id: number): Promise<Menu | null> {
+export async function getMenuById(id: string): Promise<Menu | null> {
   try {
     const { data, error } = await supabase
       .from('menus')
@@ -174,7 +174,7 @@ export async function createMenu(
  * Update a menu
  */
 export async function updateMenu(
-  id: number,
+  id: string,
   updates: Partial<Omit<Menu, 'id' | 'organizationId' | 'created_at' | 'updated_at'>>,
   supabaseClient?: SupabaseClient
 ): Promise<Menu | null> {
@@ -203,7 +203,7 @@ export async function updateMenu(
  * Delete a menu (soft delete by setting is_active=false)
  */
 export async function deleteMenu(
-  id: number,
+  id: string,
   supabaseClient?: SupabaseClient
 ): Promise<boolean> {
   try {

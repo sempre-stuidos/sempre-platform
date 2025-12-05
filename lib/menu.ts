@@ -8,7 +8,7 @@ function transformMenuItemRecord(record: Record<string, unknown>): MenuItem {
   const price = record.price ? parseFloat(record.price as string) : undefined;
   
   // Debug: log the menu_id value
-  const menuId = record.menu_id as number | undefined;
+  const menuId = record.menu_id as string | undefined;
   if (menuId === undefined || menuId === null) {
     console.warn('transformMenuItemRecord: menu_id is missing or null for item', {
       id: record.id,
@@ -20,7 +20,7 @@ function transformMenuItemRecord(record: Record<string, unknown>): MenuItem {
   
   return {
     id: record.id as number,
-    menuId: menuId as number, // Type assertion - menu_id should always be present after migration
+    menuId: menuId as string, // UUID
     menuCategoryId: record.menu_category_id as number | undefined,
     menuType: (record.menu_type as MenuType) || undefined,
     name: record.name as string,
@@ -104,7 +104,7 @@ function transformMenuItemToRecord(menuItem: Partial<MenuItem>): Record<string, 
  * Get all menu items for a menu with optional filters
  */
 export async function getMenuItems(
-  menuId: number,
+  menuId: string,
   options?: {
     categoryId?: number;
     visibleOnly?: boolean;
@@ -195,7 +195,7 @@ export async function getMenuItemById(
  * Create a new menu item
  */
 export async function createMenuItem(
-  menuId: number,
+  menuId: string,
   menuItem: Omit<MenuItem, 'id' | 'menuId' | 'created_at' | 'updated_at'>,
   supabaseClient?: SupabaseClient
 ): Promise<MenuItem | null> {

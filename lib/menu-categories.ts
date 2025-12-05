@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 function transformMenuCategoryRecord(record: Record<string, unknown>): MenuCategory {
   return {
     id: record.id as number,
-    menuId: record.menu_id as number,
+    menuId: record.menu_id as string, // UUID
     menuType: (record.menu_type as MenuType) || undefined,
     name: record.name as string,
     slug: record.slug as string,
@@ -64,7 +64,7 @@ export function generateSlug(name: string): string {
  * Get all menu categories for a menu, optionally filtered by menu type
  */
 export async function getMenuCategories(
-  menuId: number,
+  menuId: string,
   menuType?: MenuType,
   supabaseClient?: SupabaseClient
 ): Promise<MenuCategory[]> {
@@ -123,7 +123,7 @@ export async function getMenuCategoryById(id: number): Promise<MenuCategory | nu
  * Create a new menu category
  */
 export async function createMenuCategory(
-  menuId: number,
+  menuId: string,
   category: Omit<MenuCategory, 'id' | 'menuId' | 'created_at' | 'updated_at'>,
   supabaseClient?: SupabaseClient
 ): Promise<MenuCategory | null> {

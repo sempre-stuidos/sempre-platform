@@ -46,7 +46,7 @@ export function ManageCategoriesModal({
   // Form state
   const [formData, setFormData] = useState({
     name: "",
-    menuId: undefined as number | undefined,
+    menuId: undefined as string | undefined,
     sortOrder: 0,
   })
   const [isSaving, setIsSaving] = useState(false)
@@ -107,14 +107,15 @@ export function ManageCategoriesModal({
     if (menuFilter === "all") {
       return categories
     }
-    return categories.filter(cat => cat.menuId === parseInt(menuFilter))
+    // Menu IDs are now UUIDs (strings)
+    return categories.filter(cat => String(cat.menuId) === menuFilter)
   }, [categories, menuFilter])
 
   // Group categories by menu for display
   const groupedCategories = useMemo(() => {
     const grouped: Record<string, MenuCategory[]> = {}
     filteredCategories.forEach(cat => {
-      const menu = menus.find(m => m.id === cat.menuId)
+      const menu = menus.find(m => String(m.id) === String(cat.menuId))
       const menuName = menu?.name || 'Uncategorized'
       if (!grouped[menuName]) {
         grouped[menuName] = []
@@ -288,9 +289,10 @@ export function ManageCategoriesModal({
                 Menu <span className="text-destructive">*</span>
               </Label>
               <Select
-                value={formData.menuId?.toString() || ""}
+                value={formData.menuId || ""}
                 onValueChange={(value) => {
-                  setFormData({ ...formData, menuId: parseInt(value) })
+                  // Menu IDs are now UUIDs (strings)
+                  setFormData({ ...formData, menuId: value || undefined })
                 }}
               >
                 <SelectTrigger id="menu" className={errors.menuId ? 'border-destructive' : ''}>
@@ -398,7 +400,7 @@ export function ManageCategoriesModal({
                         </TableHeader>
                         <TableBody>
                           {categoryGroup.map((category) => {
-                            const menu = menus.find(m => m.id === category.menuId)
+                            const menu = menus.find(m => String(m.id) === String(category.menuId))
                             return (
                               <TableRow key={category.id}>
                                 <TableCell className="font-medium">{category.name}</TableCell>

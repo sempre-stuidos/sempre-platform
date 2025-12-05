@@ -35,7 +35,7 @@ export function MenuItemForm({
 }: MenuItemFormProps) {
   const [formData, setFormData] = useState({
     name: "",
-    menuId: undefined as number | undefined,
+    menuId: undefined as string | undefined,
     menuCategoryId: undefined as number | undefined,
     description: "",
     price: "",
@@ -56,8 +56,8 @@ export function MenuItemForm({
   // When editing, also include the current category even if it's from a different menu (for display purposes)
   const filteredCategories = formData.menuId
     ? categories.filter(cat => {
-        // Show categories for the selected menu
-        if (cat.menuId === formData.menuId) return true
+        // Show categories for the selected menu (menu IDs are UUIDs/strings)
+        if (String(cat.menuId) === String(formData.menuId)) return true
         // When editing, also show the current category if it exists (so it doesn't disappear)
         if (initialItem && cat.id === initialItem.menuCategoryId) return true
         return false
@@ -156,7 +156,7 @@ export function MenuItemForm({
       newErrors.name = 'Name is required'
     }
 
-    if (!formData.menuId || isNaN(formData.menuId) || formData.menuId <= 0) {
+    if (!formData.menuId) {
       newErrors.menuId = 'Menu is required'
     }
 
@@ -282,20 +282,18 @@ export function MenuItemForm({
                 Menu <span className="text-destructive">*</span>
               </Label>
               <Select
-                value={formData.menuId?.toString() || ""}
+                value={formData.menuId || ""}
                 onValueChange={(value) => {
                   if (value && value !== "") {
-                    const parsedMenuId = parseInt(value, 10)
-                    if (!isNaN(parsedMenuId) && parsedMenuId > 0) {
-                      // Only clear category if the menu actually changed
-                      const newCategoryId = formData.menuId === parsedMenuId 
-                        ? formData.menuCategoryId 
-                        : undefined
-                      setFormData({ ...formData, menuId: parsedMenuId, menuCategoryId: newCategoryId })
-                      // Clear menuId error if it exists
-                      if (errors.menuId) {
-                        setErrors({ ...errors, menuId: '' })
-                      }
+                    // Menu IDs are now UUIDs (strings)
+                    // Only clear category if the menu actually changed
+                    const newCategoryId = formData.menuId === value 
+                      ? formData.menuCategoryId 
+                      : undefined
+                    setFormData({ ...formData, menuId: value, menuCategoryId: newCategoryId })
+                    // Clear menuId error if it exists
+                    if (errors.menuId) {
+                      setErrors({ ...errors, menuId: '' })
                     }
                   } else {
                     setFormData({ ...formData, menuId: undefined, menuCategoryId: undefined })

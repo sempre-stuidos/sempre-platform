@@ -22,7 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { IconPlus, IconEdit, IconArchive, IconEye, IconEyeOff, IconSearch, IconX, IconDotsVertical, IconTrash } from "@tabler/icons-react"
+import { IconPlus, IconEdit, IconArchive, IconEye, IconEyeOff, IconSearch, IconX, IconDotsVertical, IconTrash, IconChevronLeft, IconChevronRight } from "@tabler/icons-react"
 import { MenuItem, MenuCategory, MenuType, Menu } from "@/lib/types"
 import { MenuItemForm } from "./menu-item-form"
 import { ManageCategoriesModal } from "./manage-categories-modal"
@@ -58,6 +58,10 @@ export function MenuManagement({
   const [visibleOnly, setVisibleOnly] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 6
 
   // Fetch menus, items and categories
   const fetchData = async () => {
@@ -107,12 +111,21 @@ export function MenuManagement({
         console.log('Fetched categories:', fetchedCategories)
         console.log('Number of categories:', fetchedCategories?.length || 0)
         setCategories(fetchedCategories || [])
-      } else if (categoriesRes.status === 404) {
-        // No client linked - use empty array (dummy mode)
-        setCategories([])
       } else {
-        console.error('Error fetching categories:', categoriesRes.status, await categoriesRes.text())
-        setCategories([])
+        let errorData: { error?: string; details?: string } = {};
+        try {
+          errorData = await categoriesRes.json();
+        } catch {
+          const errorText = await categoriesRes.text();
+          errorData = { error: errorText };
+        }
+        console.error('Error fetching categories:', categoriesRes.status, errorData)
+        // Show error to user
+        toast.error(`Failed to fetch categories: ${errorData.error || errorData.details || 'Unknown error'}`)
+        // Don't set empty array on error - keep existing categories if any
+        if (categoriesRes.status === 404) {
+          setCategories([])
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -132,13 +145,14 @@ export function MenuManagement({
   const filteredItems = useMemo(() => {
     let filtered = [...items]
 
-    // Apply filters
+    // Apply filters (menu IDs are now UUIDs)
     if (menuFilter !== "all") {
-      filtered = filtered.filter(item => item.menuId === parseInt(menuFilter))
+      filtered = filtered.filter(item => String(item.menuId) === menuFilter);
     }
 
     if (categoryFilter !== "all") {
-      filtered = filtered.filter(item => item.menuCategoryId === parseInt(categoryFilter))
+      const categoryFilterNum = Number(categoryFilter);
+      filtered = filtered.filter(item => item.menuCategoryId === categoryFilterNum);
     }
 
     if (visibleOnly) {
@@ -159,6 +173,17 @@ export function MenuManagement({
 
     return filtered
   }, [items, menuFilter, categoryFilter, visibleOnly, showArchived, searchQuery])
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedItems = filteredItems.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [menuFilter, categoryFilter, visibleOnly, showArchived, searchQuery])
 
   const handleSave = async (itemData: Partial<MenuItem>) => {
     try {
@@ -381,7 +406,11 @@ export function MenuManagement({
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
             {categories
-              .filter(cat => menuFilter === "all" || cat.menuId === parseInt(menuFilter))
+              .filter(cat => {
+                if (menuFilter === "all") return true;
+                // Menu IDs are now UUIDs (strings)
+                return String(cat.menuId) === menuFilter;
+              })
               .map((category) => (
                 <SelectItem key={category.id} value={category.id.toString()}>
                   {category.name}
@@ -442,8 +471,8 @@ export function MenuManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredItems.map((item) => {
-                const menu = menus.find(m => m.id === item.menuId)
+              {paginatedItems.map((item) => {
+                const menu = menus.find(m => String(m.id) === String(item.menuId))
                 const category = categories.find(c => c.id === item.menuCategoryId)
                 const truncatedDescription = item.description 
                   ? (item.description.length > 30 ? item.description.substring(0, 30) + '...' : item.description)
@@ -556,6 +585,63 @@ export function MenuManagement({
               })}
             </TableBody>
           </Table>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t px-4 py-3">
+              <div className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredItems.length)} of {filteredItems.length} items
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <IconChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    // Show first page, last page, current page, and pages around current
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className="min-w-[2.5rem]"
+                        >
+                          {page}
+                        </Button>
+                      )
+                    } else if (
+                      page === currentPage - 2 ||
+                      page === currentPage + 2
+                    ) {
+                      return <span key={page} className="px-2">...</span>
+                    }
+                    return null
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <IconChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

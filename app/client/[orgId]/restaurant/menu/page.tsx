@@ -1,8 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getOrganizationById, getUserRoleInOrg } from '@/lib/businesses';
-import { getMenuItems } from '@/lib/menu';
-import { getMenuCategories } from '@/lib/menu-categories';
+import { getOrganizationById } from '@/lib/businesses';
 import { supabaseAdmin } from '@/lib/supabase';
 import { MenuManagement } from '@/components/menu-management';
 
@@ -42,7 +40,7 @@ export default async function MenuPage({ params }: MenuPageProps) {
     const { data: clients } = await supabase
       .from('clients')
       .select('id')
-      .eq('organization_id', orgId)
+      .eq('business_id', orgId)
       .limit(1)
       .single();
     
@@ -51,12 +49,8 @@ export default async function MenuPage({ params }: MenuPageProps) {
     }
   }
 
-  const [menuItems, categories] = clientId
-    ? await Promise.all([
-        getMenuItems(clientId),
-        getMenuCategories(clientId),
-      ])
-    : [[], []];
+  // The MenuManagement component fetches data via API on mount
+  // Pass empty arrays - the component will fetch via API (menu IDs are now UUIDs)
 
   // Use a dummy clientId if none exists (for UI display purposes)
   const displayClientId = clientId || 0;
@@ -68,8 +62,8 @@ export default async function MenuPage({ params }: MenuPageProps) {
           <MenuManagement
             orgId={orgId}
             clientId={displayClientId}
-            initialItems={menuItems}
-            initialCategories={categories}
+            initialItems={[]}
+            initialCategories={[]}
           />
         </div>
       </div>

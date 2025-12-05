@@ -233,7 +233,7 @@ export interface GalleryImage {
 export type MenuType = 'brunch' | 'dinner' | 'lunch' | 'breakfast' | 'dessert' | null;
 
 export interface Menu {
-  id: number;
+  id: string; // UUID
   organizationId: string;
   name: string;
   description?: string;
@@ -244,7 +244,7 @@ export interface Menu {
 
 export interface MenuCategory {
   id: number;
-  menuId: number;
+  menuId: string; // UUID
   menuType?: MenuType;
   name: string;
   slug: string;
@@ -258,7 +258,7 @@ export interface MenuCategory {
 
 export interface MenuItem {
   id: number;
-  menuId: number;
+  menuId: string; // UUID
   menuCategoryId?: number;
   menuType?: MenuType;
   name: string;

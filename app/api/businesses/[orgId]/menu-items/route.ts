@@ -55,15 +55,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     let items: MenuItem[] = [];
 
+    // Query menu items (menu IDs are now UUIDs)
+    let query = supabase
+      .from('menu_items')
+      .select('*');
+
     if (menuIdParam && menuIdParam !== "all") {
       // Fetch items for a specific menu
-      const menuId = parseInt(menuIdParam);
-      items = await getMenuItems(menuId, {
-        categoryId,
-        visibleOnly,
-        includeArchived,
-        search,
-      }, supabase);
+      query = query.eq('menu_id', menuIdParam);
     } else {
       // Fetch items from all menus for this business
       const { data: menus, error: menusError } = await supabase
@@ -80,21 +79,67 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         );
       }
 
-      // Fetch items from all menus
       if (menus && menus.length > 0) {
         const menuIds = menus.map(m => m.id);
-        const allItemsPromises = menuIds.map(menuId => 
-          getMenuItems(menuId, {
-            categoryId,
-            visibleOnly,
-            includeArchived,
-            search,
-          }, supabase)
-        );
-        const allItemsArrays = await Promise.all(allItemsPromises);
-        items = allItemsArrays.flat();
+        query = query.in('menu_id', menuIds);
+      } else {
+        // No menus found, return empty array
+        return NextResponse.json({ items: [] });
       }
     }
+
+    // Apply filters
+    if (categoryId !== undefined) {
+      query = query.eq('menu_category_id', categoryId);
+    }
+
+    if (visibleOnly) {
+      query = query.eq('is_visible', true);
+    }
+
+    if (!includeArchived) {
+      query = query.eq('is_archived', false);
+    }
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+
+    query = query
+      .order('position', { ascending: true, nullsLast: true })
+      .order('name', { ascending: true });
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching menu items:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch menu items' },
+        { status: 500 }
+      );
+    }
+
+    // Transform to MenuItem format
+    items = (data || []).map((item: any) => {
+      const priceCents = item.price_cents;
+      const price = item.price ? parseFloat(String(item.price)) : undefined;
+      
+      return {
+        id: item.id,
+        menuId: item.menu_id, // UUID
+        menuCategoryId: item.menu_category_id || item.category_id,
+        name: item.name,
+        description: item.description,
+        price: price,
+        priceCents: priceCents || (price ? Math.round(price * 100) : undefined),
+        isVisible: item.is_visible !== false,
+        isFeatured: item.is_featured || false,
+        position: item.position || 0,
+        isArchived: item.is_archived || false,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+      } as MenuItem;
+    });
 
     return NextResponse.json({ items });
   } catch (error) {
