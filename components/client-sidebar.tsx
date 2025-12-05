@@ -60,19 +60,9 @@ const getClientNavItems = (orgId: string, businessType?: string) => {
     ],
     restaurant: isRestaurant ? [
       {
-        title: "Analytics",
-        url: `/client/${orgId}/analytics`,
-        icon: IconChartBar,
-      },
-      {
         title: "Reservations",
         url: `/client/${orgId}/reservations`,
         icon: IconCalendar,
-      },
-      {
-        title: "Reports",
-        url: `/client/${orgId}/reports`,
-        icon: IconReport,
       },
       {
         title: "Menu",
@@ -83,6 +73,18 @@ const getClientNavItems = (orgId: string, businessType?: string) => {
         title: "Events",
         url: `/client/${orgId}/events`,
         icon: IconCalendar,
+      },
+    ] : [],
+    data: isRestaurant ? [
+      {
+        title: "Analytics",
+        url: `/client/${orgId}/analytics`,
+        icon: IconChartBar,
+      },
+      {
+        title: "Reports",
+        url: `/client/${orgId}/reports`,
+        icon: IconReport,
       },
     ] : [],
     retail: isRetail ? [
@@ -180,7 +182,7 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
 
   // Get business type, default to 'restaurant' if not available
   const businessType = business?.type || 'restaurant'
-  const navItems = orgId ? getClientNavItems(orgId, businessType) : { main: [], restaurant: [], retail: [], help: [], site: [] }
+  const navItems = orgId ? getClientNavItems(orgId, businessType) : { main: [], restaurant: [], retail: [], help: [], site: [], data: [] }
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -311,32 +313,63 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Help & Support</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.help.map((item) => {
-                const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
-                
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip={item.title}
-                      className="hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
-                      data-active={isActive}
-                    >
-                      <a href={item.url}>
-                        {item.icon && <item.icon />}
-                        <span>{item.title}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {navItems.data.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Data</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navItems.data.map((item) => {
+                  const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
+                  
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton 
+                        asChild 
+                        tooltip={item.title}
+                        className="hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
+                        data-active={isActive}
+                      >
+                        <a href={item.url}>
+                          {item.icon && <item.icon />}
+                          <span>{item.title}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+        {/* Help & Support group hidden for now */}
+        {false && navItems.help.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Help & Support</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navItems.help.map((item) => {
+                  const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
+                  
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton 
+                        asChild 
+                        tooltip={item.title}
+                        className="hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
+                        data-active={isActive}
+                      >
+                        <a href={item.url}>
+                          {item.icon && <item.icon />}
+                          <span>{item.title}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>

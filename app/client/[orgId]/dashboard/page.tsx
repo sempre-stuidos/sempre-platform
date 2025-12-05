@@ -4,7 +4,7 @@ import { getOrganizationById, getUserRoleInOrg } from '@/lib/businesses';
 import { getOrganizationByClientId } from '@/lib/businesses';
 import { supabaseAdmin } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction, CardFooter } from '@/components/ui/card';
-import { IconMenu2, IconPhoto, IconFileText, IconTrendingUp, IconShoppingCart, IconPackage, IconUsers } from '@tabler/icons-react';
+import { IconMenu2, IconFileText, IconTrendingUp, IconShoppingCart, IconPackage, IconUsers, IconCalendar } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { ChartSiteAnalytics, SiteAnalyticsData } from '@/components/chart-site-analytics';
 
@@ -60,24 +60,62 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
 
   // Get stats based on business type
   let menuItemsCount = 0;
-  let galleryImagesCount = 0;
+  let eventsCount = 0;
   let sectionsCount = 0;
   let ordersCount = 0;
   let productsCount = 0;
   let activeProductsCount = 0;
   let customersCount = 0;
 
-  if (isRestaurant && clientId) {
-    // Restaurant stats - require clientId
-    const [menuResult, galleryResult, sectionsResult] = await Promise.all([
-      supabaseServer.from('menu_items').select('id', { count: 'exact', head: true }).eq('client_id', clientId),
-      supabaseServer.from('gallery_images').select('id', { count: 'exact', head: true }).eq('client_id', clientId),
-      supabaseServer.from('page_sections').select('id', { count: 'exact', head: true }).eq('client_id', clientId),
-    ]);
+  if (isRestaurant) {
+    // Restaurant stats - query by business_id (orgId)
+    try {
+      // Get menu items count: Get all menus for this business, then count items in those menus
+      const { data: menus } = await supabaseServer
+        .from('menus')
+        .select('id')
+        .eq('business_id', orgId)
+        .eq('is_active', true);
+      
+      if (menus && menus.length > 0) {
+        const menuIds = menus.map(m => m.id);
+        const { count: menuItemsCountResult } = await supabaseServer
+          .from('menu_items')
+          .select('id', { count: 'exact', head: true })
+          .in('menu_id', menuIds)
+          .eq('is_archived', false);
+        menuItemsCount = menuItemsCountResult || 0;
+      } else {
+        menuItemsCount = 0;
+      }
 
-    menuItemsCount = menuResult.count || 0;
-    galleryImagesCount = galleryResult.count || 0;
-    sectionsCount = sectionsResult.count || 0;
+      // Get events count: Count all events for this organization
+      const { count: eventsCountResult } = await supabaseServer
+        .from('events')
+        .select('id', { count: 'exact', head: true })
+        .eq('org_id', orgId);
+      eventsCount = eventsCountResult || 0;
+
+      // Get page sections count: Get all pages for this org, then count sections in page_sections_v2
+      const { data: pages } = await supabaseServer
+        .from('pages')
+        .select('id')
+        .eq('org_id', orgId);
+      
+      if (pages && pages.length > 0) {
+        const pageIds = pages.map(p => p.id);
+        const { count: sectionsCountResult } = await supabaseServer
+          .from('page_sections_v2')
+          .select('id', { count: 'exact', head: true })
+          .in('page_id', pageIds);
+        sectionsCount = sectionsCountResult || 0;
+      } else {
+        sectionsCount = 0;
+      }
+    } catch (error) {
+      console.error('Error fetching restaurant stats:', error);
+      // Keep default values of 0
+    }
   } else if (isRetail) {
     // Retail stats - query directly by business_id (orgId), no clientId needed
     try {
@@ -183,23 +221,23 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
 
               <Card className="@container/card">
                 <CardHeader>
-                  <CardDescription>Gallery Images</CardDescription>
+                  <CardDescription>Events</CardDescription>
                   <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-                    {galleryImagesCount}
+                    {eventsCount}
                   </CardTitle>
                   <CardAction>
                     <Badge variant="outline">
-                      <IconPhoto className="size-4" />
-                      Images
+                      <IconCalendar className="size-4" />
+                      Total events
                     </Badge>
                   </CardAction>
                 </CardHeader>
                 <CardFooter className="flex-col items-start gap-1.5 text-sm">
                   <div className="line-clamp-1 flex gap-2 font-medium">
-                    Visual content gallery <IconTrendingUp className="size-4" />
+                    Event management <IconTrendingUp className="size-4" />
                   </div>
                   <div className="text-muted-foreground">
-                    Showcase your restaurant photos
+                    Manage your restaurant events and promotions
                   </div>
                 </CardFooter>
               </Card>
