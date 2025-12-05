@@ -1,10 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import Link from 'next/link';
 import { getOrganizationById, getUserRoleInOrg } from '@/lib/businesses';
 import { getOrganizationByClientId } from '@/lib/businesses';
 import { supabaseAdmin } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction, CardFooter } from '@/components/ui/card';
-import { IconMenu2, IconFileText, IconTrendingUp, IconShoppingCart, IconPackage, IconUsers, IconCalendar } from '@tabler/icons-react';
+import { IconMenu2, IconTrendingUp, IconShoppingCart, IconPackage, IconUsers, IconCalendar } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { ChartSiteAnalytics, SiteAnalyticsData } from '@/components/chart-site-analytics';
 
@@ -61,7 +62,7 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
   // Get stats based on business type
   let menuItemsCount = 0;
   let eventsCount = 0;
-  let sectionsCount = 0;
+  let reservationsCount = 0;
   let ordersCount = 0;
   let productsCount = 0;
   let activeProductsCount = 0;
@@ -96,22 +97,12 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
         .eq('org_id', orgId);
       eventsCount = eventsCountResult || 0;
 
-      // Get page sections count: Get all pages for this org, then count sections in page_sections_v2
-      const { data: pages } = await supabaseServer
-        .from('pages')
-        .select('id')
+      // Get reservations count: Count all reservations for this organization
+      const { count: reservationsCountResult } = await supabaseServer
+        .from('reservations')
+        .select('id', { count: 'exact', head: true })
         .eq('org_id', orgId);
-      
-      if (pages && pages.length > 0) {
-        const pageIds = pages.map(p => p.id);
-        const { count: sectionsCountResult } = await supabaseServer
-          .from('page_sections_v2')
-          .select('id', { count: 'exact', head: true })
-          .in('page_id', pageIds);
-        sectionsCount = sectionsCountResult || 0;
-      } else {
-        sectionsCount = 0;
-      }
+      reservationsCount = reservationsCountResult || 0;
     } catch (error) {
       console.error('Error fetching restaurant stats:', error);
       // Keep default values of 0
@@ -214,7 +205,9 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
                     Restaurant menu management <IconTrendingUp className="size-4" />
                   </div>
                   <div className="text-muted-foreground">
-                    Manage your menu items and pricing
+                    <Link href={`/client/${orgId}/restaurant/menu`} className="hover:text-primary hover:underline transition-colors">
+                      Manage your menu items and pricing
+                    </Link>
                   </div>
                 </CardFooter>
               </Card>
@@ -237,30 +230,34 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
                     Event management <IconTrendingUp className="size-4" />
                   </div>
                   <div className="text-muted-foreground">
-                    Manage your restaurant events and promotions
+                    <Link href={`/client/${orgId}/events`} className="hover:text-primary hover:underline transition-colors">
+                      Manage your restaurant events
+                    </Link>
                   </div>
                 </CardFooter>
               </Card>
 
               <Card className="@container/card">
                 <CardHeader>
-                  <CardDescription>Page Sections</CardDescription>
+                  <CardDescription>Reservations</CardDescription>
                   <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-                    {sectionsCount}
+                    {reservationsCount}
                   </CardTitle>
                   <CardAction>
                     <Badge variant="outline">
-                      <IconFileText className="size-4" />
-                      Sections
+                      <IconCalendar className="size-4" />
+                      Total reservations
                     </Badge>
                   </CardAction>
                 </CardHeader>
                 <CardFooter className="flex-col items-start gap-1.5 text-sm">
                   <div className="line-clamp-1 flex gap-2 font-medium">
-                    Content sections <IconTrendingUp className="size-4" />
+                    Reservation management <IconTrendingUp className="size-4" />
                   </div>
                   <div className="text-muted-foreground">
-                    Customize your page content
+                    <Link href={`/client/${orgId}/reservations`} className="hover:text-primary hover:underline transition-colors">
+                      View and manage customer reservations
+                    </Link>
                   </div>
                 </CardFooter>
               </Card>
