@@ -4,7 +4,7 @@
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS reservations (
-    id BIGSERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     client_id BIGINT REFERENCES clients(id) ON DELETE CASCADE,
     org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
     customer_name TEXT NOT NULL,

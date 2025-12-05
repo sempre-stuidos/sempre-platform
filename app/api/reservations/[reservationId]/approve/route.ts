@@ -121,9 +121,22 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .eq('id', reservationId);
 
     if (updateError) {
-      console.error('Error updating reservation:', updateError);
+      console.error('Error updating reservation:', {
+        error: updateError,
+        code: updateError.code,
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint,
+        reservationId,
+        orgId: reservation.org_id,
+        userId: user.id,
+      });
       return NextResponse.json(
-        { error: 'Failed to approve reservation' },
+        { 
+          error: 'Failed to approve reservation',
+          details: updateError.message || 'Unknown error',
+          code: updateError.code
+        },
         { status: 500 }
       );
     }

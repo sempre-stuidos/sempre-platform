@@ -36,34 +36,25 @@ export async function getUserProfile(userId: string): Promise<Profile | null> {
  */
 export async function getOrCreateUserProfile(userId: string): Promise<Profile | null> {
   try {
-    // Try to get existing profile
-    const existingProfile = await getUserProfile(userId);
+    // Use upsert function to safely create or get profile
+    const { data, error } = await supabaseAdmin.rpc('upsert_profile', {
+      p_user_id: userId,
+      p_full_name: null,
+      p_avatar_url: null,
+      p_default_role: null,
+    });
 
-    if (existingProfile) {
-      return existingProfile;
+    if (error) {
+      console.error('Error upserting profile:', error);
+      // Fallback to get existing profile
+      return await getUserProfile(userId);
     }
 
-    // Create new profile if it doesn't exist
-    const { data, error } = await supabaseAdmin
-      .from('profiles')
-      .insert({
-        id: userId,
-        full_name: null,
-        avatar_url: null,
-        default_role: null,
-      })
-      .select()
-      .single();
-
-    if (error || !data) {
-      console.error('Error creating profile:', error);
-      return null;
-    }
-
-    return data;
+    return data as Profile | null;
   } catch (error) {
     console.error('Error in getOrCreateUserProfile:', error);
-    return null;
+    // Fallback to get existing profile
+    return await getUserProfile(userId);
   }
 }
 
@@ -101,42 +92,25 @@ export async function updateUserProfile(
  */
 export async function ensureProfileExists(userId: string): Promise<Profile | null> {
   try {
-    const profile = await getUserProfile(userId);
-
-    if (profile) {
-      return profile;
-    }
-
-    // Create profile if it doesn't exist
-    const { data, error } = await supabaseAdmin
-      .from('profiles')
-      .insert({
-        id: userId,
-        full_name: null,
-        avatar_url: null,
-        default_role: null,
-      })
-      .select()
-      .single();
+    // Use upsert function to safely create or get profile
+    const { data, error } = await supabaseAdmin.rpc('upsert_profile', {
+      p_user_id: userId,
+      p_full_name: null,
+      p_avatar_url: null,
+      p_default_role: null,
+    });
 
     if (error) {
-      // If profile already exists (duplicate key), try to fetch it
-      if (error.code === '23505') {
-        console.log('Profile already exists, fetching it:', userId);
-        return await getUserProfile(userId);
-      }
-      console.error('Error creating profile:', error);
-      return null;
+      console.error('Error upserting profile:', error);
+      // Fallback to get existing profile
+      return await getUserProfile(userId);
     }
 
-    if (!data) {
-      return null;
-    }
-
-    return data;
+    return data as Profile | null;
   } catch (error) {
     console.error('Error in ensureProfileExists:', error);
-    return null;
+    // Fallback to get existing profile
+    return await getUserProfile(userId);
   }
 }
 

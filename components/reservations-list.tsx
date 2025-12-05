@@ -35,7 +35,7 @@ import {
 import { toast } from "sonner"
 
 interface Reservation {
-  id: number
+  id: string // UUID
   customer_name: string
   customer_email: string
   customer_phone?: string
@@ -116,7 +116,7 @@ function formatTime(timeString: string): string {
   return `${hour12}:${minutes} ${ampm}`
 }
 
-async function approveReservation(reservationId: number) {
+async function approveReservation(reservationId: string) {
   try {
     const response = await fetch(`/api/reservations/${reservationId}/approve`, {
       method: 'POST',
@@ -139,7 +139,7 @@ async function approveReservation(reservationId: number) {
   }
 }
 
-async function rejectReservation(reservationId: number) {
+async function rejectReservation(reservationId: string) {
   try {
     const response = await fetch(`/api/reservations/${reservationId}/reject`, {
       method: 'POST',
@@ -162,7 +162,7 @@ async function rejectReservation(reservationId: number) {
   }
 }
 
-async function cancelReservation(reservationId: number) {
+async function cancelReservation(reservationId: string) {
   try {
     const response = await fetch(`/api/reservations/${reservationId}/reject`, {
       method: 'POST',
@@ -184,7 +184,7 @@ async function cancelReservation(reservationId: number) {
   }
 }
 
-async function markAsCompleted(reservationId: number) {
+async function markAsCompleted(reservationId: string) {
   try {
     const response = await fetch(`/api/reservations/${reservationId}/complete`, {
       method: 'POST',
@@ -206,7 +206,7 @@ async function markAsCompleted(reservationId: number) {
   }
 }
 
-async function archiveReservation(reservationId: number) {
+async function archiveReservation(reservationId: string) {
   try {
     const response = await fetch(`/api/reservations/${reservationId}/archive`, {
       method: 'POST',
