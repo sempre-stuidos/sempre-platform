@@ -47,7 +47,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
     const { name, description, isActive } = body;
 
-    const menu = await updateMenu(parseInt(menuId), {
+    const menu = await updateMenu(menuId, {
       name,
       description,
       isActive,
@@ -103,7 +103,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const success = await deleteMenu(parseInt(menuId), supabase);
+    const success = await deleteMenu(menuId, supabase);
 
     if (!success) {
       return NextResponse.json(

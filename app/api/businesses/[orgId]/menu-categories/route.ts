@@ -85,7 +85,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     query = query
-      .order('sort_order', { ascending: true, nullsLast: true })
+      .order('sort_order', { ascending: true, nullsFirst: false })
       .order('name', { ascending: true });
 
     const { data, error } = await query;
