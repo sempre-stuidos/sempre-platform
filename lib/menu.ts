@@ -204,6 +204,15 @@ export async function createMenuItem(
     const record = transformMenuItemToRecord({ ...menuItem, menuId });
     console.log('Creating menu item with record:', JSON.stringify(record, null, 2));
     console.log('Menu ID:', menuId);
+    console.log('Menu item input:', JSON.stringify(menuItem, null, 2));
+    
+    // Ensure required fields are present
+    if (!record.name) {
+      throw new Error('Name is required for menu item');
+    }
+    if (!record.menu_id) {
+      throw new Error('Menu ID is required for menu item');
+    }
 
     const { data, error } = await client
       .from('menu_items')
@@ -218,13 +227,15 @@ export async function createMenuItem(
       console.error('Error details:', error.details);
       console.error('Error hint:', error.hint);
       console.error('Full error:', JSON.stringify(error, null, 2));
+      // Re-throw the error so the API route can handle it properly
       throw error;
     }
 
     return data ? transformMenuItemRecord(data) : null;
   } catch (error) {
     console.error('Error in createMenuItem:', error);
-    return null;
+    // Re-throw instead of returning null so we can get the actual error
+    throw error;
   }
 }
 
@@ -285,13 +296,17 @@ export async function archiveMenuItem(
 
     if (error) {
       console.error('Error archiving menu item:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      console.error('Error details:', error.details);
+      console.error('Error hint:', error.hint);
       throw error;
     }
 
     return true;
   } catch (error) {
     console.error('Error in archiveMenuItem:', error);
-    return false;
+    throw error; // Re-throw so the API route can handle it
   }
 }
 

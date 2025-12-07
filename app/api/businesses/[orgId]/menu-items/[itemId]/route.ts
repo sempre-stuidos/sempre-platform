@@ -203,10 +203,20 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in DELETE /api/businesses/[orgId]/menu-items/[itemId]:', error);
+    const errorMessage = error?.message || error?.error?.message || 'Unknown error';
+    const errorCode = error?.code || error?.error?.code;
+    const errorDetails = error?.details || error?.error?.details;
+    const errorHint = error?.hint || error?.error?.hint;
+    
     return NextResponse.json(
-      { error: 'Failed to archive menu item' },
+      { 
+        error: `Failed to archive menu item: ${errorMessage}`,
+        ...(errorCode && { code: errorCode }),
+        ...(errorDetails && { details: errorDetails }),
+        ...(errorHint && { hint: errorHint }),
+      },
       { status: 500 }
     );
   }

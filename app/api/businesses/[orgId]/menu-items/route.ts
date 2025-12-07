@@ -3,7 +3,6 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserRoleInOrg } from '@/lib/businesses';
 import { getMenuItems, createMenuItem } from '@/lib/menu';
-import { getOrCreateDefaultMenu } from '@/lib/menus';
 import { MenuItem } from '@/lib/types';
 
 interface RouteParams {
@@ -184,64 +183,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get or create client linked to this business
-    let clientData: { id: number } | null = null;
-    
-    // First, try to find existing client
-    const { data: existingClient } = await supabase
-      .from('clients')
-      .select('id')
-      .eq('business_id', orgId)
-      .limit(1)
-      .single();
-
-    if (existingClient) {
-      clientData = existingClient;
-    } else {
-      // No client found - create one automatically
-      const { data: orgData } = await supabase
-        .from('businesses')
-        .select('name')
-        .eq('id', orgId)
-        .single();
-
-      const clientName = orgData?.name || 'Restaurant Client';
-      const today = new Date().toISOString().split('T')[0];
-
-      const { data: newClient, error: createError } = await supabase
-        .from('clients')
-        .insert([{
-          name: clientName,
-          business_type: 'Restaurant',
-          status: 'Active',
-          priority: 'Medium',
-          contact_email: user.email || 'client@example.com',
-          last_contact: today,
-          business_id: orgId,
-        }])
-        .select('id')
-        .single();
-
-      if (createError || !newClient) {
-        console.error('Error creating client:', createError);
-        return NextResponse.json(
-          { error: 'Failed to create client' },
-          { status: 500 }
-        );
-      }
-
-      clientData = newClient;
-    }
-
-    // Get or create menu for this business
-    const menu = await getOrCreateDefaultMenu(orgId, supabase);
-    if (!menu) {
-      return NextResponse.json(
-        { error: 'Failed to get or create menu' },
-        { status: 500 }
-      );
-    }
-
     const body = await request.json();
     const { 
       name, 
@@ -286,17 +227,30 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }, supabase);
 
     if (!item) {
+      // Log more details about why creation failed
+      console.error('createMenuItem returned null - checking for errors');
       return NextResponse.json(
-        { error: 'Failed to create menu item' },
+        { error: 'Failed to create menu item. Check server logs for details.' },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ item });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in POST /api/businesses/[orgId]/menu-items:', error);
+    const errorMessage = error?.message || error?.error?.message || 'Unknown error';
+    const errorCode = error?.code || error?.error?.code;
+    const errorDetails = error?.details || error?.error?.details;
+    const errorHint = error?.hint || error?.error?.hint;
+    
+    // Return more detailed error information
     return NextResponse.json(
-      { error: 'Failed to create menu item' },
+      { 
+        error: `Failed to create menu item: ${errorMessage}`,
+        ...(errorCode && { code: errorCode }),
+        ...(errorDetails && { details: errorDetails }),
+        ...(errorHint && { hint: errorHint }),
+      },
       { status: 500 }
     );
   }
