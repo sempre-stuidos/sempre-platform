@@ -92,14 +92,39 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { title, short_description, description, image_url, event_type, starts_at, ends_at, publish_start_at, publish_end_at, status, is_featured } = body;
+    const { title, short_description, description, image_url, event_type, starts_at, ends_at, publish_start_at, publish_end_at, status, is_featured, is_weekly, day_of_week } = body;
 
-    // Validate required fields
-    if (!title || !starts_at || !ends_at) {
+    // Validate required fields based on event type
+    if (!title) {
       return NextResponse.json(
-        { error: 'Title, starts_at, and ends_at are required' },
+        { error: 'Title is required' },
         { status: 400 }
       );
+    }
+
+    if (is_weekly) {
+      // For weekly events, require day_of_week
+      if (day_of_week === undefined || day_of_week === null) {
+        return NextResponse.json(
+          { error: 'day_of_week is required for weekly events' },
+          { status: 400 }
+        );
+      }
+      if (day_of_week < 0 || day_of_week > 6) {
+        return NextResponse.json(
+          { error: 'day_of_week must be between 0 (Sunday) and 6 (Saturday)' },
+          { status: 400 }
+        );
+      }
+      // starts_at and ends_at are optional for weekly events (time is stored in them)
+    } else {
+      // For one-time events, require starts_at and ends_at
+      if (!starts_at || !ends_at) {
+        return NextResponse.json(
+          { error: 'starts_at and ends_at are required for one-time events' },
+          { status: 400 }
+        );
+      }
     }
 
     // Compute status if not provided
@@ -110,19 +135,28 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     } as Partial<Event>);
 
     // Clean up empty strings to null for optional fields
-    const cleanEventData = {
+    // Handle null explicitly for publish_end_at (for indefinite weekly events)
+    const cleanEventData: Record<string, unknown> = {
       title,
       short_description: short_description || undefined,
       description: description || undefined,
       image_url: image_url || undefined,
       event_type: event_type || undefined,
-      starts_at,
-      ends_at,
+      starts_at: starts_at || undefined,
+      ends_at: ends_at || undefined,
       publish_start_at: publish_start_at || undefined,
-      publish_end_at: publish_end_at || undefined,
       status: computedStatus,
       is_featured: is_featured || false,
+      is_weekly: is_weekly || false,
+      day_of_week: is_weekly ? day_of_week : undefined,
     };
+    
+    // Handle publish_end_at separately to preserve null values
+    if (publish_end_at === null) {
+      cleanEventData.publish_end_at = null;
+    } else if (publish_end_at) {
+      cleanEventData.publish_end_at = publish_end_at;
+    }
 
     const event = await createEvent(
       orgId,

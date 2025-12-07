@@ -14,7 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Switch } from "@/components/ui/switch"
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { EventStatusBadge } from "@/components/event-status-badge"
 import { Event } from "@/lib/types"
@@ -38,6 +39,8 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
     description: event?.description || '',
     event_type: event?.event_type || '',
     image_url: event?.image_url || '',
+    is_weekly: event?.is_weekly || false,
+    day_of_week: event?.day_of_week !== undefined ? event.day_of_week : undefined,
     start_date: event?.starts_at ? new Date(event.starts_at).toISOString().split('T')[0] : '',
     start_time: event?.starts_at ? new Date(event.starts_at).toTimeString().slice(0, 5) : '',
     end_date: event?.ends_at ? new Date(event.ends_at).toISOString().split('T')[0] : '',
@@ -48,6 +51,8 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
     publish_end_date: event?.publish_end_at ? new Date(event.publish_end_at).toISOString().split('T')[0] : '',
     publish_end_time: event?.publish_end_at ? new Date(event.publish_end_at).toTimeString().slice(0, 5) : '',
     is_featured: event?.is_featured || false,
+    is_indefinite: !event?.publish_end_at, // If no publish_end_at, it's indefinite
+    is_live: event?.status === 'live' || event?.status === 'scheduled', // For weekly events, determine if live
   })
 
   const [errors, setErrors] = React.useState<Record<string, string>>({})
@@ -117,6 +122,18 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
 
   // Compute current status - use event status from DB if available, otherwise compute from form data
   const computedStatus = React.useMemo(() => {
+    // For weekly events, use is_live directly
+    if (formData.is_weekly) {
+      if (formData.is_live !== undefined) {
+        return formData.is_live ? 'live' : 'draft'
+      }
+      // Fallback to event status if is_live is not set
+      if (event?.status) {
+        return event.status === 'live' || event.status === 'scheduled' ? 'live' : 'draft'
+      }
+      return 'draft'
+    }
+
     // For existing events, use the status from the database (same as events table)
     if (event?.status) {
       return event.status
@@ -138,7 +155,7 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
     }
 
     return computeEventStatus(tempEvent)
-  }, [event?.status, formData.publish_start_date, formData.publish_start_time, formData.publish_end_date, formData.publish_end_time])
+  }, [event?.status, formData.is_weekly, formData.is_live, formData.publish_start_date, formData.publish_start_time, formData.publish_end_date, formData.publish_end_time])
 
   const getStatusMessage = () => {
     if (!formData.publish_start_date || !formData.publish_start_time) {
@@ -172,12 +189,48 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
       newErrors.title = 'Title is required'
     }
 
-    if (formData.start_date && formData.end_date) {
-      const start = new Date(`${formData.start_date}T${formData.start_time || '00:00'}`)
-      const end = new Date(`${formData.end_date}T${formData.end_time || '00:00'}`)
-      
-      if (end <= start) {
-        newErrors.end_date = 'End date/time must be after start date/time'
+    if (formData.is_weekly) {
+      // For weekly events, require day_of_week and times
+      if (formData.day_of_week === undefined || formData.day_of_week === null) {
+        newErrors.day_of_week = 'Day of week is required for weekly events'
+      }
+      if (!formData.start_time) {
+        newErrors.start_time = 'Start time is required'
+      }
+      if (!formData.end_time) {
+        newErrors.end_time = 'End time is required'
+      }
+      // Validate that end time is after start time
+      if (formData.start_time && formData.end_time) {
+        const [startHour, startMin] = formData.start_time.split(':').map(Number)
+        const [endHour, endMin] = formData.end_time.split(':').map(Number)
+        const startMinutes = startHour * 60 + startMin
+        const endMinutes = endHour * 60 + endMin
+        if (endMinutes <= startMinutes) {
+          newErrors.end_time = 'End time must be after start time'
+        }
+      }
+    } else {
+      // For one-time events, require dates and times
+      if (!formData.start_date) {
+        newErrors.start_date = 'Start date is required'
+      }
+      if (!formData.start_time) {
+        newErrors.start_time = 'Start time is required'
+      }
+      if (!formData.end_date) {
+        newErrors.end_date = 'End date is required'
+      }
+      if (!formData.end_time) {
+        newErrors.end_time = 'End time is required'
+      }
+      if (formData.start_date && formData.end_date && formData.start_time && formData.end_time) {
+        const start = new Date(`${formData.start_date}T${formData.start_time}`)
+        const end = new Date(`${formData.end_date}T${formData.end_time}`)
+        
+        if (end <= start) {
+          newErrors.end_date = 'End date/time must be after start date/time'
+        }
       }
     }
 
@@ -186,55 +239,105 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
   }
 
   const buildEventData = (action: 'draft' | 'schedule' | 'publish'): Partial<Event> => {
-    const startsAt = formData.start_date && formData.start_time
-      ? new Date(`${formData.start_date}T${formData.start_time}`).toISOString()
-      : new Date().toISOString()
-    
-    const endDate = formData.end_date && formData.end_time
-      ? new Date(`${formData.end_date}T${formData.end_time}`)
-      : (() => {
-          const start = new Date(startsAt)
-          start.setHours(start.getHours() + 2)
-          return start
-        })()
-    const endsAt = endDate.toISOString()
+    let startsAt: string | undefined
+    let endsAt: string | undefined
 
-    // Always include visibility scheduling if provided, regardless of action
+    if (formData.is_weekly) {
+      // For weekly events, store time in a placeholder date (2000-01-01) for compatibility
+      // The actual day is stored in day_of_week
+      if (formData.start_time) {
+        const [hours, minutes] = formData.start_time.split(':').map(Number)
+        const placeholderDate = new Date('2000-01-01')
+        placeholderDate.setHours(hours, minutes, 0, 0)
+        startsAt = placeholderDate.toISOString()
+      }
+      if (formData.end_time) {
+        const [hours, minutes] = formData.end_time.split(':').map(Number)
+        const placeholderDate = new Date('2000-01-01')
+        placeholderDate.setHours(hours, minutes, 0, 0)
+        endsAt = placeholderDate.toISOString()
+      }
+    } else {
+      // For one-time events, use actual dates
+      startsAt = formData.start_date && formData.start_time
+        ? new Date(`${formData.start_date}T${formData.start_time}`).toISOString()
+        : new Date().toISOString()
+      
+      const endDate = formData.end_date && formData.end_time
+        ? new Date(`${formData.end_date}T${formData.end_time}`)
+        : (() => {
+            const start = new Date(startsAt)
+            start.setHours(start.getHours() + 2)
+            return start
+          })()
+      endsAt = endDate.toISOString()
+    }
+
+    // Handle visibility scheduling
     let publishStartAt: string | undefined
     let publishEndAt: string | undefined
-    
-    if (formData.publish_start_date && formData.publish_start_time) {
-      publishStartAt = new Date(`${formData.publish_start_date}T${formData.publish_start_time}`).toISOString()
-    }
-    
-    if (formData.publish_end_date && formData.publish_end_time) {
-      publishEndAt = new Date(`${formData.publish_end_date}T${formData.publish_end_time}`).toISOString()
-    }
-
     let status: Event['status'] = 'draft'
 
-    if (action === 'publish') {
-      // For "Publish now", always set publish_start to current date and time
-      publishStartAt = new Date().toISOString()
-      
-      // Use publish_end from form if provided, otherwise default to event end time
-      if (!publishEndAt) {
-        publishEndAt = endsAt
+    if (formData.is_weekly) {
+      // For weekly events, use is_live toggle and is_indefinite option
+      if (formData.is_live) {
+        // Event is live - set publish_start to now if not already set
+        publishStartAt = formData.publish_start_date && formData.publish_start_time
+          ? new Date(`${formData.publish_start_date}T${formData.publish_start_time}`).toISOString()
+          : new Date().toISOString()
+        status = 'live'
+      } else {
+        // Event is inactive
+        status = 'draft'
+        // Still allow setting publish_start for future activation
+        if (formData.publish_start_date && formData.publish_start_time) {
+          publishStartAt = new Date(`${formData.publish_start_date}T${formData.publish_start_time}`).toISOString()
+        }
       }
-      status = 'live'
-    } else if (action === 'schedule') {
-      // Schedule requires publish_start to be set
-      if (!publishStartAt) {
-        // This should be caught by validation, but fallback to current time
+
+      // Handle indefinite option
+      if (formData.is_indefinite) {
+        // Indefinite - explicitly set publish_end_at to null to clear it in database
+        publishEndAt = null as unknown as string
+      } else {
+        // Not indefinite - use publish_end if provided
+        if (formData.publish_end_date && formData.publish_end_time) {
+          publishEndAt = new Date(`${formData.publish_end_date}T${formData.publish_end_time}`).toISOString()
+        }
+      }
+    } else {
+      // For one-time events, use original logic
+      if (formData.publish_start_date && formData.publish_start_time) {
+        publishStartAt = new Date(`${formData.publish_start_date}T${formData.publish_start_time}`).toISOString()
+      }
+      
+      if (formData.publish_end_date && formData.publish_end_time) {
+        publishEndAt = new Date(`${formData.publish_end_date}T${formData.publish_end_time}`).toISOString()
+      }
+
+      if (action === 'publish') {
+        // For "Publish now", always set publish_start to current date and time
         publishStartAt = new Date().toISOString()
+        
+        // Use publish_end from form if provided, otherwise default to event end time
+        if (!publishEndAt && endsAt) {
+          publishEndAt = endsAt
+        }
+        status = 'live'
+      } else if (action === 'schedule') {
+        // Schedule requires publish_start to be set
+        if (!publishStartAt) {
+          // This should be caught by validation, but fallback to current time
+          publishStartAt = new Date().toISOString()
+        }
+        
+        // Compute status based on publish_start time
+        const now = new Date()
+        const publishStart = new Date(publishStartAt)
+        status = now >= publishStart ? 'live' : 'scheduled'
       }
-      
-      // Compute status based on publish_start time
-      const now = new Date()
-      const publishStart = new Date(publishStartAt)
-      status = now >= publishStart ? 'live' : 'scheduled'
+      // For 'draft' action, status remains 'draft' but visibility scheduling is still saved
     }
-    // For 'draft' action, status remains 'draft' but visibility scheduling is still saved
 
     return {
       title: formData.title,
@@ -248,6 +351,8 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
       publish_end_at: publishEndAt,
       status,
       is_featured: formData.is_featured,
+      is_weekly: formData.is_weekly,
+      day_of_week: formData.is_weekly ? formData.day_of_week : undefined,
     }
   }
 
@@ -265,6 +370,17 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
     setIsSubmitting(true)
     try {
       const eventData = buildEventData(action)
+      
+      // Log the event data being sent for debugging
+      console.log('Saving event data:', {
+        is_weekly: eventData.is_weekly,
+        day_of_week: eventData.day_of_week,
+        status: eventData.status,
+        publish_start_at: eventData.publish_start_at,
+        publish_end_at: eventData.publish_end_at,
+        is_indefinite: formData.is_indefinite,
+        is_live: formData.is_live,
+      })
       
       if (onSave) {
         await onSave(eventData)
@@ -289,7 +405,29 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
           throw new Error(errorData.error || 'Failed to save event')
         }
 
-        toast.success(`Event ${action === 'draft' ? 'saved as draft' : action === 'schedule' ? 'scheduled' : 'published'}`)
+        const responseData = await response.json()
+        const savedEvent = responseData.event
+
+        // Determine success message based on event type and actual saved status
+        let successMessage = 'Event saved'
+        if (formData.is_weekly) {
+          // For weekly events, message based on actual saved status
+          if (savedEvent?.status === 'live') {
+            successMessage = formData.is_indefinite 
+              ? 'Weekly event saved and is now live indefinitely' 
+              : 'Weekly event saved and is now live'
+          } else {
+            successMessage = 'Weekly event saved as inactive'
+          }
+        } else {
+          // For one-time events, message based on action
+          successMessage = action === 'draft' 
+            ? 'Event saved as draft' 
+            : action === 'schedule' 
+            ? 'Event scheduled' 
+            : 'Event published'
+        }
+        toast.success(successMessage)
       }
       
       // Use replace to avoid back button issues, and refresh will happen automatically
@@ -456,57 +594,140 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
             <CardHeader>
               <CardTitle>Date & Time</CardTitle>
               <CardDescription>When does this event occur?</CardDescription>
+              <CardAction>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <Label htmlFor="is_weekly" className="text-sm font-medium">Weekly Event</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Repeats weekly
+                    </p>
+                  </div>
+                  <Switch
+                    id="is_weekly"
+                    checked={formData.is_weekly}
+                    onCheckedChange={(checked) => {
+                      setFormData({
+                        ...formData,
+                        is_weekly: checked,
+                        // Clear day_of_week when toggling off
+                        day_of_week: checked ? formData.day_of_week : undefined,
+                        // Clear dates when toggling on
+                        start_date: checked ? '' : formData.start_date,
+                        end_date: checked ? '' : formData.end_date,
+                      })
+                    }}
+                  />
+                </div>
+              </CardAction>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2" data-tour="start-date">
-                  <Label htmlFor="start_date">Start Date *</Label>
-                  <Input
-                    id="start_date"
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className={errors.start_date ? "border-red-500" : ""}
-                  />
-                  {errors.start_date && <p className="text-sm text-red-500">{errors.start_date}</p>}
-                </div>
 
-                <div className="space-y-2" data-tour="start-time">
-                  <Label htmlFor="start_time">Start Time *</Label>
-                  <Input
-                    id="start_time"
-                    type="time"
-                    value={formData.start_time}
-                    onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                    className={errors.start_time ? "border-red-500" : ""}
-                  />
-                  {errors.start_time && <p className="text-sm text-red-500">{errors.start_time}</p>}
-                </div>
+              {formData.is_weekly ? (
+                // Weekly event fields
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2" data-tour="end-time">
+                    <Label htmlFor="end_time">End Time *</Label>
+                    <Input
+                      id="end_time"
+                      type="time"
+                      value={formData.end_time}
+                      onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                      className={errors.end_time ? "border-red-500" : ""}
+                    />
+                    {errors.end_time && <p className="text-sm text-red-500">{errors.end_time}</p>}
+                  </div>
 
-                <div className="space-y-2" data-tour="end-date">
-                  <Label htmlFor="end_date">End Date *</Label>
-                  <Input
-                    id="end_date"
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className={errors.end_date ? "border-red-500" : ""}
-                  />
-                  {errors.end_date && <p className="text-sm text-red-500">{errors.end_date}</p>}
-                </div>
+                  <div className="space-y-2" data-tour="start-time">
+                    <Label htmlFor="start_time">Start Time *</Label>
+                    <Input
+                      id="start_time"
+                      type="time"
+                      value={formData.start_time}
+                      onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                      className={errors.start_time ? "border-red-500" : ""}
+                    />
+                    {errors.start_time && <p className="text-sm text-red-500">{errors.start_time}</p>}
+                  </div>
 
-                <div className="space-y-2" data-tour="end-time">
-                  <Label htmlFor="end_time">End Time *</Label>
-                  <Input
-                    id="end_time"
-                    type="time"
-                    value={formData.end_time}
-                    onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                    className={errors.end_time ? "border-red-500" : ""}
-                  />
-                  {errors.end_time && <p className="text-sm text-red-500">{errors.end_time}</p>}
+                  <div className="space-y-2">
+                    <Label htmlFor="day_of_week">Day of Week *</Label>
+                    <Select
+                      value={formData.day_of_week !== undefined ? formData.day_of_week.toString() : ""}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          day_of_week: parseInt(value, 10),
+                        })
+                      }
+                    >
+                      <SelectTrigger className={errors.day_of_week ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Select day" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Sunday</SelectItem>
+                        <SelectItem value="1">Monday</SelectItem>
+                        <SelectItem value="2">Tuesday</SelectItem>
+                        <SelectItem value="3">Wednesday</SelectItem>
+                        <SelectItem value="4">Thursday</SelectItem>
+                        <SelectItem value="5">Friday</SelectItem>
+                        <SelectItem value="6">Saturday</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.day_of_week && <p className="text-sm text-red-500">{errors.day_of_week}</p>}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                // One-time event fields
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2" data-tour="start-date">
+                    <Label htmlFor="start_date">Start Date *</Label>
+                    <Input
+                      id="start_date"
+                      type="date"
+                      value={formData.start_date}
+                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                      className={errors.start_date ? "border-red-500" : ""}
+                    />
+                    {errors.start_date && <p className="text-sm text-red-500">{errors.start_date}</p>}
+                  </div>
+
+                  <div className="space-y-2" data-tour="start-time">
+                    <Label htmlFor="start_time">Start Time *</Label>
+                    <Input
+                      id="start_time"
+                      type="time"
+                      value={formData.start_time}
+                      onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                      className={errors.start_time ? "border-red-500" : ""}
+                    />
+                    {errors.start_time && <p className="text-sm text-red-500">{errors.start_time}</p>}
+                  </div>
+
+                  <div className="space-y-2" data-tour="end-date">
+                    <Label htmlFor="end_date">End Date *</Label>
+                    <Input
+                      id="end_date"
+                      type="date"
+                      value={formData.end_date}
+                      onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                      className={errors.end_date ? "border-red-500" : ""}
+                    />
+                    {errors.end_date && <p className="text-sm text-red-500">{errors.end_date}</p>}
+                  </div>
+
+                  <div className="space-y-2" data-tour="end-time">
+                    <Label htmlFor="end_time">End Time *</Label>
+                    <Input
+                      id="end_time"
+                      type="time"
+                      value={formData.end_time}
+                      onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                      className={errors.end_time ? "border-red-500" : ""}
+                    />
+                    {errors.end_time && <p className="text-sm text-red-500">{errors.end_time}</p>}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -516,57 +737,143 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
               <CardDescription>Choose when this event should appear on your site</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2" data-tour="publish-start">
-                  <Label htmlFor="publish_start_date">Publish Start</Label>
-                  <Input
-                    id="publish_start_date"
-                    type="date"
-                    value={formData.publish_start_date}
-                    onChange={(e) => setFormData({ ...formData, publish_start_date: e.target.value })}
-                  />
-                </div>
+              {formData.is_weekly ? (
+                // Weekly event visibility options
+                <>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between rounded-md border p-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="is_live" className="text-base">Event Status</Label>
+                        <p className="text-sm text-muted-foreground">
+                          {formData.is_live ? 'Event is live and visible' : 'Event is inactive and hidden'}
+                        </p>
+                      </div>
+                      <Switch
+                        id="is_live"
+                        checked={formData.is_live !== undefined ? formData.is_live : computedStatus === 'live'}
+                        onCheckedChange={(checked) => {
+                          setFormData({ ...formData, is_live: checked })
+                        }}
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="publish_start_time">Publish Start Time</Label>
-                  <Input
-                    id="publish_start_time"
-                    type="time"
-                    value={formData.publish_start_time}
-                    onChange={(e) => setFormData({ ...formData, publish_start_time: e.target.value })}
-                  />
-                </div>
+                    <div className="flex items-center justify-between rounded-md border p-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="is_indefinite" className="text-base">Indefinite</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Show this event indefinitely (no end date)
+                        </p>
+                      </div>
+                      <Switch
+                        id="is_indefinite"
+                        checked={formData.is_indefinite}
+                        onCheckedChange={(checked) => {
+                          setFormData({
+                            ...formData,
+                            is_indefinite: checked,
+                            // Clear end date/time when indefinite is checked
+                            publish_end_date: checked ? '' : formData.publish_end_date,
+                            publish_end_time: checked ? '' : formData.publish_end_time,
+                          })
+                        }}
+                      />
+                    </div>
 
-                <div className="space-y-2" data-tour="publish-end">
-                  <Label htmlFor="publish_end_date">Publish End</Label>
-                  <Input
-                    id="publish_end_date"
-                    type="date"
-                    value={formData.publish_end_date}
-                    onChange={(e) => setFormData({ ...formData, publish_end_date: e.target.value })}
-                  />
-                </div>
+                    {!formData.is_indefinite && (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2" data-tour="publish-end">
+                          <Label htmlFor="publish_end_date">Publish End</Label>
+                          <Input
+                            id="publish_end_date"
+                            type="date"
+                            value={formData.publish_end_date}
+                            onChange={(e) => setFormData({ ...formData, publish_end_date: e.target.value })}
+                          />
+                        </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="publish_end_time">Publish End Time</Label>
-                  <Input
-                    id="publish_end_time"
-                    type="time"
-                    value={formData.publish_end_time}
-                    onChange={(e) => setFormData({ ...formData, publish_end_time: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-md border bg-muted/50 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Status</p>
-                    <p className="text-sm text-muted-foreground">{getStatusMessage()}</p>
+                        <div className="space-y-2">
+                          <Label htmlFor="publish_end_time">Publish End Time</Label>
+                          <Input
+                            id="publish_end_time"
+                            type="time"
+                            value={formData.publish_end_time}
+                            onChange={(e) => setFormData({ ...formData, publish_end_time: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <EventStatusBadge status={computedStatus} />
-                </div>
-              </div>
+
+                  <div className="rounded-md border bg-muted/50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">Status</p>
+                        <p className="text-sm text-muted-foreground">
+                          {computedStatus === 'live'
+                            ? 'Live (Visible on site now)'
+                            : 'Inactive (Hidden from site)'}
+                        </p>
+                      </div>
+                      <EventStatusBadge status={computedStatus} />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                // One-time event visibility options (original)
+                <>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2" data-tour="publish-start">
+                      <Label htmlFor="publish_start_date">Publish Start</Label>
+                      <Input
+                        id="publish_start_date"
+                        type="date"
+                        value={formData.publish_start_date}
+                        onChange={(e) => setFormData({ ...formData, publish_start_date: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="publish_start_time">Publish Start Time</Label>
+                      <Input
+                        id="publish_start_time"
+                        type="time"
+                        value={formData.publish_start_time}
+                        onChange={(e) => setFormData({ ...formData, publish_start_time: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2" data-tour="publish-end">
+                      <Label htmlFor="publish_end_date">Publish End</Label>
+                      <Input
+                        id="publish_end_date"
+                        type="date"
+                        value={formData.publish_end_date}
+                        onChange={(e) => setFormData({ ...formData, publish_end_date: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="publish_end_time">Publish End Time</Label>
+                      <Input
+                        id="publish_end_time"
+                        type="time"
+                        value={formData.publish_end_time}
+                        onChange={(e) => setFormData({ ...formData, publish_end_time: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border bg-muted/50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">Status</p>
+                        <p className="text-sm text-muted-foreground">{getStatusMessage()}</p>
+                      </div>
+                      <EventStatusBadge status={computedStatus} />
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -583,30 +890,45 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
           >
             Cancel
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => handleSubmit('draft')}
-            disabled={isSubmitting}
-          >
-            Save as Draft
-          </Button>
-          <Button
-            type="button"
-            variant="default"
-            onClick={() => handleSubmit('schedule')}
-            disabled={isSubmitting}
-          >
-            Schedule
-          </Button>
-          <Button
-            type="button"
-            variant="default"
-            onClick={() => handleSubmit('publish')}
-            disabled={isSubmitting}
-          >
-            Publish Now
-          </Button>
+          {formData.is_weekly ? (
+            // Weekly events: Simple save button (status controlled by Live/Inactive toggle)
+            <Button
+              type="button"
+              variant="default"
+              onClick={() => handleSubmit('draft')}
+              disabled={isSubmitting}
+            >
+              {event ? 'Save Changes' : 'Create Event'}
+            </Button>
+          ) : (
+            // One-time events: Full set of action buttons
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleSubmit('draft')}
+                disabled={isSubmitting}
+              >
+                Save as Draft
+              </Button>
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => handleSubmit('schedule')}
+                disabled={isSubmitting}
+              >
+                Schedule
+              </Button>
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => handleSubmit('publish')}
+                disabled={isSubmitting}
+              >
+                Publish Now
+              </Button>
+            </>
+          )}
         </div>
       </form>
     </div>

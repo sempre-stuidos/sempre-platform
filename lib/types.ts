@@ -347,12 +347,14 @@ export interface Event {
   description?: string;
   image_url?: string;
   event_type?: string;
-  starts_at: string; // ISO datetime string
-  ends_at: string; // ISO datetime string
+  starts_at?: string; // ISO datetime string (optional for weekly events)
+  ends_at?: string; // ISO datetime string (optional for weekly events)
   publish_start_at?: string; // ISO datetime string
   publish_end_at?: string; // ISO datetime string
   status: 'draft' | 'scheduled' | 'live' | 'past' | 'archived';
   is_featured: boolean;
+  is_weekly?: boolean; // true if event repeats weekly
+  day_of_week?: number; // 0-6, where 0=Sunday, 6=Saturday
   created_at: string;
   updated_at: string;
 }

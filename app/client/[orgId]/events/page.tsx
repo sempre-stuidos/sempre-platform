@@ -17,7 +17,7 @@ export default function EventsPage() {
   const orgId = params.orgId as string
   
   const [searchQuery, setSearchQuery] = React.useState("")
-  const [activeTab, setActiveTab] = React.useState<"upcoming" | "past" | "drafts" | "all">("all")
+  const [activeTab, setActiveTab] = React.useState<"weekly" | "upcoming" | "past" | "drafts" | "all">("weekly")
   const [allEvents, setAllEvents] = React.useState<Event[]>([])
   const [loading, setLoading] = React.useState(true)
 
@@ -67,6 +67,9 @@ export default function EventsPage() {
 
     // Filter by tab
     switch (activeTab) {
+      case "weekly":
+        events = events.filter(event => event.is_weekly === true)
+        break
       case "upcoming":
         events = events.filter(event => {
           const status = computeEventStatus(event)
@@ -101,8 +104,12 @@ export default function EventsPage() {
     }
 
     // Sort by starts_at (most recent first)
+    // Handle weekly events where starts_at might be undefined
     return events.sort((a, b) => {
-      return new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime()
+      // For weekly events without starts_at, use created_at as fallback
+      const aDate = a.starts_at ? new Date(a.starts_at) : new Date(a.created_at)
+      const bDate = b.starts_at ? new Date(b.starts_at) : new Date(b.created_at)
+      return bDate.getTime() - aDate.getTime()
     })
   }, [allEvents, activeTab, searchQuery])
 
@@ -139,6 +146,7 @@ export default function EventsPage() {
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
               <div className="flex items-center justify-between">
                 <TabsList>
+                  <TabsTrigger value="weekly">Weekly</TabsTrigger>
                   <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
                   <TabsTrigger value="past">Past</TabsTrigger>
                   <TabsTrigger value="drafts">Drafts</TabsTrigger>

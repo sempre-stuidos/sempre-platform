@@ -57,12 +57,16 @@ function transformEventRecord(record: Record<string, unknown>): Event {
     description: record.description as string | undefined,
     image_url: record.image_url as string | undefined,
     event_type: record.event_type as string | undefined,
-    starts_at: record.starts_at as string,
-    ends_at: record.ends_at as string,
+    starts_at: record.starts_at as string | undefined,
+    ends_at: record.ends_at as string | undefined,
     publish_start_at: record.publish_start_at as string | undefined,
     publish_end_at: record.publish_end_at as string | undefined,
     status: record.status as Event['status'],
     is_featured: record.is_featured as boolean,
+    is_weekly: record.is_weekly as boolean | undefined,
+    day_of_week: record.day_of_week !== null && record.day_of_week !== undefined 
+      ? (record.day_of_week as number) 
+      : undefined,
     created_at: record.created_at as string,
     updated_at: record.updated_at as string,
   };
@@ -83,9 +87,14 @@ function transformEventToRecord(event: Partial<Event>): Record<string, unknown> 
   if (event.starts_at !== undefined) record.starts_at = event.starts_at;
   if (event.ends_at !== undefined) record.ends_at = event.ends_at;
   if (event.publish_start_at !== undefined) record.publish_start_at = event.publish_start_at;
-  if (event.publish_end_at !== undefined) record.publish_end_at = event.publish_end_at;
+  // Handle null explicitly for publish_end_at (to clear it for indefinite events)
+  if (event.publish_end_at !== undefined) {
+    record.publish_end_at = event.publish_end_at; // This includes null
+  }
   if (event.status !== undefined) record.status = event.status;
   if (event.is_featured !== undefined) record.is_featured = event.is_featured;
+  if (event.is_weekly !== undefined) record.is_weekly = event.is_weekly;
+  if (event.day_of_week !== undefined) record.day_of_week = event.day_of_week;
   
   return record;
 }
@@ -566,6 +575,48 @@ export function formatEventDateTime(startsAt: string, endsAt: string): string {
   // Different days
   const endDate = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   return `${startDate} · ${startTime} → ${endDate} · ${endTime}`;
+}
+
+/**
+ * Format weekly event date and time for display
+ */
+export function formatWeeklyEventDateTime(dayOfWeek: number, startsAt?: string, endsAt?: string): string {
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const dayName = dayNames[dayOfWeek] || 'Unknown'
+
+  if (!startsAt) {
+    return `Every ${dayName}`
+  }
+
+  const start = new Date(startsAt)
+  
+  // Check for invalid date
+  if (isNaN(start.getTime())) {
+    return `Every ${dayName}`
+  }
+
+  const startTime = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+
+  // If no end time or end time is same as start time, just show start time
+  if (!endsAt) {
+    return `Every ${dayName} at ${startTime}`
+  }
+
+  const end = new Date(endsAt)
+  
+  // Check for invalid date
+  if (isNaN(end.getTime())) {
+    return `Every ${dayName} at ${startTime}`
+  }
+
+  const endTime = end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+
+  // If times are the same, just show one time
+  if (startTime === endTime) {
+    return `Every ${dayName} at ${startTime}`
+  }
+
+  return `Every ${dayName} · ${startTime} - ${endTime}`
 }
 
 /**

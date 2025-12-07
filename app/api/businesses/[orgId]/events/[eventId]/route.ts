@@ -97,12 +97,47 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { title, short_description, description, image_url, event_type, starts_at, ends_at, publish_start_at, publish_end_at, status, is_featured } = body;
+    const { title, short_description, description, image_url, event_type, starts_at, ends_at, publish_start_at, publish_end_at, status, is_featured, is_weekly, day_of_week } = body;
 
     // Get current event to compute status if needed
     const currentEvent = await getEventById(orgId, eventId, supabase);
     if (!currentEvent) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    }
+
+    // Determine the effective is_weekly value (use provided value or current value)
+    const effectiveIsWeekly = is_weekly !== undefined ? is_weekly : currentEvent.is_weekly;
+
+    // Validate based on event type
+    if (effectiveIsWeekly) {
+      // For weekly events, require day_of_week
+      const effectiveDayOfWeek = day_of_week !== undefined ? day_of_week : currentEvent.day_of_week;
+      if (effectiveDayOfWeek === undefined || effectiveDayOfWeek === null) {
+        return NextResponse.json(
+          { error: 'day_of_week is required for weekly events' },
+          { status: 400 }
+        );
+      }
+      if (effectiveDayOfWeek < 0 || effectiveDayOfWeek > 6) {
+        return NextResponse.json(
+          { error: 'day_of_week must be between 0 (Sunday) and 6 (Saturday)' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // For one-time events, require starts_at and ends_at if they're being updated
+      if (starts_at === undefined && !currentEvent.starts_at) {
+        return NextResponse.json(
+          { error: 'starts_at is required for one-time events' },
+          { status: 400 }
+        );
+      }
+      if (ends_at === undefined && !currentEvent.ends_at) {
+        return NextResponse.json(
+          { error: 'ends_at is required for one-time events' },
+          { status: 400 }
+        );
+      }
     }
 
     // Compute status if not explicitly provided
@@ -125,6 +160,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (publish_start_at !== undefined) updates.publish_start_at = publish_start_at;
     if (publish_end_at !== undefined) updates.publish_end_at = publish_end_at;
     if (is_featured !== undefined) updates.is_featured = is_featured;
+    if (is_weekly !== undefined) updates.is_weekly = is_weekly;
+    if (day_of_week !== undefined) updates.day_of_week = day_of_week;
+    // Clear day_of_week if switching from weekly to one-time
+    if (is_weekly === false && currentEvent.is_weekly) {
+      updates.day_of_week = undefined;
+    }
+    // Clear starts_at/ends_at if switching from one-time to weekly (they'll be set with time only)
+    // This is handled by the form sending the placeholder dates
     updates.status = computedStatus;
 
     const event = await updateEvent(eventId, orgId, updates, supabase);

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { EventStatusBadge } from "@/components/event-status-badge"
 import { Event } from "@/lib/types"
-import { formatEventDateTime, formatVisibilityWindow } from "@/lib/events"
+import { formatEventDateTime, formatWeeklyEventDateTime, formatVisibilityWindow } from "@/lib/events"
 import Image from "next/image"
 
 interface EventsTableProps {
@@ -119,7 +119,11 @@ export function EventsTable({ orgId, events }: EventsTableProps) {
               </TableCell>
               <TableCell>
                 <div className="text-sm">
-                  {formatEventDateTime(event.starts_at, event.ends_at)}
+                  {event.is_weekly && event.day_of_week !== undefined
+                    ? formatWeeklyEventDateTime(event.day_of_week, event.starts_at, event.ends_at)
+                    : event.starts_at && event.ends_at
+                    ? formatEventDateTime(event.starts_at, event.ends_at)
+                    : 'No date/time set'}
                 </div>
               </TableCell>
               <TableCell>
