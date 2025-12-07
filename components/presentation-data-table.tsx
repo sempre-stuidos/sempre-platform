@@ -59,7 +59,6 @@ import Link from "next/link"
 import { Presentation } from "@/lib/types"
 import { PresentationDrawer } from "./presentation-drawer"
 import { AddPresentationModal } from "./add-presentation-modal"
-import { deletePresentation, getClients, getTeamMembersWithCurrentUser } from "@/lib/presentations"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -381,13 +380,21 @@ export function PresentationDataTable({
   const handleDeletePresentation = async (presentation: Presentation) => {
     if (window.confirm(`Are you sure you want to delete "${presentation.title}"?`)) {
       try {
-        await deletePresentation(presentation.id)
+        const response = await fetch(`/api/presentations/${presentation.id}`, {
+          method: 'DELETE',
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || 'Failed to delete presentation')
+        }
+
         toast.success("Presentation deleted successfully")
         // Refresh the data by calling the parent's refresh function
         window.location.reload() // Simple refresh for now
       } catch (error) {
         console.error("Error deleting presentation:", error)
-        toast.error("Failed to delete presentation")
+        toast.error(error instanceof Error ? error.message : "Failed to delete presentation")
       }
     }
   }
@@ -401,14 +408,28 @@ export function PresentationDataTable({
   React.useEffect(() => {
     const loadData = async () => {
       try {
-        const [clientsData, teamMembersData] = await Promise.all([
-          getClients(),
-          getTeamMembersWithCurrentUser(currentUser?.id)
+        const [clientsResponse, teamMembersResponse] = await Promise.all([
+          fetch('/api/presentations/clients'),
+          fetch('/api/team-members')
         ])
-        setClients(clientsData)
-        setTeamMembers(teamMembersData)
+
+        if (!clientsResponse.ok) {
+          throw new Error('Failed to fetch clients')
+        }
+        if (!teamMembersResponse.ok) {
+          throw new Error('Failed to fetch team members')
+        }
+
+        const [clientsData, teamMembersData] = await Promise.all([
+          clientsResponse.json(),
+          teamMembersResponse.json()
+        ])
+
+        setClients(clientsData.clients || [])
+        setTeamMembers(teamMembersData.teamMembers || [])
       } catch (error) {
         console.error("Error loading data:", error)
+        toast.error("Failed to load clients and team members")
       }
     }
     loadData()

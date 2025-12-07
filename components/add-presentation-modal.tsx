@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/select"
 import { Presentation } from "@/lib/types"
 import { toast } from "sonner"
-import { createPresentation, updatePresentation } from "@/lib/presentations"
 
 interface AddPresentationModalProps {
   isOpen: boolean
@@ -97,19 +96,36 @@ export function AddPresentationModal({
         last_modified: new Date().toISOString().split('T')[0],
       }
 
+      let response: Response;
       if (isEdit && presentation) {
-        await updatePresentation(presentation.id, presentationData)
-        toast.success("Presentation updated successfully")
+        response = await fetch(`/api/presentations/${presentation.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(presentationData),
+        })
       } else {
-        await createPresentation(presentationData)
-        toast.success("Presentation created successfully")
+        response = await fetch('/api/presentations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(presentationData),
+        })
       }
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to save presentation')
+      }
+
+      toast.success(isEdit ? "Presentation updated successfully" : "Presentation created successfully")
       onSuccess()
       onClose()
     } catch (error) {
       console.error("Error saving presentation:", error)
-      toast.error("Failed to save presentation")
+      toast.error(error instanceof Error ? error.message : "Failed to save presentation")
     } finally {
       setIsLoading(false)
     }
