@@ -235,11 +235,37 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
       // Get the field schema to understand what type of field this is
       const fieldSchema = getFieldSchema(component, selectedComponentKey)
       
-      // Handle nested paths with dot notation (e.g., "day.description")
+      // Handle nested paths with dot notation (e.g., "day.description" or "images.0")
       if (selectedComponentKey.includes('.')) {
         const pathSegments = selectedComponentKey.split('.')
-        const [parentKey, ...nestedKeys] = pathSegments
-        const nestedFieldKey = nestedKeys[nestedKeys.length - 1] // Last segment is the field name
+        const [parentKey, ...restSegments] = pathSegments
+        const lastSegment = restSegments[restSegments.length - 1]
+        
+        // Check if the last segment is a numeric index (array item)
+        const isArrayIndex = /^\d+$/.test(lastSegment)
+        
+        if (isArrayIndex) {
+          // This is an array item (e.g., "images.0")
+          const arrayIndex = parseInt(lastSegment, 10)
+          const arrayValue = draftContent[parentKey]
+          
+          if (Array.isArray(arrayValue) && arrayValue[arrayIndex] !== undefined && arrayValue[arrayIndex] !== null) {
+            // Return the array item value wrapped with _item key for the form
+            // Ensure the value is a string for image fields
+            const itemValue = arrayValue[arrayIndex]
+            return { _item: typeof itemValue === 'string' ? itemValue : String(itemValue || '') }
+          } else {
+            // Array item not found - initialize from schema
+            if (fieldSchema) {
+              const defaultValue = fieldSchema.default ?? ''
+              return { _item: typeof defaultValue === 'string' ? defaultValue : String(defaultValue || '') }
+            }
+            return { _item: '' }
+          }
+        }
+        
+        // This is a nested object path (e.g., "day.description")
+        const nestedFieldKey = lastSegment // Last segment is the field name
         
         // Get parent object from draftContent
         const parentObject = draftContent[parentKey]
@@ -248,7 +274,7 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
           
           // Navigate to nested value
           let nestedValue: unknown = parentObj
-          for (const key of nestedKeys) {
+          for (const key of restSegments) {
             if (isRecord(nestedValue)) {
               nestedValue = nestedValue[key]
             } else {
@@ -322,11 +348,43 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
 
   const handleFieldChange = (field: string, value: unknown) => {
     if (selectedComponentKey) {
-      // Handle nested paths with dot notation (e.g., "day.description")
+      // Handle nested paths with dot notation (e.g., "day.description" or "images.0")
       if (selectedComponentKey.includes('.')) {
         const pathSegments = selectedComponentKey.split('.')
-        const [parentKey, ...nestedKeys] = pathSegments
-        const nestedFieldKey = nestedKeys[nestedKeys.length - 1]
+        const [parentKey, ...restSegments] = pathSegments
+        const lastSegment = restSegments[restSegments.length - 1]
+        
+        // Check if the last segment is a numeric index (array item)
+        const isArrayIndex = /^\d+$/.test(lastSegment)
+        
+        if (isArrayIndex) {
+          // This is an array item (e.g., "images.0")
+          const arrayIndex = parseInt(lastSegment, 10)
+          const arrayValue = draftContent[parentKey]
+          
+          if (Array.isArray(arrayValue)) {
+            // Update the array item at the specified index
+            const updatedArray = [...arrayValue]
+            // The field should be "_item" for array items
+            if (field === '_item') {
+              updatedArray[arrayIndex] = value
+            } else {
+              updatedArray[arrayIndex] = value
+            }
+            // Return the updated array
+            onContentChange(updatedArray)
+            return
+          } else {
+            // Array doesn't exist - create it with the new value
+            const newArray: unknown[] = []
+            newArray[arrayIndex] = value
+            onContentChange(newArray)
+            return
+          }
+        }
+        
+        // This is a nested object path (e.g., "day.description")
+        const nestedFieldKey = lastSegment
         
         // For nested paths, the field parameter should match the nested field key
         // (e.g., field="description" when selectedComponentKey="day.description")
@@ -455,17 +513,27 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
     // Get schema for current component or nested component
     const getSchemaForContext = (): ComponentSchema | null => {
       if (selectedComponentKey) {
-        // Handle nested paths with dot notation (e.g., "day.description")
+        // Handle nested paths with dot notation (e.g., "day.description" or "images.0")
         if (selectedComponentKey.includes('.')) {
           const pathSegments = selectedComponentKey.split('.')
-          const nestedFieldKey = pathSegments[pathSegments.length - 1]
+          const lastSegment = pathSegments[pathSegments.length - 1]
           const fieldSchema = getFieldSchema(component, selectedComponentKey)
           
           if (fieldSchema) {
-            // Create a schema with just this nested field
-            // This allows us to render the field with proper type, label, and placeholder
-            return {
-              [nestedFieldKey]: fieldSchema
+            // Check if this is an array item (numeric index)
+            const isArrayIndex = /^\d+$/.test(lastSegment)
+            
+            if (isArrayIndex) {
+              // For array items, use "_item" as the key in the schema
+              // This matches how we wrap the value in componentContent
+              return {
+                _item: fieldSchema
+              }
+            } else {
+              // For nested object fields, use the nested field key
+              return {
+                [lastSegment]: fieldSchema
+              }
             }
           }
           return null
@@ -553,14 +621,15 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
         'object')
 
       // Handle null/undefined with schema default
-      if (value === null || value === undefined) {
+      if (value === null || value === undefined || value === '') {
         const defaultValue = fieldSchema?.default ?? ''
+        const defaultImageValue = typeof defaultValue === 'string' ? defaultValue : String(defaultValue || '')
         if (fieldType === 'image') {
           return (
             <div key={fieldKey} className="space-y-2">
               <Label htmlFor={fieldKey}>{displayKey}</Label>
               <ImagePicker
-                value={String(defaultValue)}
+                value={defaultImageValue}
                 onChange={(url) => handleFieldChange(key, url)}
                 label=""
                 compact={isWidgetMode}
@@ -601,11 +670,17 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
 
       // Render based on schema type or inferred type
       if (fieldType === 'image' || (typeof value === 'string' && (key.toLowerCase().includes('image') || key.toLowerCase().includes('photo') || key.toLowerCase().includes('picture') || value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')))) {
+        // Ensure value is a string and not undefined/null
+        // Use schema default if value is empty
+        let imageValue = value != null ? String(value) : ''
+        if (!imageValue && fieldSchema?.default) {
+          imageValue = typeof fieldSchema.default === 'string' ? fieldSchema.default : String(fieldSchema.default)
+        }
         return (
           <div key={fieldKey} className="space-y-2">
             <Label htmlFor={fieldKey}>{displayKey}</Label>
             <ImagePicker
-              value={String(value)}
+              value={imageValue}
               onChange={(url) => handleFieldChange(key, url)}
               label=""
               compact={isWidgetMode}
@@ -803,7 +878,9 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
             {schemaKeys.map((key) => {
               const value = content[key]
               const fieldSchema = schema[key]
-              return renderField(key, value, '', fieldSchema)
+              // For array items with _item key, ensure we get the actual value
+              const actualValue = value !== undefined && value !== null ? value : (fieldSchema?.default ?? '')
+              return renderField(key, actualValue, '', fieldSchema)
             })}
           </div>
         )
@@ -850,11 +927,43 @@ export function SectionForm({ component, draftContent, selectedComponentKey, onC
     // If a component is selected, show only that component's fields using dynamic form
     if (selectedComponentKey) {
       return renderDynamicForm(componentContent, (content) => {
-        // Handle nested paths with dot notation (e.g., "day.description")
+        // Handle nested paths with dot notation (e.g., "day.description" or "images.0")
         if (selectedComponentKey.includes('.')) {
           const pathSegments = selectedComponentKey.split('.')
-          const [parentKey, ...nestedKeys] = pathSegments
-          const nestedFieldKey = nestedKeys[nestedKeys.length - 1]
+          const [parentKey, ...restSegments] = pathSegments
+          const lastSegment = restSegments[restSegments.length - 1]
+          
+          // Check if the last segment is a numeric index (array item)
+          const isArrayIndex = /^\d+$/.test(lastSegment)
+          
+          if (isArrayIndex) {
+            // This is an array item (e.g., "images.0")
+            const arrayIndex = parseInt(lastSegment, 10)
+            const arrayValue = draftContent[parentKey]
+            
+            if (Array.isArray(arrayValue)) {
+              // Extract the value from content (content will be { _item: value })
+              const extractedValue = content._item
+              
+              // Update the array item at the specified index
+              const updatedArray = [...arrayValue]
+              updatedArray[arrayIndex] = extractedValue
+              
+              // Return the updated array
+              onContentChange(updatedArray)
+              return
+            } else {
+              // Array doesn't exist - create it with the new value
+              const newArray: unknown[] = []
+              const extractedValue = content._item
+              newArray[arrayIndex] = extractedValue
+              onContentChange(newArray)
+              return
+            }
+          }
+          
+          // This is a nested object path (e.g., "day.description")
+          const nestedFieldKey = lastSegment
           
           // Get parent object from draftContent
           const parentObject = draftContent[parentKey]

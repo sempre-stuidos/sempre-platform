@@ -231,11 +231,34 @@ export function PageCanvasEditor({
         setDraftContents(prev => {
           const currentSectionContent = prev[selectedSectionId] || {}
           
-          // Handle nested paths with dot notation (e.g., "day.description")
+          // Handle nested paths with dot notation (e.g., "day.description" or "images.0")
           if (selectedComponentKey.includes('.')) {
             const pathSegments = selectedComponentKey.split('.')
-            const [parentKey, ...nestedKeys] = pathSegments
-            const nestedFieldKey = nestedKeys[nestedKeys.length - 1]
+            const [parentKey, ...restSegments] = pathSegments
+            const lastSegment = restSegments[restSegments.length - 1]
+            
+            // Check if the last segment is a numeric index (array item)
+            const isArrayIndex = /^\d+$/.test(lastSegment)
+            
+            if (isArrayIndex) {
+              // This is an array item (e.g., "images.0")
+              // Content will be the updated array
+              if (Array.isArray(content)) {
+                const updatedContent = {
+                  ...currentSectionContent,
+                  [parentKey]: content,
+                }
+                return {
+                  ...prev,
+                  [selectedSectionId]: updatedContent,
+                }
+              }
+              // If content is not an array, something went wrong - return previous state
+              return prev
+            }
+            
+            // This is a nested object path (e.g., "day.description")
+            const nestedFieldKey = lastSegment
             
             // Get parent object from current section content
             const parentObject = currentSectionContent[parentKey]

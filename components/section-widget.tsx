@@ -100,7 +100,26 @@ export function SectionWidget({
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold truncate">
               {selectedComponentKey 
-                ? `${section.label} - ${selectedComponentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}`
+                ? (() => {
+                    // Handle array items like "images.0" - show parent field name
+                    if (selectedComponentKey.includes('.')) {
+                      const pathSegments = selectedComponentKey.split('.')
+                      const lastSegment = pathSegments[pathSegments.length - 1]
+                      const isArrayIndex = /^\d+$/.test(lastSegment)
+                      
+                      if (isArrayIndex) {
+                        // For array items, show the parent field name (e.g., "Images" for "images.0")
+                        const parentKey = pathSegments[0]
+                        const parentLabel = parentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()
+                        return `${section.label} - ${parentLabel}`
+                      } else {
+                        // For nested object fields, show the full path
+                        return `${section.label} - ${selectedComponentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}`
+                      }
+                    }
+                    // For top-level fields, just capitalize
+                    return `${section.label} - ${selectedComponentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}`
+                  })()
                 : section.label}
             </h3>
             {getStatusBadge()}

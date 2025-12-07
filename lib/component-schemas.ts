@@ -349,24 +349,6 @@ export const componentSchemas: ComponentSchemas = {
       label: 'Address',
       placeholder: '478 PARLIAMENT ST',
     },
-    title: {
-      type: 'string',
-      default: "JOHNNY G's",
-      label: 'Title',
-      placeholder: "JOHNNY G's",
-    },
-    subtitle: {
-      type: 'string',
-      default: 'Brunch',
-      label: 'Subtitle',
-      placeholder: 'Brunch',
-    },
-    established: {
-      type: 'string',
-      default: 'EST 1975',
-      label: 'Established',
-      placeholder: 'EST 1975',
-    },
     daysLabel: {
       type: 'string',
       default: 'MONDAY - SUNDAY',
@@ -442,6 +424,95 @@ export const componentSchemas: ComponentSchemas = {
       placeholder: 'Reservation',
     },
   },
+
+  HomeAboutSection: {
+    title: {
+      type: 'string',
+      default: 'The Master Behind the Menu',
+      label: 'Title',
+      placeholder: 'The Master Behind the Menu',
+    },
+    paragraphs: {
+      type: 'array',
+      default: [
+        "Welcome to Johnny G's! This iconic Cabbagetown spot, established in 1975, was revitalized in November 2022 by owner and Head Chef Dinesh Sharma, who brings over 30 years of restaurant experience and a lifelong passion for vibrant cuisine.",
+        "Drawing on his expertise from opening over 20 restaurants across Canada since arriving from India in 2001, Chef Sharma ensures that every dish reflects his commitment to excellence, whether you're enjoying our classic breakfast and lunch staples or exploring the flavourful Indian, Hakka, and Momo dinner menu.",
+        "Come in and experience a blend of beloved tradition and culinary mastery that promises to make your next meal truly special."
+      ],
+      label: 'Paragraphs',
+      nestedSchema: {
+        _item: {
+          type: 'textarea',
+          default: '',
+          label: 'Paragraph',
+          placeholder: 'Enter paragraph text...',
+        },
+      },
+    },
+  },
+
+  HomeMenuSection: {
+    title: {
+      type: 'string',
+      default: 'Taste Why Cabbagetown Has Loved Us for Decades',
+      label: 'Title',
+      placeholder: 'Taste Why Cabbagetown Has Loved Us for Decades',
+    },
+    description: {
+      type: 'textarea',
+      default: 'Explore our carefully crafted dishes',
+      label: 'Description',
+      placeholder: 'Explore our carefully crafted dishes',
+    },
+    images: {
+      type: 'array',
+      default: [
+        '/assets/imgs/home-menu/NPCgroove-09 1.png',
+        '/assets/imgs/home-menu/NPCgroove-10 1.png',
+        '/assets/imgs/home-menu/NPCgroove-11 1.png',
+        '/assets/imgs/home-menu/NPCgroove-13 1.png'
+      ],
+      label: 'Menu Images',
+      nestedSchema: {
+        _item: {
+          type: 'image',
+          default: '',
+          label: 'Image',
+          placeholder: '/path/to/image.png',
+        },
+      },
+    },
+  },
+
+  HomeEventsSection: {
+    title: {
+      type: 'string',
+      default: 'Dinner and Jazz',
+      label: 'Title',
+      placeholder: 'Dinner and Jazz',
+    },
+    description: {
+      type: 'textarea',
+      default: 'Join us every [day of the week] for an evening that feeds both your appetite and your soul. As the sun sets, Johnny G\'s transforms into an intimate jazz venue where talented local musicians set the perfect backdrop for an unforgettable dining experience.',
+      label: 'Description',
+      placeholder: 'Join us every [day of the week] for an evening that feeds both your appetite and your soul...',
+    },
+  },
+
+  HomeReservationSection: {
+    heading: {
+      type: 'string',
+      default: 'Your Table Awaits',
+      label: 'Heading',
+      placeholder: 'Your Table Awaits',
+    },
+    subheading: {
+      type: 'string',
+      default: 'Reserve Now',
+      label: 'Subheading',
+      placeholder: 'Reserve Now',
+    },
+  },
 }
 
 /**
@@ -459,10 +530,30 @@ export function getFieldSchema(componentName: string, fieldKey: string): FieldSc
   const schema = getComponentSchema(componentName)
   if (!schema) return null
   
-  // Handle nested paths with dot notation (e.g., "day.description")
+  // Handle nested paths with dot notation (e.g., "day.description" or "images.0")
   if (fieldKey.includes('.')) {
     const pathSegments = fieldKey.split('.')
+    const [parentKey, ...restSegments] = pathSegments
+    const lastSegment = restSegments[restSegments.length - 1]
     
+    // Check if the last segment is a numeric index (array item)
+    const isArrayIndex = /^\d+$/.test(lastSegment)
+    
+    if (isArrayIndex) {
+      // This is an array item (e.g., "images.0")
+      const arrayFieldSchema = schema[parentKey] as FieldSchema | undefined
+      
+      if (arrayFieldSchema?.type === 'array' && arrayFieldSchema.nestedSchema) {
+        // Return the _item schema for array items
+        const itemSchema = arrayFieldSchema.nestedSchema['_item']
+        if (itemSchema) {
+          return itemSchema
+        }
+      }
+      return null
+    }
+    
+    // This is a nested object path (e.g., "day.description")
     // Navigate through the path
     let currentSchema: ComponentSchema = schema
     
