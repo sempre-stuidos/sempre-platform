@@ -31,6 +31,97 @@ async function getUserNameFromRoleId(roleId: number | null): Promise<string | nu
   }
 }
 
+export async function GET(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          },
+        },
+      }
+    );
+
+    // Fetch presentations with clients join
+    const { data, error } = await supabase
+      .from('presentations')
+      .select(`
+        *,
+        clients!inner(name)
+      `)
+      .order('created_date', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching presentations:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch presentations' },
+        { status: 500 }
+      );
+    }
+
+    if (!data || !Array.isArray(data)) {
+      return NextResponse.json({ presentations: [] });
+    }
+
+    // Type assertion to work around Supabase type inference issue
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const presentationsData = data as any as Array<{
+      owner_id: number | null
+      id: number
+      title: string
+      client_id: number
+      type: string
+      created_date: string
+      status: string
+      link: string
+      description?: string | null
+      last_modified: string
+      clients: { name: string }
+      created_at?: string
+      updated_at?: string
+    }>
+
+    // Fetch owner names for all presentations in parallel
+    const ownerNames = await Promise.all(
+      presentationsData.map((p) => getUserNameFromRoleId(p.owner_id))
+    )
+
+    const presentations = presentationsData.map((presentation, index) => ({
+      id: presentation.id,
+      title: presentation.title,
+      clientId: presentation.client_id,
+      clientName: presentation.clients.name,
+      type: presentation.type,
+      createdDate: presentation.created_date,
+      ownerId: presentation.owner_id,
+      ownerName: ownerNames[index],
+      status: presentation.status,
+      link: presentation.link,
+      description: presentation.description ?? undefined,
+      lastModified: presentation.last_modified,
+      created_at: presentation.created_at,
+      updated_at: presentation.updated_at
+    }));
+
+    return NextResponse.json({ presentations });
+  } catch (error) {
+    console.error('Error in GET /api/presentations:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch presentations' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -122,4 +213,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
