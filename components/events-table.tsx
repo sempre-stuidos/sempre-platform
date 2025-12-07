@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { IconEdit, IconCopy, IconArchive, IconDotsVertical } from "@tabler/icons-react"
+import { IconEdit, IconCopy, IconArchive, IconDotsVertical, IconTrash } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -17,8 +17,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { EventStatusBadge } from "@/components/event-status-badge"
 import { Event } from "@/lib/types"
 import { formatEventDateTime, formatWeeklyEventDateTime, formatVisibilityWindow } from "@/lib/events"
@@ -27,10 +38,13 @@ import Image from "next/image"
 interface EventsTableProps {
   orgId: string
   events: Event[]
+  onEventDeleted?: (eventId: string) => void
 }
 
-export function EventsTable({ orgId, events }: EventsTableProps) {
+export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps) {
   const router = useRouter()
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [eventToDelete, setEventToDelete] = React.useState<Event | null>(null)
 
   const handleEdit = (eventId: string) => {
     router.push(`/client/${orgId}/events/${eventId}`)
@@ -61,6 +75,38 @@ export function EventsTable({ orgId, events }: EventsTableProps) {
     } catch (error) {
       console.error('Error archiving event:', error)
       toast.error('Failed to archive event')
+    }
+  }
+
+  const handleDeleteClick = (event: Event, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEventToDelete(event)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!eventToDelete) return
+
+    const eventIdToDelete = eventToDelete.id
+
+    try {
+      const response = await fetch(`/api/businesses/${orgId}/events/${eventIdToDelete}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete event')
+      }
+
+      toast.success('Event deleted successfully')
+      setDeleteDialogOpen(false)
+      setEventToDelete(null)
+      
+      // Remove event from UI immediately
+      onEventDeleted?.(eventIdToDelete)
+    } catch (error) {
+      console.error('Error deleting event:', error)
+      toast.error('Failed to delete event')
     }
   }
 
@@ -176,6 +222,14 @@ export function EventsTable({ orgId, events }: EventsTableProps) {
                       <IconArchive className="h-4 w-4 mr-2" />
                       Archive
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={(e) => handleDeleteClick(event, e)}
+                      className="text-red-600"
+                    >
+                      <IconTrash className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -183,6 +237,27 @@ export function EventsTable({ orgId, events }: EventsTableProps) {
           ))}
         </TableBody>
       </Table>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{eventToDelete?.title}"? This action is irreversible and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setEventToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

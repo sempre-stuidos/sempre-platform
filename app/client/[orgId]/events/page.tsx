@@ -170,7 +170,13 @@ export default function EventsPage() {
                     <p className="text-muted-foreground">Loading events...</p>
                   </div>
                 ) : (
-                  <EventsTable orgId={orgId} events={filteredEvents} />
+                  <EventsTable 
+                    orgId={orgId} 
+                    events={filteredEvents}
+                    onEventDeleted={(eventId) => {
+                      setAllEvents(prev => prev.filter(event => event.id !== eventId))
+                    }}
+                  />
                 )}
               </TabsContent>
             </Tabs>
