@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useParams, useSearchParams } from "next/navigation"
-import { EventEditorForm } from "@/components/event-editor-form"
+import { EventWizard } from "@/components/event-wizard/event-wizard"
 import { Event } from "@/lib/types"
 
 export default function NewEventPage() {
@@ -52,7 +52,7 @@ export default function NewEventPage() {
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="px-4 lg:px-6">
-          <EventEditorForm orgId={orgId} event={eventToDuplicate} />
+          <EventWizard orgId={orgId} event={eventToDuplicate} />
         </div>
       </div>
     </div>
