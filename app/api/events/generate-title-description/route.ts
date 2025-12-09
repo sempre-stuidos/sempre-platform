@@ -148,7 +148,7 @@ export async function POST(request: Request) {
 Title: ${currentTitle || 'Not provided'}
 Description: ${currentDescription || 'Not provided'}${contextString}
 
-Please create a SHORTER version with the same ${toneDescriptions[tone]} tone. Make the title more concise and the description more brief while keeping the essential information.
+Please create a SHORTER version with the same ${toneDescriptions[tone]} tone. Make the title more concise and the description more brief while keeping ALL essential information and important details the user mentioned.
 
 Return as JSON:
 {
@@ -161,7 +161,7 @@ Return as JSON:
 Title: ${currentTitle || 'Not provided'}
 Description: ${currentDescription || 'Not provided'}${contextString}
 
-Please rewrite this in a more formal, professional tone while keeping the same information. Make it sound more sophisticated and polished.
+Please rewrite this in a more formal, professional tone while keeping ALL the same information and important details. Make it sound more sophisticated and polished, but preserve all key points the user mentioned.
 
 Return as JSON:
 {
@@ -170,9 +170,14 @@ Return as JSON:
 }`
     } else {
       // Generate new or regenerate
-      prompt = `Generate an event title and description with a ${toneDescriptions[tone]} tone.${contextString}
+      // If user has typed content, use it as context to incorporate important details
+      const userContentContext = currentTitle || currentDescription 
+        ? `\n\nThe user has provided some content that may contain important details they want included:\n${currentTitle ? `Title: ${currentTitle}` : ''}${currentTitle && currentDescription ? '\n' : ''}${currentDescription ? `Description: ${currentDescription}` : ''}\n\nPlease incorporate any important details, themes, or information from the user's content into the generated title and description, while maintaining the ${toneDescriptions[tone]} tone.`
+        : ''
 
-${currentTitle && currentDescription ? `You can use this as inspiration, but create something fresh:\nTitle: ${currentTitle}\nDescription: ${currentDescription}\n\n` : ''}The title should be catchy and clear (max 60 characters). The description should be engaging and informative (2-4 sentences).
+      prompt = `Generate an event title and description with a ${toneDescriptions[tone]} tone.${contextString}${userContentContext}
+
+The title should be catchy and clear (max 60 characters). The description should be engaging and informative (2-4 sentences).${userContentContext ? ' Make sure to preserve and incorporate any important details the user mentioned.' : ''}
 
 Return as JSON:
 {

@@ -85,8 +85,8 @@ export function BasicInfoStep({
           tone: selectedTone,
           eventContext,
           refinement,
-          currentTitle: refinement ? title : undefined,
-          currentDescription: refinement ? description : undefined,
+          currentTitle: title || undefined,
+          currentDescription: description || undefined,
         }),
       })
 
