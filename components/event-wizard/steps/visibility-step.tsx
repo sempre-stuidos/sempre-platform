@@ -3,8 +3,7 @@
 import * as React from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { EventStatusBadge } from "@/components/event-status-badge"
 
@@ -108,71 +107,79 @@ export function VisibilityStep({
         <div className="max-w-2xl mx-auto space-y-4">
           <Card>
             <CardContent className="flex items-center justify-between p-4">
-              <div className="space-y-0.5">
-                <Label htmlFor="is_live" className="text-base">
-                  Event Status
+              <div className="space-y-0.5 flex-1">
+                <Label htmlFor="is_live" className="text-base font-medium">
+                  Event is live and visible
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  {isLive
-                    ? "Event is live and visible"
-                    : "Event is inactive and hidden"}
+                  Make this weekly event visible on your site
                 </p>
               </div>
-              <Switch
-                id="is_live"
-                checked={isLive}
-                onCheckedChange={onIsLiveChange}
-              />
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant={isLive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    onIsLiveChange(true)
+                  }}
+                  className="min-w-[60px]"
+                >
+                  Yes
+                </Button>
+                <Button
+                  type="button"
+                  variant={!isLive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    onIsLiveChange(false)
+                  }}
+                  className="min-w-[60px]"
+                >
+                  No
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="flex items-center justify-between p-4">
-              <div className="space-y-0.5">
-                <Label htmlFor="is_indefinite" className="text-base">
-                  Show Indefinitely
+              <div className="space-y-0.5 flex-1">
+                <Label htmlFor="is_indefinite" className="text-base font-medium">
+                  Show indefinitely
                 </Label>
                 <p className="text-sm text-muted-foreground">
                   Show this event indefinitely (no end date)
                 </p>
               </div>
-              <Switch
-                id="is_indefinite"
-                checked={isIndefinite}
-                onCheckedChange={(checked) => {
-                  onIsIndefiniteChange(checked)
-                  if (checked) {
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant={isIndefinite ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    onIsIndefiniteChange(true)
                     onPublishEndDateChange("")
                     onPublishEndTimeChange("")
-                  }
-                }}
-              />
+                  }}
+                  className="min-w-[60px]"
+                >
+                  Yes
+                </Button>
+                <Button
+                  type="button"
+                  variant={!isIndefinite ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    onIsIndefiniteChange(false)
+                  }}
+                  className="min-w-[60px]"
+                >
+                  No
+                </Button>
+              </div>
             </CardContent>
           </Card>
-
-          {!isIndefinite && (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="publish_end_date">Hide After Date</Label>
-                <Input
-                  id="publish_end_date"
-                  type="date"
-                  value={publishEndDate}
-                  onChange={(e) => onPublishEndDateChange(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="publish_end_time">Hide After Time</Label>
-                <Input
-                  id="publish_end_time"
-                  type="time"
-                  value={publishEndTime}
-                  onChange={(e) => onPublishEndTimeChange(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
 
           <Card>
             <CardContent className="p-4">

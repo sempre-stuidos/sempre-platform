@@ -128,7 +128,7 @@ export function EventWizard({ orgId, event, onSave }: EventWizardProps) {
       endDate: null,
       endTime: "",
       dayOfWeek: undefined,
-      isLive: false,
+      isLive: true,
       isIndefinite: true,
       publishEndDate: "",
       publishEndTime: "",
@@ -578,16 +578,16 @@ export function EventWizard({ orgId, event, onSave }: EventWizardProps) {
             publishEndTimeOneTime={formData.publishEndTimeOneTime}
             visibilityAction={formData.visibilityAction}
             onIsLiveChange={(isLive) =>
-              setFormData({ ...formData, isLive })
+              setFormData((prev) => ({ ...prev, isLive }))
             }
             onIsIndefiniteChange={(isIndefinite) =>
-              setFormData({ ...formData, isIndefinite })
+              setFormData((prev) => ({ ...prev, isIndefinite }))
             }
             onPublishEndDateChange={(date) =>
-              setFormData({ ...formData, publishEndDate: date })
+              setFormData((prev) => ({ ...prev, publishEndDate: date }))
             }
             onPublishEndTimeChange={(time) =>
-              setFormData({ ...formData, publishEndTime: time })
+              setFormData((prev) => ({ ...prev, publishEndTime: time }))
             }
             onPublishStartDateChange={(date) =>
               setFormData({ ...formData, publishStartDate: date })

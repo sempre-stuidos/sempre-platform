@@ -120,22 +120,9 @@ export function ImageUploadStep({
       </div>
 
       <div className="max-w-2xl mx-auto space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="image_url">Image URL</Label>
-          <Input
-            id="image_url"
-            value={imageUrl}
-            onChange={(e) => {
-              onImageChange(e.target.value)
-              setImagePreview(e.target.value)
-            }}
-            placeholder="https://example.com/image.jpg"
-          />
-        </div>
-
         <div
           className={`
-            border-2 border-dashed rounded-lg p-8 text-center transition-colors
+            border-2 border-dashed rounded-lg text-center transition-colors relative
             ${
               isDragging
                 ? "border-primary bg-primary/5"
@@ -147,7 +134,7 @@ export function ImageUploadStep({
           onDrop={handleDrop}
         >
           {imagePreview ? (
-            <div className="relative aspect-video w-full max-w-md mx-auto rounded-lg overflow-hidden border">
+            <div className="relative aspect-video w-full overflow-hidden">
               <Image
                 src={imagePreview}
                 alt="Event preview"
@@ -159,13 +146,13 @@ export function ImageUploadStep({
               <button
                 type="button"
                 onClick={handleRemove}
-                className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-2 hover:bg-destructive/90"
+                className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-2 hover:bg-destructive/90 z-10"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 p-8">
               <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium mb-1">

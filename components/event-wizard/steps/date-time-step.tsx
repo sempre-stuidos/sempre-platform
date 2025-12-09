@@ -43,6 +43,14 @@ const DAYS_OF_WEEK = [
   { value: 6, label: "Saturday" },
 ]
 
+function formatTime(timeString: string): string {
+  if (!timeString) return ""
+  const [hours, minutes] = timeString.split(":").map(Number)
+  const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours
+  const amPm = hours < 12 ? "AM" : "PM"
+  return `${hour12}:${String(minutes).padStart(2, "0")} ${amPm}`
+}
+
 export function DateTimeStep({
   isWeekly,
   startDate,
@@ -135,6 +143,14 @@ export function DateTimeStep({
                 <span className="font-semibold text-primary">
                   {DAYS_OF_WEEK.find((d) => d.value === dayOfWeek)?.label}
                 </span>
+                {startTime && endTime && (
+                  <>
+                    {" "}from{" "}
+                    <span className="font-semibold text-primary">
+                      {formatTime(startTime)} - {formatTime(endTime)}
+                    </span>
+                  </>
+                )}
               </p>
             </div>
           )}
