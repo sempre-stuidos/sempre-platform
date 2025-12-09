@@ -521,11 +521,14 @@ export function EventWizard({ orgId, event, onSave }: EventWizardProps) {
           <BasicInfoStep
             title={formData.title}
             description={formData.description}
-            onTitleChange={(title) => setFormData({ ...formData, title })}
-            onDescriptionChange={(description) =>
-              setFormData({ ...formData, description })
-            }
+            onTitleChange={(title) => {
+              setFormData((prev) => ({ ...prev, title }))
+            }}
+            onDescriptionChange={(description) => {
+              setFormData((prev) => ({ ...prev, description }))
+            }}
             errors={errors}
+            orgId={orgId}
           />
         )
       case 4:
