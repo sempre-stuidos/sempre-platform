@@ -20,7 +20,7 @@ function CalendarDayButton({
       variant="ghost"
       size="icon"
       className={cn(
-        "h-9 w-9 p-0 font-normal",
+        "h-12 w-12 p-0 font-normal text-base",
         modifiers.selected && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
         modifiers.today && !modifiers.selected && "bg-accent text-accent-foreground",
         modifiers.outside && "text-muted-foreground opacity-50",
@@ -43,28 +43,28 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
+      className={cn("p-2", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-        month: "space-y-4",
-        month_caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
-        nav: "flex items-center justify-between absolute inset-x-0",
+        month: "space-y-5",
+        month_caption: "flex justify-center pt-2 relative items-center min-h-[2.5rem]",
+        caption_label: "text-base font-medium",
+        nav: "flex items-center justify-between absolute inset-x-0 px-1 hidden",
         button_previous: cn(
           buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 z-10 hidden"
         ),
         button_next: cn(
           buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 z-10 hidden"
         ),
         table: "w-full border-collapse space-y-1",
         head_row: "flex",
         head_cell:
-          "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
-        row: "flex w-full mt-2",
+          "text-muted-foreground rounded-md w-12 font-normal text-sm",
+        row: "flex w-full mt-3",
         cell: "p-0 relative text-center",
-        day: "h-9 w-9",
+        day: "h-12 w-12",
         day_range_end: "day-range-end",
         day_selected: "",
         day_today: "",

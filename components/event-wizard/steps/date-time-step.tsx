@@ -2,16 +2,9 @@
 
 import * as React from "react"
 import { Calendar } from "@/components/ui/calendar"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { TimePickerModal } from "../time-picker-modal"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { DaySelector } from "../day-selector"
 import { TimePicker } from "../time-picker"
 
@@ -65,19 +58,34 @@ export function DateTimeStep({
   onDayOfWeekChange,
   errors,
 }: DateTimeStepProps) {
-  const [timePickerOpen, setTimePickerOpen] = React.useState(false)
-  const [selectedDateForTime, setSelectedDateForTime] = React.useState<Date | null>(null)
+  const [month, setMonth] = React.useState<Date>(
+    startDate || endDate || new Date()
+  )
 
-  const handleDayClick = (date: Date | undefined) => {
-    if (!date) return
-    onStartDateSelect(date)
-    setSelectedDateForTime(date)
-    setTimePickerOpen(true)
+  const handlePreviousMonth = () => {
+    setMonth((prev) => {
+      const newDate = new Date(prev)
+      newDate.setMonth(prev.getMonth() - 1)
+      return newDate
+    })
   }
 
-  const handleTimeSave = () => {
-    setTimePickerOpen(false)
+  const handleNextMonth = () => {
+    setMonth((prev) => {
+      const newDate = new Date(prev)
+      newDate.setMonth(prev.getMonth() + 1)
+      return newDate
+    })
   }
+
+  // Update month when dates change
+  React.useEffect(() => {
+    if (startDate) {
+      setMonth(startDate)
+    } else if (endDate) {
+      setMonth(endDate)
+    }
+  }, [startDate, endDate])
 
   if (isWeekly) {
     return (
@@ -165,120 +173,144 @@ export function DateTimeStep({
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold mb-2">When does this event occur?</h2>
         <p className="text-muted-foreground">
-          Click a date on the calendar to select start and end times
+          Select the date range and times for your event
         </p>
       </div>
 
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="space-y-2">
-          <Label>Start Date <span className="text-red-500">*</span></Label>
-          <div className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={startDate || undefined}
-              onSelect={(date) => {
-                if (date) {
-                  handleDayClick(date)
-                } else {
-                  onStartDateSelect(null)
-                }
-              }}
-              className="rounded-md border"
+      <div className="max-w-6xl mx-auto">
+        {/* Three-column layout: Start Date | Start Time | End Time */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Left: Date Range Calendar */}
+          <div>
+            <div className="space-y-3">
+              <Label>
+                Date Range <span className="text-red-500">*</span>
+              </Label>
+              <div className="flex flex-col items-center gap-3">
+                <Calendar
+                  mode="range"
+                  month={month}
+                  onMonthChange={setMonth}
+                  selected={{
+                    from: startDate || undefined,
+                    to: endDate || undefined,
+                  }}
+                  onSelect={(range) => {
+                    if (range?.from) {
+                      onStartDateSelect(range.from)
+                    } else {
+                      onStartDateSelect(null)
+                    }
+                    if (range?.to) {
+                      onEndDateSelect(range.to)
+                    } else if (range?.from) {
+                      // If only from is selected, set end date to same as start (single day event)
+                      onEndDateSelect(range.from)
+                    } else {
+                      onEndDateSelect(null)
+                    }
+                  }}
+                  className="rounded-md border w-fit"
+                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreviousMonth}
+                    className="h-8"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Previous
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNextMonth}
+                    className="h-8"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+              {errors?.start_date && (
+                <p className="text-sm text-red-500 text-center">{errors.start_date}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Middle: Start Time */}
+          <div>
+            <TimePicker
+              value={startTime}
+              onChange={onStartTimeChange}
+              label={
+                <>
+                  Start Time <span className="text-red-500">*</span>
+                </>
+              }
+              error={errors?.start_time}
             />
           </div>
-          {errors?.start_date && (
-            <p className="text-sm text-red-500 text-center">{errors.start_date}</p>
-          )}
+
+          {/* Right: End Time */}
+          <div>
+            <TimePicker
+              value={endTime}
+              onChange={onEndTimeChange}
+              label={
+                <>
+                  End Time <span className="text-red-500">*</span>
+                </>
+              }
+              error={errors?.end_time}
+            />
+          </div>
         </div>
 
-        {startDate && (
-          <div className="space-y-4">
-            <div className="rounded-md border bg-muted/50 p-4">
-              <p className="text-sm font-medium mb-2">
-                Selected Date:{" "}
-                <span className="font-semibold text-primary">
-                  {startDate.toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </span>
-              </p>
-              {startTime && endTime && (
-                <p className="text-sm text-muted-foreground">
-                  {startTime} - {endTime}
-                </p>
+        {/* Selected date and times summary */}
+        {startDate && startTime && endTime && (
+          <div className="mt-6 rounded-md border bg-muted/50 p-4 text-center">
+            <p className="text-sm font-medium mb-2">
+              {endDate && endDate.getTime() !== startDate.getTime() ? (
+                <>
+                  Selected Date Range:{" "}
+                  <span className="font-semibold text-primary">
+                    {startDate.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}{" "}
+                    - {endDate.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </span>
+                </>
+              ) : (
+                <>
+                  Selected Date:{" "}
+                  <span className="font-semibold text-primary">
+                    {startDate.toLocaleDateString("en-US", {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </span>
+                </>
               )}
-            </div>
-
-            {(!startTime || !endTime) && (
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-2">
-                  Click the date above to set times
-                </p>
-              </div>
-            )}
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="start_time_display">Start Time</Label>
-                <Input
-                  id="start_time_display"
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => onStartTimeChange(e.target.value)}
-                  className={errors?.start_time ? "border-red-500" : ""}
-                />
-                {errors?.start_time && (
-                  <p className="text-sm text-red-500">{errors.start_time}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="end_time_display">End Time</Label>
-                <Input
-                  id="end_time_display"
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => onEndTimeChange(e.target.value)}
-                  className={errors?.end_time ? "border-red-500" : ""}
-                />
-                {errors?.end_time && (
-                  <p className="text-sm text-red-500">{errors.end_time}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="end_date">End Date (optional - defaults to start date)</Label>
-              <div className="flex justify-center">
-                <Calendar
-                  mode="single"
-                  selected={endDate || undefined}
-                  onSelect={(date) => onEndDateSelect(date)}
-                  className="rounded-md border"
-                />
-              </div>
-              {errors?.end_date && (
-                <p className="text-sm text-red-500 text-center">{errors.end_date}</p>
-              )}
-            </div>
+            </p>
+            <p className="text-sm font-medium">
+              <span className="font-semibold text-primary">
+                {formatTime(startTime)} - {formatTime(endTime)}
+              </span>
+            </p>
           </div>
         )}
       </div>
-
-      <TimePickerModal
-        isOpen={timePickerOpen}
-        onClose={() => setTimePickerOpen(false)}
-        selectedDate={selectedDateForTime}
-        startTime={startTime}
-        endTime={endTime}
-        onStartTimeChange={onStartTimeChange}
-        onEndTimeChange={onEndTimeChange}
-        onSave={handleTimeSave}
-        isWeekly={false}
-      />
     </div>
   )
 }
