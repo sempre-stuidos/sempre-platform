@@ -422,6 +422,10 @@ interface SendReservationConfirmationEmailParams {
   reservationDate: string
   reservationTime: string
   partySize: number
+  restaurantAddress?: string
+  reservationId?: string
+  modifyReservationLink?: string
+  cancelReservationLink?: string
 }
 
 /**
@@ -617,6 +621,9 @@ export async function sendReservationConfirmationEmail(params: SendReservationCo
         reservationTime: reservationTime,
         partySize: partySize.toString(),
         rawDate: reservationDate,
+        restaurantAddress: params.restaurantAddress || '',
+        modifyReservationLink: params.modifyReservationLink || '',
+        cancelReservationLink: params.cancelReservationLink || '',
       }
       
       console.log('Using Brevo template:', {

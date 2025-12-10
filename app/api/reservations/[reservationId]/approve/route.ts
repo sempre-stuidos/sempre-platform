@@ -74,6 +74,24 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const approverName = profile?.full_name || user.email?.split('@')[0] || 'Restaurant Staff';
 
+    // Get organization address for directions
+    const { data: organization } = await supabase
+      .from('organizations')
+      .select('address')
+      .eq('id', reservation.org_id)
+      .single();
+
+    const restaurantAddress = organization?.address || '';
+
+    // Generate reservation management links
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+    
+    // For now, create links to potential customer-facing pages
+    // These can be updated when customer reservation management pages are created
+    const modifyReservationLink = `${baseUrl}/reservations/modify?reservationId=${reservationId}`;
+    const cancelReservationLink = `${baseUrl}/reservations/cancel?reservationId=${reservationId}`;
+
     // Update reservation status
     const { error: updateError } = await supabase
       .from('reservations')
@@ -112,6 +130,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       reservationDate: reservation.reservation_date,
       reservationTime: reservation.reservation_time,
       partySize: reservation.party_size,
+      restaurantAddress: restaurantAddress,
+      reservationId: reservationId,
+      modifyReservationLink: modifyReservationLink,
+      cancelReservationLink: cancelReservationLink,
     });
 
     if (!emailResult.success) {

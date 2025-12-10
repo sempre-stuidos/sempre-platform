@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en" style="margin:0;padding:0;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reservation Confirmed - Johnny G's Brunch</title>
+    <style>
+      /* Mobile Responsive Styles */
+      @media only screen and (max-width: 600px) {
+        .email-container {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+        .mobile-padding {
+          padding: 40px 20px !important;
+        }
+        .mobile-text-large {
+          font-size: 28px !important;
+        }
+        .mobile-text-base {
+          font-size: 15px !important;
+        }
+        .mobile-text-small {
+          font-size: 13px !important;
+        }
+        .mobile-reservation-box {
+          padding: 20px 16px !important;
+        }
+        .mobile-spacing {
+          padding-bottom: 32px !important;
+        }
+        .mobile-header {
+          font-size: 18px !important;
+        }
+        .mobile-button {
+          padding: 14px 24px !important;
+          font-size: 15px !important;
+        }
+      }
+    </style>
+  </head>
+  <body style="margin:0; padding:0; background-color:#334D2D; font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+    <table width="100%" cellspacing="0" cellpadding="0" style="background:#334D2D; padding:60px 20px;">
+      <tr>
+        <td align="center" class="mobile-padding" style="padding:60px 20px;">
+          <!-- Email Container -->
+          <table width="100%" cellpadding="0" cellspacing="0" class="email-container" style="max-width:560px; background:#334D2D; padding:0; width:100%;">
+            <!-- Brand Header -->
+            <tr>
+              <td style="padding:0 0 48px 0;" class="mobile-spacing">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center">
+                      <h1 class="mobile-header" style="margin:0; font-size:24px; font-weight:600; color:#B29738; letter-spacing:-0.3px; text-align:center;">
+                        Johnny G's Brunch
+                      </h1>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Content Area -->
+            <tr>
+              <td>
+                <!-- Confirmation Title -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" class="mobile-text-large" style="font-size:32px; font-weight:600; color:#B29738; line-height:1.2; padding-bottom:16px; letter-spacing:-0.5px; text-align:center;">
+                      Reservation Confirmed
+                    </td>
+                  </tr>
+                </table>
+                <!-- Greeting Message -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" class="mobile-text-base mobile-spacing" style="font-size:16px; color:#FFFFFF; line-height:1.6; padding-bottom:32px; text-align:center; padding-left:10px; padding-right:10px;">
+                      Dear {{ params.customerName }},<br /><br />
+                      We're excited to confirm your reservation! We look forward to serving you.
+                    </td>
+                  </tr>
+                </table>
+                <!-- Reservation Details Box -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" class="mobile-spacing" style="padding-bottom:32px;">
+                      <table cellpadding="0" cellspacing="0" class="mobile-reservation-box" style="background:rgba(255,255,255,0.1); border-radius:8px; padding:32px 40px; border:1px solid rgba(178,151,56,0.3); width:100%; max-width:100%;">
+                        <tr>
+                          <td style="padding-bottom:20px;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                              <tr>
+                                <td class="mobile-text-base" style="font-size:16px; font-weight:600; color:#B29738; line-height:1.4; padding-bottom:8px;">
+                                  Date:
+                                </td>
+                                <td class="mobile-text-base" style="font-size:16px; color:#FFFFFF; line-height:1.4; text-align:right;">
+                                  {{ params.reservationDate }}
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding-bottom:20px;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                              <tr>
+                                <td class="mobile-text-base" style="font-size:16px; font-weight:600; color:#B29738; line-height:1.4; padding-bottom:8px;">
+                                  Time:
+                                </td>
+                                <td class="mobile-text-base" style="font-size:16px; color:#FFFFFF; line-height:1.4; text-align:right;">
+                                  {{ params.reservationTime }}
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                              <tr>
+                                <td class="mobile-text-base" style="font-size:16px; font-weight:600; color:#B29738; line-height:1.4; padding-bottom:8px;">
+                                  Party Size:
+                                </td>
+                                <td class="mobile-text-base" style="font-size:16px; color:#FFFFFF; line-height:1.4; text-align:right;">
+                                  {{ params.partySize }} guests
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+                <!-- See Directions Button -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" class="mobile-spacing" style="padding-bottom:32px;">
+                      <a href="https://www.google.com/maps/search/?api=1&query={{ params.restaurantAddress }}" target="_blank" style="display:inline-block; background-color:#B29738; color:#FFFFFF; text-decoration:none; border-radius:6px; padding:16px 32px; font-size:16px; font-weight:600; text-align:center; letter-spacing:0.3px;" class="mobile-button">
+                        See Directions
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <!-- Additional Message -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" class="mobile-text-base mobile-spacing" style="font-size:16px; color:#FFFFFF; line-height:1.6; padding-bottom:32px; text-align:center; padding-left:10px; padding-right:10px; opacity:0.9;">
+                      If you need to make any changes or have questions, please contact us.
+                    </td>
+                  </tr>
+                </table>
+                <!-- Divider -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="border-top:1px solid rgba(178,151,56,0.3); height:1px; padding-bottom:32px;"></td>
+                  </tr>
+                </table>
+                <!-- Footer Message -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" style="padding-top:32px; border-top:1px solid rgba(178,151,56,0.3);">
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td align="center" class="mobile-text-small" style="font-size:13px; color:#FFFFFF; line-height:1.6; text-align:center; padding-left:10px; padding-right:10px; opacity:0.8;">
+                            We look forward to seeing you soon!
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="padding-top:64px;" class="mobile-spacing">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" class="mobile-text-small" style="font-size:12px; color:#FFFFFF; line-height:1.6; opacity:0.7;">
+                      <p style="margin:0;">
+                        Johnny G's Brunch
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
