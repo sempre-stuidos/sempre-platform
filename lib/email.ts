@@ -415,3 +415,557 @@ export function getLoginCodeEmailTemplates(params: SendLoginCodeEmailParams) {
     text: generateLoginCodeEmailText(params)
   }
 }
+
+interface SendReservationConfirmationEmailParams {
+  customerEmail: string
+  customerName: string
+  reservationDate: string
+  reservationTime: string
+  partySize: number
+}
+
+/**
+ * Generate HTML email template for reservation confirmation
+ */
+function generateReservationConfirmationEmailHTML(params: SendReservationConfirmationEmailParams): string {
+  const { customerName, reservationDate, reservationTime, partySize } = params
+  const baseUrl = getBaseUrlForEmail()
+  
+  const formattedDate = new Date(reservationDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  })
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservation Confirmed</title>
+</head>
+<body style="font-family: system-ui, sans-serif, Arial; font-size: 14px; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="font-family: system-ui, sans-serif, Arial; font-size: 14px">
+    <h1 style="color: #667eea; margin: 0 0 20px 0;">Reservation Confirmed</h1>
+    
+    <p style="padding-top: 14px; border-top: 1px solid #eaeaea">
+      Dear ${customerName},
+    </p>
+    
+    <p>
+      Your reservation has been confirmed! We look forward to serving you.
+    </p>
+    
+    <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <p style="margin: 0 0 10px 0;"><strong>Date:</strong> ${formattedDate}</p>
+      <p style="margin: 0 0 10px 0;"><strong>Time:</strong> ${reservationTime}</p>
+      <p style="margin: 0;"><strong>Party Size:</strong> ${partySize} ${partySize === 1 ? 'guest' : 'guests'}</p>
+    </div>
+    
+    <p>
+      If you need to make any changes or have questions, please contact us.
+    </p>
+    
+    <p>We look forward to serving you!</p>
+    
+    <p style="color: #666; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eaeaea">
+      Best regards,<br />
+      Restaurant Team
+    </p>
+  </div>
+</body>
+</html>
+  `.trim()
+}
+
+/**
+ * Generate plain text email template for reservation confirmation
+ */
+function generateReservationConfirmationEmailText(params: SendReservationConfirmationEmailParams): string {
+  const { customerName, reservationDate, reservationTime, partySize } = params
+  
+  const formattedDate = new Date(reservationDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  })
+  
+  return `
+Dear ${customerName},
+
+Your reservation has been confirmed! We look forward to serving you.
+
+Date: ${formattedDate}
+Time: ${reservationTime}
+Party Size: ${partySize} ${partySize === 1 ? 'guest' : 'guests'}
+
+If you need to make any changes or have questions, please contact us.
+
+We look forward to serving you!
+
+Best regards,
+Restaurant Team
+  `.trim()
+}
+
+/**
+ * Get the Brevo template ID for reservation confirmation emails
+ */
+function getReservationConfirmationTemplateId(): number | null {
+  const templateId = process.env.BREVO_RESERVATION_CONFIRMATION_TEMPLATE_ID
+  if (!templateId) {
+    return null
+  }
+  const parsedId = parseInt(templateId, 10)
+  if (isNaN(parsedId)) {
+    console.warn('BREVO_RESERVATION_CONFIRMATION_TEMPLATE_ID is not a valid number, falling back to hard-coded templates')
+    return null
+  }
+  return parsedId
+}
+
+/**
+ * Send reservation confirmation email using Brevo
+ */
+export async function sendReservationConfirmationEmail(params: SendReservationConfirmationEmailParams): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { customerEmail, customerName, reservationDate, reservationTime, partySize } = params
+    
+    // Validate required parameters
+    if (!customerEmail || typeof customerEmail !== 'string' || !customerEmail.includes('@')) {
+      return {
+        success: false,
+        error: 'Invalid email address provided'
+      }
+    }
+    
+    // Get Brevo API key from environment variables
+    const apiKey = process.env.BREVO_API_KEY
+    
+    // If Brevo is not configured, log in development mode
+    if (!apiKey) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('='.repeat(60))
+        console.log('RESERVATION CONFIRMATION EMAIL (Development Mode - Brevo not configured)')
+        console.log('='.repeat(60))
+        console.log('To:', customerEmail)
+        console.log('Subject: Reservation Confirmed')
+        console.log('HTML Email:')
+        console.log(generateReservationConfirmationEmailHTML(params))
+        console.log('='.repeat(60))
+        console.log('To enable email sending, set BREVO_API_KEY in your environment variables')
+        console.log('='.repeat(60))
+        return { success: true } // Return success in dev mode even without Brevo
+      } else {
+        return {
+          success: false,
+          error: 'Email service not configured. Please set BREVO_API_KEY environment variable.'
+        }
+      }
+    }
+    
+    // Initialize Brevo API client
+    let apiInstance: TransactionalEmailsApi
+    try {
+      apiInstance = new TransactionalEmailsApi()
+      ;(apiInstance as any).authentications.apiKey.apiKey = apiKey
+    } catch (initError) {
+      console.error('Error initializing Brevo client:', initError)
+      return {
+        success: false,
+        error: `Failed to initialize email service: ${initError instanceof Error ? initError.message : 'Unknown error'}`
+      }
+    }
+    
+    // Get sender email and name
+    const senderEmail = getSenderEmail()
+    const senderName = getSenderName()
+    
+    // Get template ID
+    const templateId = getReservationConfirmationTemplateId()
+    
+    const formattedDate = new Date(reservationDate).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    })
+    
+    // Create email object
+    const sendSmtpEmail = new SendSmtpEmail()
+    sendSmtpEmail.subject = 'Reservation Confirmed'
+    sendSmtpEmail.sender = {
+      name: senderName,
+      email: senderEmail,
+    }
+    sendSmtpEmail.to = [
+      {
+        email: customerEmail,
+        name: customerName,
+      },
+    ]
+    
+    // Use Brevo template if template ID is configured
+    if (templateId) {
+      sendSmtpEmail.templateId = templateId
+      sendSmtpEmail.params = {
+        customerName: customerName,
+        reservationDate: formattedDate,
+        reservationTime: reservationTime,
+        partySize: partySize.toString(),
+        rawDate: reservationDate,
+      }
+      
+      console.log('Using Brevo template:', {
+        templateId: templateId,
+        params: sendSmtpEmail.params,
+      })
+    } else {
+      // Fall back to hard-coded templates
+      let htmlContent: string
+      let textContent: string
+      try {
+        htmlContent = generateReservationConfirmationEmailHTML(params)
+        textContent = generateReservationConfirmationEmailText(params)
+      } catch (templateError) {
+        console.error('Error generating email templates:', templateError)
+        return {
+          success: false,
+          error: `Failed to generate email template: ${templateError instanceof Error ? templateError.message : 'Unknown error'}`
+        }
+      }
+      sendSmtpEmail.htmlContent = htmlContent
+      sendSmtpEmail.textContent = textContent
+      console.log('Using hard-coded email templates (BREVO_RESERVATION_CONFIRMATION_TEMPLATE_ID not set)')
+    }
+    
+    console.log('Sending reservation confirmation email with Brevo:', {
+      from: `${senderName} <${senderEmail}>`,
+      to: customerEmail,
+      subject: sendSmtpEmail.subject,
+      usingTemplate: !!templateId,
+    })
+    
+    // Send email via Brevo
+    try {
+      const response = await apiInstance.sendTransacEmail(sendSmtpEmail)
+      
+      console.log('Reservation confirmation email sent via Brevo successfully:', {
+        messageId: response.body?.messageId,
+        statusCode: response.response?.statusCode,
+        statusMessage: response.response?.statusMessage,
+      })
+      
+      return { success: true }
+    } catch (brevoError: any) {
+      console.error('Brevo send error - Full details:', {
+        message: brevoError?.message,
+        status: brevoError?.response?.status,
+        statusCode: brevoError?.response?.statusCode,
+        statusText: brevoError?.response?.statusText,
+        body: brevoError?.response?.body,
+        text: brevoError?.response?.text,
+        data: brevoError?.response?.data,
+      })
+      
+      let errorMessage = 'Failed to send email'
+      if (brevoError?.response?.status || brevoError?.response?.statusCode) {
+        const status = brevoError.response.status || brevoError.response.statusCode
+        const body = brevoError.response.body || brevoError.response.data || {}
+        const bodyMessage = body.message || body.error || brevoError.message
+        errorMessage = `Brevo error (status ${status}): ${bodyMessage || 'Unknown error'}`
+      } else if (brevoError?.message) {
+        errorMessage = `Brevo error: ${brevoError.message}`
+      }
+      
+      return {
+        success: false,
+        error: errorMessage
+      }
+    }
+  } catch (error) {
+    console.error('Error in sendReservationConfirmationEmail:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send email'
+    }
+  }
+}
+
+interface SendReservationRejectionEmailParams {
+  customerEmail: string
+  customerName: string
+  reservationDate: string
+  reservationTime: string
+  rejectionReason: string
+}
+
+/**
+ * Generate HTML email template for reservation rejection
+ */
+function generateReservationRejectionEmailHTML(params: SendReservationRejectionEmailParams): string {
+  const { customerName, reservationDate, reservationTime, rejectionReason } = params
+  const baseUrl = getBaseUrlForEmail()
+  
+  const formattedDate = new Date(reservationDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  })
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservation Request Declined</title>
+</head>
+<body style="font-family: system-ui, sans-serif, Arial; font-size: 14px; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="font-family: system-ui, sans-serif, Arial; font-size: 14px">
+    <h1 style="color: #667eea; margin: 0 0 20px 0;">Reservation Request Declined</h1>
+    
+    <p style="padding-top: 14px; border-top: 1px solid #eaeaea">
+      Dear ${customerName},
+    </p>
+    
+    <p>
+      We regret to inform you that your reservation request has been declined.
+    </p>
+    
+    <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <p style="margin: 0 0 10px 0;"><strong>Date:</strong> ${formattedDate}</p>
+      <p style="margin: 0 0 10px 0;"><strong>Time:</strong> ${reservationTime}</p>
+      <p style="margin: 0;"><strong>Reason:</strong> ${rejectionReason}</p>
+    </div>
+    
+    <p>
+      We apologize for any inconvenience. Please feel free to contact us if you have any questions or would like to make a new reservation.
+    </p>
+    
+    <p style="color: #666; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eaeaea">
+      Best regards,<br />
+      Restaurant Team
+    </p>
+  </div>
+</body>
+</html>
+  `.trim()
+}
+
+/**
+ * Generate plain text email template for reservation rejection
+ */
+function generateReservationRejectionEmailText(params: SendReservationRejectionEmailParams): string {
+  const { customerName, reservationDate, reservationTime, rejectionReason } = params
+  
+  const formattedDate = new Date(reservationDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  })
+  
+  return `
+Dear ${customerName},
+
+We regret to inform you that your reservation request has been declined.
+
+Date: ${formattedDate}
+Time: ${reservationTime}
+Reason: ${rejectionReason}
+
+We apologize for any inconvenience. Please feel free to contact us if you have any questions or would like to make a new reservation.
+
+Best regards,
+Restaurant Team
+  `.trim()
+}
+
+/**
+ * Get the Brevo template ID for reservation rejection emails
+ */
+function getReservationRejectionTemplateId(): number | null {
+  const templateId = process.env.BREVO_RESERVATION_REJECTION_TEMPLATE_ID
+  if (!templateId) {
+    return null
+  }
+  const parsedId = parseInt(templateId, 10)
+  if (isNaN(parsedId)) {
+    console.warn('BREVO_RESERVATION_REJECTION_TEMPLATE_ID is not a valid number, falling back to hard-coded templates')
+    return null
+  }
+  return parsedId
+}
+
+/**
+ * Send reservation rejection email using Brevo
+ */
+export async function sendReservationRejectionEmail(params: SendReservationRejectionEmailParams): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { customerEmail, customerName, reservationDate, reservationTime, rejectionReason } = params
+    
+    // Validate required parameters
+    if (!customerEmail || typeof customerEmail !== 'string' || !customerEmail.includes('@')) {
+      return {
+        success: false,
+        error: 'Invalid email address provided'
+      }
+    }
+    
+    // Get Brevo API key from environment variables
+    const apiKey = process.env.BREVO_API_KEY
+    
+    // If Brevo is not configured, log in development mode
+    if (!apiKey) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('='.repeat(60))
+        console.log('RESERVATION REJECTION EMAIL (Development Mode - Brevo not configured)')
+        console.log('='.repeat(60))
+        console.log('To:', customerEmail)
+        console.log('Subject: Reservation Request Declined')
+        console.log('HTML Email:')
+        console.log(generateReservationRejectionEmailHTML(params))
+        console.log('='.repeat(60))
+        console.log('To enable email sending, set BREVO_API_KEY in your environment variables')
+        console.log('='.repeat(60))
+        return { success: true } // Return success in dev mode even without Brevo
+      } else {
+        return {
+          success: false,
+          error: 'Email service not configured. Please set BREVO_API_KEY environment variable.'
+        }
+      }
+    }
+    
+    // Initialize Brevo API client
+    let apiInstance: TransactionalEmailsApi
+    try {
+      apiInstance = new TransactionalEmailsApi()
+      ;(apiInstance as any).authentications.apiKey.apiKey = apiKey
+    } catch (initError) {
+      console.error('Error initializing Brevo client:', initError)
+      return {
+        success: false,
+        error: `Failed to initialize email service: ${initError instanceof Error ? initError.message : 'Unknown error'}`
+      }
+    }
+    
+    // Get sender email and name
+    const senderEmail = getSenderEmail()
+    const senderName = getSenderName()
+    
+    // Get template ID
+    const templateId = getReservationRejectionTemplateId()
+    
+    const formattedDate = new Date(reservationDate).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    })
+    
+    // Create email object
+    const sendSmtpEmail = new SendSmtpEmail()
+    sendSmtpEmail.subject = 'Reservation Request Declined'
+    sendSmtpEmail.sender = {
+      name: senderName,
+      email: senderEmail,
+    }
+    sendSmtpEmail.to = [
+      {
+        email: customerEmail,
+        name: customerName,
+      },
+    ]
+    
+    // Use Brevo template if template ID is configured
+    if (templateId) {
+      sendSmtpEmail.templateId = templateId
+      sendSmtpEmail.params = {
+        customerName: customerName,
+        reservationDate: formattedDate,
+        reservationTime: reservationTime,
+        rejectionReason: rejectionReason,
+        rawDate: reservationDate,
+      }
+      
+      console.log('Using Brevo template:', {
+        templateId: templateId,
+        params: sendSmtpEmail.params,
+      })
+    } else {
+      // Fall back to hard-coded templates
+      let htmlContent: string
+      let textContent: string
+      try {
+        htmlContent = generateReservationRejectionEmailHTML(params)
+        textContent = generateReservationRejectionEmailText(params)
+      } catch (templateError) {
+        console.error('Error generating email templates:', templateError)
+        return {
+          success: false,
+          error: `Failed to generate email template: ${templateError instanceof Error ? templateError.message : 'Unknown error'}`
+        }
+      }
+      sendSmtpEmail.htmlContent = htmlContent
+      sendSmtpEmail.textContent = textContent
+      console.log('Using hard-coded email templates (BREVO_RESERVATION_REJECTION_TEMPLATE_ID not set)')
+    }
+    
+    console.log('Sending reservation rejection email with Brevo:', {
+      from: `${senderName} <${senderEmail}>`,
+      to: customerEmail,
+      subject: sendSmtpEmail.subject,
+      usingTemplate: !!templateId,
+    })
+    
+    // Send email via Brevo
+    try {
+      const response = await apiInstance.sendTransacEmail(sendSmtpEmail)
+      
+      console.log('Reservation rejection email sent via Brevo successfully:', {
+        messageId: response.body?.messageId,
+        statusCode: response.response?.statusCode,
+        statusMessage: response.response?.statusMessage,
+      })
+      
+      return { success: true }
+    } catch (brevoError: any) {
+      console.error('Brevo send error - Full details:', {
+        message: brevoError?.message,
+        status: brevoError?.response?.status,
+        statusCode: brevoError?.response?.statusCode,
+        statusText: brevoError?.response?.statusText,
+        body: brevoError?.response?.body,
+        text: brevoError?.response?.text,
+        data: brevoError?.response?.data,
+      })
+      
+      let errorMessage = 'Failed to send email'
+      if (brevoError?.response?.status || brevoError?.response?.statusCode) {
+        const status = brevoError.response.status || brevoError.response.statusCode
+        const body = brevoError.response.body || brevoError.response.data || {}
+        const bodyMessage = body.message || body.error || brevoError.message
+        errorMessage = `Brevo error (status ${status}): ${bodyMessage || 'Unknown error'}`
+      } else if (brevoError?.message) {
+        errorMessage = `Brevo error: ${brevoError.message}`
+      }
+      
+      return {
+        success: false,
+        error: errorMessage
+      }
+    }
+  } catch (error) {
+    console.error('Error in sendReservationRejectionEmail:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send email'
+    }
+  }
+}

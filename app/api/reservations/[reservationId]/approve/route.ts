@@ -2,48 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserRoleInOrg } from '@/lib/businesses';
+import { sendReservationConfirmationEmail } from '@/lib/email';
 
 interface RouteParams {
   params: Promise<{
     reservationId: string;
   }>;
-}
-
-// Dummy email function - logs to console instead of sending actual email
-function sendConfirmationEmail(
-  customerEmail: string,
-  customerName: string,
-  reservationDate: string,
-  reservationTime: string
-): void {
-  const emailContent = `
-Confirmation Email (DUMMY)
-==========================
-To: ${customerEmail}
-Subject: Reservation Confirmed
-
-Dear ${customerName},
-
-Your reservation has been confirmed!
-
-Date: ${new Date(reservationDate).toLocaleDateString('en-US', { 
-  weekday: 'long',
-  month: 'long', 
-  day: 'numeric',
-  year: 'numeric'
-})}
-Time: ${reservationTime}
-
-We look forward to serving you!
-
-Best regards,
-Restaurant Team
-  `.trim();
-
-  console.log('='.repeat(50));
-  console.log('DUMMY EMAIL SENT:');
-  console.log(emailContent);
-  console.log('='.repeat(50));
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
@@ -141,17 +105,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Send dummy confirmation email
-    sendConfirmationEmail(
-      reservation.customer_email,
-      reservation.customer_name,
-      reservation.reservation_date,
-      reservation.reservation_time
-    );
+    // Send confirmation email
+    const emailResult = await sendReservationConfirmationEmail({
+      customerEmail: reservation.customer_email,
+      customerName: reservation.customer_name,
+      reservationDate: reservation.reservation_date,
+      reservationTime: reservation.reservation_time,
+      partySize: reservation.party_size,
+    });
+
+    if (!emailResult.success) {
+      // Log error but don't fail the approval
+      console.error('Failed to send confirmation email:', emailResult.error);
+    }
 
     return NextResponse.json({ 
       success: true,
-      message: 'Reservation approved and confirmation email sent (dummy)'
+      message: emailResult.success 
+        ? 'Reservation approved and confirmation email sent' 
+        : 'Reservation approved, but email sending failed'
     });
   } catch (error) {
     console.error('Error in POST /api/reservations/[reservationId]/approve:', error);

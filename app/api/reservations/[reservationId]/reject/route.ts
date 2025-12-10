@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserRoleInOrg } from '@/lib/businesses';
+import { sendReservationRejectionEmail } from '@/lib/email';
 
 interface RouteParams {
   params: Promise<{
@@ -9,46 +10,12 @@ interface RouteParams {
   }>;
 }
 
-// Dummy email function - logs to console instead of sending actual email
-function sendRejectionEmail(
-  customerEmail: string,
-  customerName: string,
-  reservationDate: string,
-  reservationTime: string
-): void {
-  const emailContent = `
-Rejection Email (DUMMY)
-========================
-To: ${customerEmail}
-Subject: Reservation Request Declined
-
-Dear ${customerName},
-
-We regret to inform you that your reservation request has been declined.
-
-Date: ${new Date(reservationDate).toLocaleDateString('en-US', { 
-  weekday: 'long',
-  month: 'long', 
-  day: 'numeric',
-  year: 'numeric'
-})}
-Time: ${reservationTime}
-
-We apologize for any inconvenience. Please feel free to contact us if you have any questions.
-
-Best regards,
-Restaurant Team
-  `.trim();
-
-  console.log('='.repeat(50));
-  console.log('DUMMY EMAIL SENT:');
-  console.log(emailContent);
-  console.log('='.repeat(50));
-}
-
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { reservationId } = await params;
+    const body = await request.json();
+    const { rejectionReason, sendEmail } = body;
+    
     const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -118,17 +85,32 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Send dummy rejection email
-    sendRejectionEmail(
-      reservation.customer_email,
-      reservation.customer_name,
-      reservation.reservation_date,
-      reservation.reservation_time
-    );
+    // Send rejection email if requested
+    if (sendEmail && rejectionReason) {
+      const emailResult = await sendReservationRejectionEmail({
+        customerEmail: reservation.customer_email,
+        customerName: reservation.customer_name,
+        reservationDate: reservation.reservation_date,
+        reservationTime: reservation.reservation_time,
+        rejectionReason: rejectionReason,
+      });
+
+      if (!emailResult.success) {
+        // Log error but don't fail the rejection
+        console.error('Failed to send rejection email:', emailResult.error);
+      }
+
+      return NextResponse.json({ 
+        success: true,
+        message: emailResult.success 
+          ? 'Reservation rejected and customer notified' 
+          : 'Reservation rejected, but email sending failed'
+      });
+    }
 
     return NextResponse.json({ 
       success: true,
-      message: 'Reservation rejected and notification email sent (dummy)'
+      message: 'Reservation rejected'
     });
   } catch (error) {
     console.error('Error in POST /api/reservations/[reservationId]/reject:', error);

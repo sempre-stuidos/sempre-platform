@@ -29,9 +29,20 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 
 interface Reservation {
@@ -139,13 +150,17 @@ async function approveReservation(reservationId: string) {
   }
 }
 
-async function rejectReservation(reservationId: string) {
+async function rejectReservation(reservationId: string, rejectionReason: string, sendEmail: boolean) {
   try {
     const response = await fetch(`/api/reservations/${reservationId}/reject`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        rejectionReason,
+        sendEmail,
+      }),
     })
 
     if (!response.ok) {
@@ -153,7 +168,7 @@ async function rejectReservation(reservationId: string) {
       throw new Error(error.error || 'Failed to reject reservation')
     }
 
-    toast.success('Reservation rejected')
+    toast.success(sendEmail ? 'Reservation rejected and customer notified' : 'Reservation rejected')
     // Reload the page to refresh the data
     window.location.reload()
   } catch (error) {
@@ -231,11 +246,13 @@ async function archiveReservation(reservationId: string) {
 function ReservationDetailModal({ 
   reservation, 
   isOpen, 
-  onClose 
+  onClose,
+  onRejectClick
 }: { 
   reservation: Reservation | null
   isOpen: boolean
   onClose: () => void
+  onRejectClick?: (reservation: Reservation) => void
 }) {
   if (!reservation) return null
 
@@ -324,7 +341,12 @@ function ReservationDetailModal({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleAction(() => rejectReservation(reservation.id))}
+                  onClick={() => {
+                    onClose()
+                    if (onRejectClick) {
+                      onRejectClick(reservation)
+                    }
+                  }}
                   className="gap-1.5 text-destructive hover:text-destructive flex-1"
                 >
                   <IconX className="size-4" />
@@ -383,16 +405,126 @@ function ReservationDetailModal({
   )
 }
 
+type RejectionReason = 'No availability' | 'Outside operating hours' | 'Party size too large' | 'Other'
+
+function RejectionModal({
+  reservation,
+  isOpen,
+  onClose,
+  onReject,
+}: {
+  reservation: Reservation | null
+  isOpen: boolean
+  onClose: () => void
+  onReject: (reason: RejectionReason, sendEmail: boolean) => void
+}) {
+  const [selectedReason, setSelectedReason] = React.useState<RejectionReason | null>(null)
+  const [showConfirmation, setShowConfirmation] = React.useState(false)
+
+  const rejectionReasons: RejectionReason[] = [
+    'No availability',
+    'Outside operating hours',
+    'Party size too large',
+    'Other'
+  ]
+
+  const handleReasonSelect = (reason: RejectionReason) => {
+    setSelectedReason(reason)
+    setShowConfirmation(true)
+  }
+
+  const handleRejectWithoutEmail = () => {
+    if (reservation) {
+      onReject('Other', false)
+      onClose()
+    }
+  }
+
+  const handleConfirmReject = () => {
+    if (selectedReason && reservation) {
+      onReject(selectedReason, true)
+      onClose()
+      setSelectedReason(null)
+      setShowConfirmation(false)
+    }
+  }
+
+  const handleCancelConfirmation = () => {
+    setShowConfirmation(false)
+    setSelectedReason(null)
+  }
+
+  if (!reservation) return null
+
+  return (
+    <>
+      <Dialog open={isOpen && !showConfirmation} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Reject Reservation</DialogTitle>
+            <DialogDescription>
+              Select a reason for rejecting this reservation or reject without sending an email.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            {rejectionReasons.map((reason) => (
+              <Button
+                key={reason}
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => handleReasonSelect(reason)}
+              >
+                {reason}
+              </Button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleRejectWithoutEmail}
+            >
+              Reject without email
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Rejection</AlertDialogTitle>
+            <AlertDialogDescription>
+              The customer will receive an email notification about the rejection with the reason: <strong>{selectedReason}</strong>. Do you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelConfirmation}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmReject}>Accept</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
+
 function ReservationsTable({ 
   reservations, 
   statusFilter,
   sortBy,
-  onReservationClick
+  onReservationClick,
+  onRejectClick
 }: { 
   reservations: Reservation[]
   statusFilter: StatusFilter
   sortBy: SortOption
   onReservationClick: (reservation: Reservation) => void
+  onRejectClick: (reservation: Reservation) => void
 }) {
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 7
@@ -440,7 +572,7 @@ function ReservationsTable({
         <Table>
           <TableBody>
             <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center">
+              <TableCell colSpan={5} className="h-24 text-center">
                 No reservations found.
               </TableCell>
             </TableRow>
@@ -457,10 +589,10 @@ function ReservationsTable({
           <TableHeader className="bg-muted sticky top-0 z-10">
             <TableRow>
               <TableHead>Customer</TableHead>
-              <TableHead>Date & Time</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Time</TableHead>
               <TableHead>Party Size</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Contacts</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -475,10 +607,10 @@ function ReservationsTable({
                 <span className="font-medium text-foreground">{reservation.customer_name}</span>
               </TableCell>
               <TableCell>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{formatDate(reservation.reservation_date)}</span>
-                  <span className="text-sm text-muted-foreground">{formatTime(reservation.reservation_time)}</span>
-                </div>
+                <span className="text-sm font-medium">{formatDate(reservation.reservation_date)}</span>
+              </TableCell>
+              <TableCell>
+                <span className="text-sm text-muted-foreground">{formatTime(reservation.reservation_time)}</span>
               </TableCell>
               <TableCell>
                 <div className="text-sm">
@@ -486,14 +618,6 @@ function ReservationsTable({
                 </div>
               </TableCell>
               <TableCell>{getStatusBadge(reservation.status)}</TableCell>
-              <TableCell>
-                <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">{reservation.customer_email}</span>
-                  {reservation.customer_phone && (
-                    <span className="text-sm text-muted-foreground">{reservation.customer_phone}</span>
-                  )}
-                </div>
-              </TableCell>
               <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                 {reservation.status === 'pending' && (
                   <div className="flex items-center justify-end gap-2">
@@ -509,7 +633,10 @@ function ReservationsTable({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => rejectReservation(reservation.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onRejectClick(reservation)
+                      }}
                       className="gap-1.5 text-destructive hover:text-destructive"
                     >
                       <IconX className="size-4" />
@@ -856,6 +983,8 @@ export function ReservationsList({ upcomingReservations, pastReservations }: Res
   const [viewMode, setViewMode] = React.useState<'table' | 'calendar'>('table')
   const [selectedReservation, setSelectedReservation] = React.useState<Reservation | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
+  const [rejectionReservation, setRejectionReservation] = React.useState<Reservation | null>(null)
+  const [isRejectionModalOpen, setIsRejectionModalOpen] = React.useState(false)
 
   const handleReservationClick = (reservation: Reservation) => {
     setSelectedReservation(reservation)
@@ -865,6 +994,19 @@ export function ReservationsList({ upcomingReservations, pastReservations }: Res
   const handleCloseModal = () => {
     setIsModalOpen(false)
     setSelectedReservation(null)
+  }
+
+  const handleRejectClick = (reservation: Reservation) => {
+    setRejectionReservation(reservation)
+    setIsRejectionModalOpen(true)
+  }
+
+  const handleReject = async (reason: RejectionReason, sendEmail: boolean) => {
+    if (rejectionReservation) {
+      await rejectReservation(rejectionReservation.id, reason, sendEmail)
+      setIsRejectionModalOpen(false)
+      setRejectionReservation(null)
+    }
   }
 
   // Create reusable control components
@@ -953,6 +1095,7 @@ export function ReservationsList({ upcomingReservations, pastReservations }: Res
             statusFilter={statusFilter}
             sortBy={sortBy}
             onReservationClick={handleReservationClick}
+            onRejectClick={handleRejectClick}
           />
         ) : (
           <ReservationsCalendar 
@@ -971,6 +1114,7 @@ export function ReservationsList({ upcomingReservations, pastReservations }: Res
             statusFilter={statusFilter}
             sortBy={sortBy}
             onReservationClick={handleReservationClick}
+            onRejectClick={handleRejectClick}
           />
         ) : (
           <ReservationsCalendar 
@@ -989,6 +1133,7 @@ export function ReservationsList({ upcomingReservations, pastReservations }: Res
             statusFilter={statusFilter}
             sortBy={sortBy}
             onReservationClick={handleReservationClick}
+            onRejectClick={handleRejectClick}
           />
         ) : (
           <ReservationsCalendar 
@@ -1004,6 +1149,16 @@ export function ReservationsList({ upcomingReservations, pastReservations }: Res
         reservation={selectedReservation}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+        onRejectClick={handleRejectClick}
+      />
+      <RejectionModal
+        reservation={rejectionReservation}
+        isOpen={isRejectionModalOpen}
+        onClose={() => {
+          setIsRejectionModalOpen(false)
+          setRejectionReservation(null)
+        }}
+        onReject={handleReject}
       />
     </Tabs>
   )
