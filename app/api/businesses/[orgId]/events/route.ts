@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserRoleInOrg } from '@/lib/businesses';
 import { getEventsForOrg, createEvent, computeEventStatus } from '@/lib/events';
+import { generateEventInstances } from '@/lib/event-instances';
 import { Event } from '@/lib/types';
 
 interface RouteParams {
@@ -92,7 +93,24 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { title, short_description, description, image_url, event_type, starts_at, ends_at, publish_start_at, publish_end_at, status, is_featured, is_weekly, day_of_week } = body;
+    const { 
+      title, 
+      short_description, 
+      description, 
+      image_url, 
+      event_type, 
+      starts_at, 
+      ends_at, 
+      publish_start_at, 
+      publish_end_at, 
+      status, 
+      is_featured, 
+      is_weekly, 
+      day_of_week,
+      instance_range_type,
+      instance_start_date,
+      instance_end_date
+    } = body;
 
     // Validate required fields based on event type
     if (!title) {
@@ -171,7 +189,52 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({ event }, { status: 201 });
+    // Generate instances for weekly events
+    let instancesCount = 0;
+    if (is_weekly && day_of_week !== undefined && day_of_week !== null) {
+      try {
+        // Determine date range for instance generation
+        let startDate: string;
+        let endDate: string;
+        
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        
+        if (instance_range_type === 'custom' && instance_start_date && instance_end_date) {
+          startDate = instance_start_date;
+          endDate = instance_end_date;
+        } else if (instance_range_type === 'next_4_weeks' && instance_end_date) {
+          startDate = todayStr;
+          endDate = instance_end_date;
+        } else if (instance_range_type === 'next_8_weeks' && instance_end_date) {
+          startDate = todayStr;
+          endDate = instance_end_date;
+        } else {
+          // Default to rest of month
+          startDate = todayStr;
+          const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          endDate = lastDayOfMonth.toISOString().split('T')[0];
+        }
+        
+        const instances = await generateEventInstances(
+          event.id,
+          day_of_week,
+          startDate,
+          endDate,
+          supabase
+        );
+        
+        instancesCount = instances.length;
+      } catch (error) {
+        console.error('Error generating event instances:', error);
+        // Don't fail the whole request if instance generation fails
+      }
+    }
+
+    return NextResponse.json({ 
+      event, 
+      instancesCount 
+    }, { status: 201 });
   } catch (error) {
     console.error('Error in POST /api/businesses/[orgId]/events:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to create event';

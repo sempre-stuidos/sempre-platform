@@ -16,6 +16,7 @@ export function FrequencyStep({
   onSelect,
   errors,
 }: FrequencyStepProps) {
+
   return (
     <div className="space-y-4">
       <div className="text-center mb-6">

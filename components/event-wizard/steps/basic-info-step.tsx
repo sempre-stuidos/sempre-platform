@@ -9,14 +9,18 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { Loader2 } from "lucide-react"
+import { BandSelector } from "@/components/bands/band-selector"
 
 type Tone = "Classic" | "Playful" | "Elegant"
 
 interface BasicInfoStepProps {
   title: string
   description: string
+  eventType?: string
+  selectedBandIds: string[]
   onTitleChange: (title: string) => void
   onDescriptionChange: (description: string) => void
+  onBandSelectionChange: (bandIds: string[]) => void
   errors?: Record<string, string>
   orgId?: string
 }
@@ -34,8 +38,11 @@ interface EventContext {
 export function BasicInfoStep({
   title,
   description,
+  eventType,
+  selectedBandIds,
   onTitleChange,
   onDescriptionChange,
+  onBandSelectionChange,
   errors,
   orgId,
 }: BasicInfoStepProps) {
@@ -174,6 +181,14 @@ export function BasicInfoStep({
               )}
             />
           </div>
+
+          {(eventType === "Jazz" || eventType === "Live Music") && orgId && (
+            <BandSelector
+              orgId={orgId}
+              selectedBandIds={selectedBandIds}
+              onSelectionChange={onBandSelectionChange}
+            />
+          )}
         </div>
 
         {/* Right Column - AI Writing Helper */}

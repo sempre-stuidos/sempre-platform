@@ -31,9 +31,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { EventStatusBadge } from "@/components/event-status-badge"
-import { Event } from "@/lib/types"
+import { Event, EventBand } from "@/lib/types"
 import { formatEventDateTime, formatWeeklyEventDateTime, formatVisibilityWindow } from "@/lib/events"
 import Image from "next/image"
+import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+import { IconCalendar } from "@tabler/icons-react"
 
 interface EventsTableProps {
   orgId: string
@@ -45,6 +48,34 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
   const router = useRouter()
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
   const [eventToDelete, setEventToDelete] = React.useState<Event | null>(null)
+  const [eventBands, setEventBands] = React.useState<Record<string, EventBand[]>>({})
+
+  // Fetch bands for all events
+  React.useEffect(() => {
+    const fetchBands = async () => {
+      const bandsMap: Record<string, EventBand[]> = {}
+      
+      for (const event of events) {
+        if (event.event_type === "Jazz" || event.event_type === "Live Music") {
+          try {
+            const response = await fetch(`/api/businesses/${orgId}/events/${event.id}/bands`)
+            if (response.ok) {
+              const data = await response.json()
+              bandsMap[event.id] = data.eventBands || []
+            }
+          } catch (error) {
+            console.error(`Error fetching bands for event ${event.id}:`, error)
+          }
+        }
+      }
+      
+      setEventBands(bandsMap)
+    }
+
+    if (events.length > 0) {
+      fetchBands()
+    }
+  }, [events, orgId])
 
   const handleEdit = (eventId: string) => {
     router.push(`/client/${orgId}/events/${eventId}`)
@@ -159,6 +190,25 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
                       <div className="text-sm text-muted-foreground line-clamp-1">
                         {event.short_description}
                       </div>
+                    )}
+                    {(event.event_type === "Jazz" || event.event_type === "Live Music") && eventBands[event.id] && eventBands[event.id].length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {eventBands[event.id].map((eb) => (
+                          <Badge key={eb.id} variant="secondary" className="text-xs">
+                            {eb.band?.name || 'Unknown Band'}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    {event.is_weekly && (
+                      <Link
+                        href={`/client/${orgId}/events/${event.id}/instances`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1"
+                      >
+                        <IconCalendar className="h-3 w-3" />
+                        View Instances
+                      </Link>
                     )}
                   </div>
                 </div>

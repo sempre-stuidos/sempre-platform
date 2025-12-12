@@ -22,6 +22,7 @@ import { Event } from "@/lib/types"
 import { computeEventStatus } from "@/lib/events"
 import Image from "next/image"
 import { toast } from "sonner"
+import { BandSelector } from "@/components/bands/band-selector"
 
 interface EventEditorFormProps {
   orgId: string
@@ -59,12 +60,35 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
   const [imagePreview, setImagePreview] = React.useState(event?.image_url || "")
   const fileInputRef = React.useRef<HTMLInputElement | null>(null)
   const [isUploadingPreview, setIsUploadingPreview] = React.useState(false)
+  const [selectedBandIds, setSelectedBandIds] = React.useState<string[]>([])
 
   React.useEffect(() => {
     if (event?.image_url) {
       setImagePreview(event.image_url)
     }
   }, [event?.image_url])
+
+  // Fetch event bands when editing
+  React.useEffect(() => {
+    const fetchEventBands = async () => {
+      if (event?.id) {
+        try {
+          const response = await fetch(`/api/businesses/${orgId}/events/${event.id}/bands`)
+          if (response.ok) {
+            const data = await response.json()
+            const bandIds = (data.eventBands || []).map((eb: { band_id: string }) => eb.band_id)
+            setSelectedBandIds(bandIds)
+          }
+        } catch (error) {
+          console.error('Error fetching event bands:', error)
+        }
+      } else {
+        setSelectedBandIds([])
+      }
+    }
+
+    fetchEventBands()
+  }, [event?.id, orgId])
 
   const handleManualImageChange = (value: string) => {
     setFormData({ ...formData, image_url: value })
@@ -200,16 +224,8 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
       if (!formData.end_time) {
         newErrors.end_time = 'End time is required'
       }
-      // Validate that end time is after start time
-      if (formData.start_time && formData.end_time) {
-        const [startHour, startMin] = formData.start_time.split(':').map(Number)
-        const [endHour, endMin] = formData.end_time.split(':').map(Number)
-        const startMinutes = startHour * 60 + startMin
-        const endMinutes = endHour * 60 + endMin
-        if (endMinutes <= startMinutes) {
-          newErrors.end_time = 'End time must be after start time'
-        }
-      }
+      // Note: For weekly events, we don't validate that end time is after start time
+      // because events can span midnight (e.g., 10 PM to 2 AM)
     } else {
       // For one-time events, require dates and times
       if (!formData.start_date) {
@@ -408,6 +424,27 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
         const responseData = await response.json()
         const savedEvent = responseData.event
 
+        // Save bands if event type is Jazz or Live Music
+        if ((formData.event_type === "Jazz" || formData.event_type === "Live Music") && savedEvent?.id) {
+          try {
+            const bandsResponse = await fetch(`/api/businesses/${orgId}/events/${savedEvent.id}/bands`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ bandIds: selectedBandIds }),
+            })
+
+            if (!bandsResponse.ok) {
+              console.error('Failed to save event bands')
+              // Don't fail the whole save if bands fail
+            }
+          } catch (error) {
+            console.error('Error saving event bands:', error)
+            // Don't fail the whole save if bands fail
+          }
+        }
+
         // Determine success message based on event type and actual saved status
         let successMessage = 'Event saved'
         if (formData.is_weekly) {
@@ -516,6 +553,14 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
                   </SelectContent>
                 </Select>
               </div>
+
+              {(formData.event_type === "Jazz" || formData.event_type === "Live Music") && (
+                <BandSelector
+                  orgId={orgId}
+                  selectedBandIds={selectedBandIds}
+                  onSelectionChange={setSelectedBandIds}
+                />
+              )}
             </CardContent>
           </Card>
 

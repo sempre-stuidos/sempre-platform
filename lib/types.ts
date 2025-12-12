@@ -359,6 +359,58 @@ export interface Event {
   updated_at: string;
 }
 
+export interface Band {
+  id: string;
+  org_id: string;
+  name: string;
+  description?: string;
+  image_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventBand {
+  id: string;
+  event_id: string;
+  band_id: string;
+  order: number;
+  created_at: string;
+  band?: Band; // Populated when joining with bands table
+}
+
+export interface EventInstance {
+  id: string;
+  event_id: string;
+  instance_date: string; // ISO date string (YYYY-MM-DD)
+  custom_description?: string;
+  custom_image_url?: string;
+  status: 'draft' | 'scheduled' | 'live' | 'past' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+  event?: Event; // Populated when joining with events table
+}
+
+export interface EventInstanceBand {
+  id: string;
+  instance_id: string;
+  band_id: string;
+  order: number;
+  band?: Band; // Populated when joining with bands table
+}
+
+export interface Notification {
+  id: string;
+  org_id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  message: string;
+  related_event_id?: string;
+  related_instance_id?: string;
+  read_at?: string;
+  created_at: string;
+}
+
 export type FeedbackStatus = 'open' | 'in_progress' | 'resolved';
 export type FeedbackPriority = 'high' | 'medium' | 'low';
 

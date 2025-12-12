@@ -11,6 +11,7 @@ import { EventsTable } from "@/components/events-table"
 import { computeEventStatus } from "@/lib/events"
 import { Event } from "@/lib/types"
 import { toast } from "sonner"
+import { NotificationBanner } from "@/components/notifications/notification-banner"
 
 export default function EventsPage() {
   const params = useParams()
@@ -140,6 +141,9 @@ export default function EventsPage() {
               </Button>
             </Link>
           </div>
+
+          {/* Notification Banner */}
+          <NotificationBanner orgId={orgId} />
 
           {/* Tabs and Search */}
           <div className="mb-6 space-y-4">
