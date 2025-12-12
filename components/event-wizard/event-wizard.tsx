@@ -490,6 +490,10 @@ export function EventWizard({ orgId, event, onSave }: EventWizardProps) {
       instance_range_type: formData.isWeekly ? formData.instanceRangeType : undefined,
       instance_start_date: formData.isWeekly ? formData.instanceStartDate : undefined,
       instance_end_date: formData.isWeekly ? formData.instanceEndDate : undefined,
+    } as Partial<Event> & {
+      instance_range_type?: string;
+      instance_start_date?: string;
+      instance_end_date?: string;
     }
   }
 
