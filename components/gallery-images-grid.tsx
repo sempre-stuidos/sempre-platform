@@ -38,12 +38,13 @@ interface GalleryImagesGridProps {
   onGoogleDriveImportClick?: () => void
   onFolderClick?: (folder: string) => void
   onDataChange?: () => void
+  businessType?: 'agency' | 'restaurant' | 'hotel' | 'retail' | 'service' | 'other'
 }
 
 const ITEMS_PER_PAGE = 6
 const RECENTS_FOLDER = "Recents"
 
-export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClick, onFolderClick, onDataChange }: GalleryImagesGridProps) {
+export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClick, onFolderClick, onDataChange, businessType }: GalleryImagesGridProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedFolder, setSelectedFolder] = useState<string>(RECENTS_FOLDER)
   const [renameDialogOpen, setRenameDialogOpen] = useState(false)
@@ -57,21 +58,28 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
     const folderSet = new Set<string>()
     folderSet.add(RECENTS_FOLDER)
     
-    // Extract folders from project field or create default folders
-    data.forEach(file => {
-      if (file.project && file.project.trim()) {
-        folderSet.add(file.project)
-      }
-    })
-    
-    // Add some default folders if no projects exist
-    if (folderSet.size === 1) {
+    // For restaurant businesses, add Events and Menu folders
+    if (businessType === 'restaurant') {
+      folderSet.add("Events")
+      folderSet.add("Menu")
       folderSet.add("All Images")
-      folderSet.add("Favorites")
+    } else {
+      // Extract folders from project field or create default folders
+      data.forEach(file => {
+        if (file.project && file.project.trim()) {
+          folderSet.add(file.project)
+        }
+      })
+      
+      // Add some default folders if no projects exist
+      if (folderSet.size === 1) {
+        folderSet.add("All Images")
+        folderSet.add("Favorites")
+      }
     }
     
     return Array.from(folderSet).sort()
-  }, [data])
+  }, [data, businessType])
 
   // Filter data based on selected folder
   const filteredData = useMemo(() => {
@@ -84,8 +92,14 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
       })
     } else if (selectedFolder === "All Images") {
       return data
+    } else if (selectedFolder === "Events") {
+      // Filter by image_category for Events folder
+      return data.filter(file => file.image_category === 'Event')
+    } else if (selectedFolder === "Menu") {
+      // Filter by image_category for Menu folder
+      return data.filter(file => file.image_category === 'Menu')
     } else {
-      // Filter by project/folder
+      // Filter by project/folder (for non-restaurant businesses)
       return data.filter(file => file.project === selectedFolder)
     }
   }, [data, selectedFolder])
@@ -216,7 +230,7 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header with folder filter and action buttons */}
+      {/* Header with action buttons */}
       <div className="flex items-center justify-between px-4 lg:px-6">
         <div className="flex items-center gap-2">
           <Select value={selectedFolder} onValueChange={handleFolderChange}>
@@ -246,6 +260,24 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
           </Button>
         </div>
       </div>
+
+      {/* Folder buttons - only show for restaurant businesses */}
+      {businessType === 'restaurant' && folders.length > 0 && (
+        <div className="flex items-center gap-2 px-4 lg:px-6 flex-wrap">
+          {folders.map((folder) => (
+            <Button
+              key={folder}
+              variant={selectedFolder === folder ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleFolderChange(folder)}
+              className="flex items-center gap-2"
+            >
+              <IconFolder className="size-4" />
+              {folder}
+            </Button>
+          ))}
+        </div>
+      )}
 
       {/* Image Grid */}
       {currentPageData.length === 0 ? (

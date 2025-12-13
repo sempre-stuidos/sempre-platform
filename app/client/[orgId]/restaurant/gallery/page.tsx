@@ -66,13 +66,14 @@ export default function GalleryPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isGoogleDriveImportModalOpen, setIsGoogleDriveImportModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [businessType, setBusinessType] = useState<'agency' | 'restaurant' | 'hotel' | 'retail' | 'service' | 'other' | undefined>(undefined)
 
   // Fetch gallery images from database
   useEffect(() => {
     const fetchGalleryImages = async () => {
       setIsLoading(true)
       try {
-        // Get business to retrieve slug
+        // Get business to retrieve slug and type
         const business = await getBusinessById(orgId)
         if (!business) {
           toast.error("Business not found")
@@ -81,6 +82,9 @@ export default function GalleryPage() {
           setIsLoading(false)
           return
         }
+
+        // Store business type
+        setBusinessType(business.type)
 
         // Fetch gallery images for this business
         const galleryImages = await getGalleryImagesForBusiness(business.slug || undefined)
@@ -147,6 +151,7 @@ export default function GalleryPage() {
             onGoogleDriveImportClick={() => setIsGoogleDriveImportModalOpen(true)}
             onFolderClick={handleFolderClick}
             onDataChange={handleDataChange}
+            businessType={businessType}
           />
         )}
       </div>
@@ -156,6 +161,7 @@ export default function GalleryPage() {
         onClose={() => setIsUploadModalOpen(false)}
         onUploadSuccess={handleUploadSuccess}
         orgId={orgId}
+        businessType={businessType}
       />
       
       <GoogleDriveImportModal

@@ -199,6 +199,7 @@ export interface FilesAssets {
   google_drive_file_id?: string;
   google_drive_web_view_link?: string;
   imported_from_google_drive?: boolean;
+  image_category?: 'Event' | 'Menu' | null;
   created_at?: string;
   updated_at?: string;
 }

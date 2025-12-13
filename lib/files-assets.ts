@@ -17,6 +17,7 @@ function transformFilesAssetsRecord(record: Record<string, unknown>): FilesAsset
     google_drive_file_id: record.google_drive_file_id as string | undefined,
     google_drive_web_view_link: record.google_drive_web_view_link as string | undefined,
     imported_from_google_drive: record.imported_from_google_drive as boolean | undefined,
+    image_category: record.image_category as 'Event' | 'Menu' | null | undefined,
     created_at: record.created_at as string,
     updated_at: record.updated_at as string,
   };
@@ -24,7 +25,7 @@ function transformFilesAssetsRecord(record: Record<string, unknown>): FilesAsset
 
 // Transform frontend interface to database record format
 function transformFilesAssetsToRecord(filesAssets: Partial<FilesAssets>) {
-  return {
+  const record: Record<string, unknown> = {
     name: filesAssets.name,
     type: filesAssets.type,
     category: filesAssets.category,
@@ -38,6 +39,13 @@ function transformFilesAssetsToRecord(filesAssets: Partial<FilesAssets>) {
     google_drive_web_view_link: filesAssets.google_drive_web_view_link || null,
     imported_from_google_drive: filesAssets.imported_from_google_drive || false,
   };
+  
+  // Only include image_category if it's explicitly set (not undefined)
+  if (filesAssets.image_category !== undefined) {
+    record.image_category = filesAssets.image_category;
+  }
+  
+  return record;
 }
 
 export async function getAllFilesAssets(): Promise<FilesAssets[]> {
@@ -106,11 +114,29 @@ export async function createFilesAssets(filesAssets: Omit<FilesAssets, 'id' | 'c
       throw new Error('Missing required fields for files_assets insert');
     }
 
-    const { data: newFilesAssets, error } = await supabase
+    // Try to insert with image_category first
+    let { data: newFilesAssets, error } = await supabase
       .from('files_assets')
       .insert([record])
       .select()
       .single();
+
+    // If error and it's related to image_category column not existing, retry without it
+    if (error && (error.message?.includes('image_category') || error.code === '42703')) {
+      console.warn('image_category column may not exist, retrying without it:', error.message);
+      // Remove image_category from record and retry
+      const recordWithoutCategory = { ...record };
+      delete recordWithoutCategory.image_category;
+      
+      const retryResult = await supabase
+        .from('files_assets')
+        .insert([recordWithoutCategory])
+        .select()
+        .single();
+      
+      newFilesAssets = retryResult.data;
+      error = retryResult.error;
+    }
 
     if (error) {
       console.error('Error creating files assets:', {
