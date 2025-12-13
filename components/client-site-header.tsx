@@ -31,6 +31,8 @@ export function ClientSiteHeader() {
     pageName = "Gallery"
   } else if (pathname?.includes("/events")) {
     pageName = "Events"
+  } else if (pathname?.includes("/bands")) {
+    pageName = "Bands"
   } else if (pathname?.includes("/sections")) {
     pageName = "Page Sections"
   } else if (pathname?.includes("/how-to")) {

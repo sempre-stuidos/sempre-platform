@@ -12,8 +12,16 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Card, CardHeader, CardTitle } from "@/components/ui/card"
-import { IconEdit, IconTrash, IconPlus } from "@tabler/icons-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { IconEdit, IconTrash, IconPlus, IconArrowLeft } from "@tabler/icons-react"
 import Image from "next/image"
+import Link from "next/link"
 import { toast } from "sonner"
 import { BandFormModal } from "./band-form-modal"
 
@@ -27,6 +35,10 @@ export function BandsManager({ orgId }: BandsManagerProps) {
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const [editingBand, setEditingBand] = useState<Band | null>(null)
   const [showFormModal, setShowFormModal] = useState(false)
+  const [selectedBand, setSelectedBand] = useState<Band | null>(null)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+
+  const DESCRIPTION_LIMIT = 100
 
   const fetchBands = async () => {
     setIsLoading(true)
@@ -93,6 +105,17 @@ export function BandsManager({ orgId }: BandsManagerProps) {
     fetchBands()
   }
 
+  const handleRowClick = (band: Band) => {
+    setSelectedBand(band)
+    setShowDetailsModal(true)
+  }
+
+  const truncateDescription = (description: string | undefined | null): string => {
+    if (!description) return ""
+    if (description.length <= DESCRIPTION_LIMIT) return description
+    return description.substring(0, DESCRIPTION_LIMIT) + "..."
+  }
+
   if (isLoading) {
     return (
       <div className="rounded-md border p-8 text-center">
@@ -104,11 +127,19 @@ export function BandsManager({ orgId }: BandsManagerProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Bands</h2>
-          <p className="text-muted-foreground mt-1">
-            Manage bands that perform at your events
-          </p>
+        <div className="flex items-center gap-4">
+          <Link href={`/client/${orgId}/events`}>
+            <Button variant="ghost" size="sm">
+              <IconArrowLeft className="mr-2 h-4 w-4" />
+              Back to Events
+            </Button>
+          </Link>
+          <div>
+            <h2 className="text-2xl font-bold">Bands</h2>
+            <p className="text-muted-foreground mt-1">
+              Manage bands that perform at your events
+            </p>
+          </div>
         </div>
         <Button onClick={handleCreate}>
           <IconPlus className="mr-2 h-4 w-4" />
@@ -144,8 +175,12 @@ export function BandsManager({ orgId }: BandsManagerProps) {
             </TableHeader>
             <TableBody>
               {bands.map((band) => (
-                <TableRow key={band.id}>
-                  <TableCell>
+                <TableRow 
+                  key={band.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleRowClick(band)}
+                >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     {band.image_url ? (
                       <div className="relative h-12 w-12 overflow-hidden rounded-md">
                         <Image
@@ -163,9 +198,13 @@ export function BandsManager({ orgId }: BandsManagerProps) {
                   </TableCell>
                   <TableCell className="font-medium">{band.name}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {band.description || <span className="italic">No description</span>}
+                    {band.description ? (
+                      truncateDescription(band.description)
+                    ) : (
+                      <span className="italic">No description</span>
+                    )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
@@ -200,6 +239,52 @@ export function BandsManager({ orgId }: BandsManagerProps) {
           onSuccess={handleFormSuccess}
         />
       )}
+
+      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{selectedBand?.name}</DialogTitle>
+            <DialogDescription>Band Details</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedBand?.image_url && (
+              <div className="relative h-64 w-full overflow-hidden rounded-md">
+                <Image
+                  src={selectedBand.image_url}
+                  alt={selectedBand.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+            <div>
+              <h3 className="text-sm font-semibold mb-2">Description</h3>
+              <p className="text-sm text-muted-foreground">
+                {selectedBand?.description || (
+                  <span className="italic">No description provided</span>
+                )}
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDetailsModal(false)
+                  if (selectedBand) {
+                    handleEdit(selectedBand)
+                  }
+                }}
+              >
+                <IconEdit className="mr-2 h-4 w-4" />
+                Edit Band
+              </Button>
+              <Button onClick={() => setShowDetailsModal(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

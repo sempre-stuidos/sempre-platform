@@ -5,7 +5,7 @@ import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { IconPlus, IconSearch } from "@tabler/icons-react"
+import { IconPlus, IconSearch, IconMusic } from "@tabler/icons-react"
 import Link from "next/link"
 import { EventsTable } from "@/components/events-table"
 import { computeEventStatus } from "@/lib/events"
@@ -126,20 +126,28 @@ export default function EventsPage() {
                 Manage jazz nights and monthly events.
               </p>
             </div>
-            <Link 
-              href={`/client/${orgId}/events/new`}
-              onClick={() => {
-                // If tour is active, mark to continue after navigation
-                if (typeof window !== 'undefined' && sessionStorage.getItem('event-creation-tour-active') === 'true') {
-                  sessionStorage.setItem('event-creation-tour-continue', '2')
-                }
-              }}
-            >
-              <Button data-tour="new-event-button">
-                <IconPlus className="mr-2 h-4 w-4" />
-                New Event
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link href={`/client/${orgId}/bands`}>
+                <Button variant="outline">
+                  <IconMusic className="mr-2 h-4 w-4" />
+                  Manage Bands
+                </Button>
+              </Link>
+              <Link 
+                href={`/client/${orgId}/events/new`}
+                onClick={() => {
+                  // If tour is active, mark to continue after navigation
+                  if (typeof window !== 'undefined' && sessionStorage.getItem('event-creation-tour-active') === 'true') {
+                    sessionStorage.setItem('event-creation-tour-continue', '2')
+                  }
+                }}
+              >
+                <Button data-tour="new-event-button">
+                  <IconPlus className="mr-2 h-4 w-4" />
+                  New Event
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Notification Banner */}
