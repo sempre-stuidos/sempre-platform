@@ -1,6 +1,6 @@
 "use client"
 
-import { IconX, IconUpload, IconChevronLeft, IconChevronRight, IconPhoto, IconLink, IconPlus } from "@tabler/icons-react"
+import { IconX, IconUpload, IconChevronLeft, IconChevronRight, IconPhoto, IconLink, IconPlus, IconWand } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -11,6 +11,7 @@ import { useState, useEffect, useRef } from "react"
 import { Product } from "@/lib/products"
 import { toast } from "sonner"
 import Image from "next/image"
+import { Loader2 } from "lucide-react"
 
 interface AddProductModalProps {
   open: boolean
@@ -32,6 +33,10 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
   const [imageUrlInput, setImageUrlInput] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [benefits, setBenefits] = useState<string[]>([''])
+  const [showDescriptionHint, setShowDescriptionHint] = useState(false)
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
+  const [isGeneratingBenefits, setIsGeneratingBenefits] = useState(false)
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   const [formData, setFormData] = useState<Partial<Product>>(() => {
     if (product) {
@@ -339,6 +344,113 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
     toast.success('Image URL set')
   }
 
+  // Track description field focus for hint display
+  useEffect(() => {
+    const textarea = descriptionTextareaRef.current
+    if (textarea) {
+      const handleFocus = () => {
+        if (formData.description && formData.description.trim().length > 0) {
+          setShowDescriptionHint(true)
+        }
+      }
+      const handleBlur = () => setShowDescriptionHint(false)
+      const handleInput = () => {
+        if (textarea.value && textarea.value.trim().length > 0) {
+          setShowDescriptionHint(true)
+        } else {
+          setShowDescriptionHint(false)
+        }
+      }
+      
+      textarea.addEventListener('focus', handleFocus)
+      textarea.addEventListener('blur', handleBlur)
+      textarea.addEventListener('input', handleInput)
+      
+      return () => {
+        textarea.removeEventListener('focus', handleFocus)
+        textarea.removeEventListener('blur', handleBlur)
+        textarea.removeEventListener('input', handleInput)
+      }
+    }
+  }, [formData.description])
+
+  const handleGenerateDescription = async () => {
+    if (!formData.name?.trim()) {
+      toast.error('Please enter a product name first')
+      return
+    }
+    
+    setIsGeneratingDescription(true)
+    try {
+      const response = await fetch('/api/products/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'description',
+          productName: formData.name,
+          currentDescription: formData.description || undefined
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to generate description' }))
+        throw new Error(errorData.error || 'Failed to generate description')
+      }
+      
+      const data = await response.json()
+      setFormData({ ...formData, description: data.description })
+      toast.success('Description generated successfully')
+    } catch (error) {
+      console.error('Error generating description:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to generate description. Please try again.')
+    } finally {
+      setIsGeneratingDescription(false)
+    }
+  }
+
+  const handleGenerateBenefits = async () => {
+    if (!formData.name?.trim()) {
+      toast.error('Please enter a product name first')
+      return
+    }
+    
+    setIsGeneratingBenefits(true)
+    try {
+      const response = await fetch('/api/products/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'benefits',
+          productName: formData.name,
+          currentDescription: formData.description || undefined,
+          currentBenefits: benefits.filter(b => b.trim() !== '')
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to generate benefits' }))
+        throw new Error(errorData.error || 'Failed to generate benefits')
+      }
+      
+      const data = await response.json()
+      // Add new benefit to existing ones (append, don't replace)
+      const existingBenefits = benefits.filter(b => b.trim() !== '')
+      const newBenefit = data.benefits && data.benefits.length > 0 ? data.benefits[0] : ''
+      if (newBenefit) {
+        const newBenefits = [...existingBenefits, newBenefit]
+        setBenefits(newBenefits.length > 0 ? newBenefits : [''])
+        toast.success('Benefit generated successfully')
+      } else {
+        toast.error('No benefit was generated')
+      }
+    } catch (error) {
+      console.error('Error generating benefits:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to generate benefits. Please try again.')
+    } finally {
+      setIsGeneratingBenefits(false)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -559,14 +671,46 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
 
               {/* Description */}
               <div className="grid gap-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description" className="flex items-center justify-between">
+                  <span>Description</span>
+                  {showDescriptionHint && (
+                    <span className="text-xs text-muted-foreground font-normal">
+                      Press Control + Command + G
+                    </span>
+                  )}
+                </Label>
                 <Textarea
+                  ref={descriptionTextareaRef}
                   id="description"
                   value={formData.description || ""}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Enter product description"
+                  placeholder="Enter a short description and then press Control + Command + G to generate description"
                   rows={4}
+                  disabled={isGeneratingDescription}
+                  onKeyDown={(e) => {
+                    // Control + Command + G (Mac: Ctrl+Cmd+G) or Ctrl+Alt+G (Windows/Linux)
+                    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+                    if (isMac) {
+                      // Mac: Check for both Ctrl (controlKey) and Cmd (metaKey)
+                      if (e.ctrlKey && e.metaKey && e.key === 'g') {
+                        e.preventDefault()
+                        handleGenerateDescription()
+                      }
+                    } else {
+                      // Windows/Linux: Use Ctrl+Alt+G as alternative
+                      if (e.ctrlKey && e.altKey && e.key === 'g') {
+                        e.preventDefault()
+                        handleGenerateDescription()
+                      }
+                    }
+                  }}
                 />
+                {isGeneratingDescription && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Generating description...</span>
+                  </div>
+                )}
               </div>
             </div>
           ) : step === 2 ? (
@@ -690,15 +834,36 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
                     </div>
                   ))}
                   
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleAddBenefit}
-                    className="w-full"
-                  >
-                    <IconPlus className="h-4 w-4 mr-2" />
-                    Add Benefit
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAddBenefit}
+                      className="flex-1"
+                    >
+                      <IconPlus className="h-4 w-4 mr-2" />
+                      Add Benefit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleGenerateBenefits}
+                      disabled={isGeneratingBenefits || !formData.name?.trim()}
+                      className="flex-1"
+                    >
+                      {isGeneratingBenefits ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <IconWand className="h-4 w-4 mr-2" />
+                          Generate Benefit
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

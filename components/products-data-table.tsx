@@ -5,6 +5,8 @@ import {
   IconDotsVertical,
   IconEdit,
   IconStar,
+  IconCopy,
+  IconTrash,
 } from "@tabler/icons-react"
 import {
   ColumnDef,
@@ -231,9 +233,13 @@ const createColumns = (
             <IconEdit className="size-4 mr-2" />
             Edit
           </DropdownMenuItem>
-          <DropdownMenuItem>Duplicate</DropdownMenuItem>
+          <DropdownMenuItem>
+            <IconCopy className="size-4 mr-2" />
+            Duplicate
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={() => onDeleteProduct?.(row.original)}>
+            <IconTrash className="size-4 mr-2" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
