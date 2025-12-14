@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { IconDotsVertical, IconPlus, IconBrandGoogleDrive, IconChevronLeft, IconChevronRight, IconFolder, IconEye, IconDownload, IconEdit, IconTrash } from "@tabler/icons-react"
+import { IconDotsVertical, IconPlus, IconBrandGoogleDrive, IconChevronLeft, IconChevronRight, IconFolder, IconEye, IconDownload, IconEdit, IconTrash, IconWand } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -24,6 +24,7 @@ import { getFilePublicUrl, deleteFilesAssets, updateFilesAssets } from "@/lib/fi
 import { getGalleryImagePublicUrl, deleteGalleryImage } from "@/lib/gallery-images"
 import { toast } from "sonner"
 import Image from "next/image"
+import { ImageGenerationWizard } from "@/components/image-generation-wizard/image-generation-wizard"
 
 interface GalleryImagesGridProps {
   data: FilesAssets[]
@@ -48,6 +49,7 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
   const [isDeleting, setIsDeleting] = useState(false)
   const [productsWithImages, setProductsWithImages] = useState<Array<{ id: string; name: string; imageCount: number }>>([])
   const [isLoadingProducts, setIsLoadingProducts] = useState(false)
+  const [isGenerateWizardOpen, setIsGenerateWizardOpen] = useState(false)
 
   // Fetch products with images for retail businesses
   useEffect(() => {
@@ -280,51 +282,62 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
   return (
     <div className="flex flex-col gap-4">
       {/* Header with folder buttons and action buttons */}
-      <div className="flex items-center justify-between px-4 lg:px-6">
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Folder buttons - show for restaurant and retail businesses */}
-          {(businessType === 'restaurant' || businessType === 'retail') && folders.length > 0 && (
-            <>
-              {folders.map((folder) => (
-                <Button
-                  key={folder}
-                  variant={selectedFolder === folder ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleFolderChange(folder)}
-                  className="flex items-center gap-2"
-                >
-                  <IconFolder className="size-4" />
-                  {folder}
-                </Button>
-              ))}
-              {/* Product folders for retail businesses */}
-              {businessType === 'retail' && productsWithImages.map((product) => (
-                <Button
-                  key={product.id}
-                  variant={selectedFolder === product.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleFolderChange(product.id)}
-                  className="flex items-center gap-2"
-                >
-                  <IconFolder className="size-4" />
-                  {product.name} ({product.imageCount})
-                </Button>
-              ))}
-            </>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {onGoogleDriveImportClick && (
-            <Button variant="outline" size="sm" onClick={onGoogleDriveImportClick}>
-              <IconBrandGoogleDrive className="size-4" />
-              <span className="hidden lg:inline">Import from Drive</span>
+      <div className="flex flex-col gap-3 px-4 lg:px-6">
+        {/* First row: Regular folders and action buttons */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Folder buttons - show for restaurant and retail businesses */}
+            {(businessType === 'restaurant' || businessType === 'retail') && folders.length > 0 && (
+              <>
+                {folders.map((folder) => (
+                  <Button
+                    key={folder}
+                    variant={selectedFolder === folder ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleFolderChange(folder)}
+                    className="flex items-center gap-2"
+                  >
+                    <IconFolder className="size-4" />
+                    {folder}
+                  </Button>
+                ))}
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsGenerateWizardOpen(true)}>
+              <IconWand className="size-4" />
+              <span className="hidden lg:inline">Generate Image</span>
             </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={onUploadClick}>
-            <IconPlus className="size-4" />
-            <span className="hidden lg:inline">Upload Image</span>
-          </Button>
+            {onGoogleDriveImportClick && (
+              <Button variant="outline" size="sm" onClick={onGoogleDriveImportClick}>
+                <IconBrandGoogleDrive className="size-4" />
+                <span className="hidden lg:inline">Import from Drive</span>
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={onUploadClick}>
+              <IconPlus className="size-4" />
+              <span className="hidden lg:inline">Upload Image</span>
+            </Button>
+          </div>
         </div>
+        {/* Second row: Product folders for retail businesses */}
+        {businessType === 'retail' && productsWithImages.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {productsWithImages.map((product) => (
+              <Button
+                key={product.id}
+                variant={selectedFolder === product.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleFolderChange(product.id)}
+                className="flex items-center gap-2"
+              >
+                <IconFolder className="size-4" />
+                {product.name} ({product.imageCount})
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Image Grid */}
@@ -544,6 +557,20 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Image Generation Wizard */}
+      {orgId && (
+        <ImageGenerationWizard
+          open={isGenerateWizardOpen}
+          onOpenChange={setIsGenerateWizardOpen}
+          orgId={orgId}
+          businessType={businessType}
+          galleryImages={data}
+          onImageGenerated={() => {
+            onDataChange?.()
+          }}
+        />
+      )}
     </div>
   )
 }
