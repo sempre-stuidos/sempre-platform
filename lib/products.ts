@@ -93,9 +93,9 @@ export async function getProductsWithGalleryImages(
 
     // Count images per product
     const productCounts = new Map<string, number>();
-    filesData.forEach((file) => {
+    filesData.forEach((file: { product_id: string | null }) => {
       if (file.product_id) {
-        const productId = file.product_id as string;
+        const productId = file.product_id;
         productCounts.set(productId, (productCounts.get(productId) || 0) + 1);
       }
     });
@@ -124,11 +124,14 @@ export async function getProductsWithGalleryImages(
     }
 
     // Combine product data with image counts
-    return productsData.map((product) => ({
-      id: typeof product.id === 'string' ? product.id : product.id.toString(),
-      name: product.name,
-      imageCount: productCounts.get(product.id.toString()) || 0,
-    }));
+    return productsData.map((product: { id: string; name: string }) => {
+      const productId = product.id;
+      return {
+        id: productId,
+        name: product.name,
+        imageCount: productCounts.get(productId) || 0,
+      };
+    });
   } catch (error) {
     console.error('Error in getProductsWithGalleryImages:', error);
     return [];

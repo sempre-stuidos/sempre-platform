@@ -55,7 +55,7 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
       setIsLoadingProducts(true)
       fetch(`/api/products/${orgId}`)
         .then((res) => res.json())
-        .then((responseData) => {
+        .then((responseData: { products?: Array<{ id: string; name: string }> }) => {
           if (responseData.products) {
             // Count images per product from current gallery images data
             const productCounts = new Map<string, number>()
@@ -67,16 +67,14 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
             
             // Create products with images array - only include products that have images
             const productsWithCounts = responseData.products
-              .filter((product: { id: string }) => {
-                const productId = typeof product.id === 'string' ? product.id : product.id.toString()
-                return productCounts.has(productId)
+              .filter((product) => {
+                return productCounts.has(product.id)
               })
-              .map((product: { id: string; name: string }) => {
-                const productId = typeof product.id === 'string' ? product.id : product.id.toString()
+              .map((product) => {
                 return {
-                  id: productId,
+                  id: product.id,
                   name: product.name,
-                  imageCount: productCounts.get(productId) || 0,
+                  imageCount: productCounts.get(product.id) || 0,
                 }
               })
             
