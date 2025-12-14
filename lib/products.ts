@@ -64,3 +64,74 @@ export function transformProductRecord(record: ProductRecord): Product {
   };
 }
 
+/**
+ * Get products that have gallery images associated with them
+ * Returns products with their image counts for retail businesses
+ */
+export async function getProductsWithGalleryImages(
+  orgId: string
+): Promise<Array<{ id: string; name: string; imageCount: number }>> {
+  try {
+    const { supabase } = await import('./supabase');
+    
+    // Query files_assets to get product IDs and counts
+    const { data: filesData, error: filesError } = await supabase
+      .from('files_assets')
+      .select('product_id')
+      .eq('type', 'Images')
+      .eq('project', 'Gallery')
+      .not('product_id', 'is', null);
+
+    if (filesError) {
+      console.error('Error fetching gallery images for products:', filesError);
+      return [];
+    }
+
+    if (!filesData || filesData.length === 0) {
+      return [];
+    }
+
+    // Count images per product
+    const productCounts = new Map<string, number>();
+    filesData.forEach((file) => {
+      if (file.product_id) {
+        const productId = file.product_id as string;
+        productCounts.set(productId, (productCounts.get(productId) || 0) + 1);
+      }
+    });
+
+    // Get unique product IDs
+    const productIds = Array.from(productCounts.keys());
+
+    if (productIds.length === 0) {
+      return [];
+    }
+
+    // Fetch product details from retail_products_table
+    const { data: productsData, error: productsError } = await supabase
+      .from('retail_products_table')
+      .select('id, name')
+      .eq('business_id', orgId)
+      .in('id', productIds);
+
+    if (productsError) {
+      console.error('Error fetching products:', productsError);
+      return [];
+    }
+
+    if (!productsData || productsData.length === 0) {
+      return [];
+    }
+
+    // Combine product data with image counts
+    return productsData.map((product) => ({
+      id: typeof product.id === 'string' ? product.id : product.id.toString(),
+      name: product.name,
+      imageCount: productCounts.get(product.id.toString()) || 0,
+    }));
+  } catch (error) {
+    console.error('Error in getProductsWithGalleryImages:', error);
+    return [];
+  }
+}
+

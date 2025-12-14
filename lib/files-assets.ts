@@ -18,6 +18,7 @@ function transformFilesAssetsRecord(record: Record<string, unknown>): FilesAsset
     google_drive_web_view_link: record.google_drive_web_view_link as string | undefined,
     imported_from_google_drive: record.imported_from_google_drive as boolean | undefined,
     image_category: record.image_category as 'Event' | 'Menu' | null | undefined,
+    product_id: record.product_id as string | undefined,
     created_at: record.created_at as string,
     updated_at: record.updated_at as string,
   };
@@ -43,6 +44,11 @@ function transformFilesAssetsToRecord(filesAssets: Partial<FilesAssets>) {
   // Only include image_category if it's explicitly set (not undefined)
   if (filesAssets.image_category !== undefined) {
     record.image_category = filesAssets.image_category;
+  }
+  
+  // Only include product_id if it's explicitly set (not undefined)
+  if (filesAssets.product_id !== undefined) {
+    record.product_id = filesAssets.product_id || null;
   }
   
   return record;
@@ -114,23 +120,24 @@ export async function createFilesAssets(filesAssets: Omit<FilesAssets, 'id' | 'c
       throw new Error('Missing required fields for files_assets insert');
     }
 
-    // Try to insert with image_category first
+    // Try to insert with image_category and product_id first
     let { data: newFilesAssets, error } = await supabase
       .from('files_assets')
       .insert([record])
       .select()
       .single();
 
-    // If error and it's related to image_category column not existing, retry without it
-    if (error && (error.message?.includes('image_category') || error.code === '42703')) {
-      console.warn('image_category column may not exist, retrying without it:', error.message);
-      // Remove image_category from record and retry
-      const recordWithoutCategory = { ...record };
-      delete recordWithoutCategory.image_category;
+    // If error and it's related to image_category or product_id column not existing, retry without them
+    if (error && (error.message?.includes('image_category') || error.message?.includes('product_id') || error.code === '42703')) {
+      console.warn('image_category or product_id column may not exist, retrying without them:', error.message);
+      // Remove image_category and product_id from record and retry
+      const recordWithoutOptional = { ...record };
+      delete recordWithoutOptional.image_category;
+      delete recordWithoutOptional.product_id;
       
       const retryResult = await supabase
         .from('files_assets')
-        .insert([recordWithoutCategory])
+        .insert([recordWithoutOptional])
         .select()
         .single();
       
@@ -356,6 +363,51 @@ export async function getGalleryImagesForBusiness(
     return galleryImages;
   } catch (error) {
     console.error('Error in getGalleryImagesForBusiness:', error);
+    return [];
+  }
+}
+
+/**
+ * Get gallery images for a specific product
+ * Filters by type="Images", project="Gallery", and product_id
+ */
+export async function getGalleryImagesByProduct(
+  productId: string,
+  businessSlug?: string
+): Promise<FilesAssets[]> {
+  try {
+    const query = supabase
+      .from('files_assets')
+      .select('*')
+      .eq('type', 'Images')
+      .eq('project', 'Gallery')
+      .eq('product_id', productId)
+      .order('uploaded', { ascending: false });
+
+    const { data: filesAssets, error } = await query;
+
+    if (error) {
+      console.error('Error fetching gallery images by product:', error);
+      throw error;
+    }
+
+    if (!filesAssets || filesAssets.length === 0) {
+      return [];
+    }
+
+    let galleryImages = filesAssets.map(transformFilesAssetsRecord);
+
+    // Filter by business slug if provided
+    if (businessSlug) {
+      const sanitizedSlug = businessSlug.replace(/[^a-zA-Z0-9-_]/g, '-');
+      galleryImages = galleryImages.filter((file: FilesAssets) => 
+        file.file_url?.includes(`${sanitizedSlug}/gallery/`)
+      );
+    }
+
+    return galleryImages;
+  } catch (error) {
+    console.error('Error in getGalleryImagesByProduct:', error);
     return [];
   }
 }

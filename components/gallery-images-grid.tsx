@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { IconDotsVertical, IconPlus, IconBrandGoogleDrive, IconChevronLeft, IconChevronRight, IconFolder, IconEye, IconDownload, IconEdit, IconTrash } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,13 +10,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -39,12 +32,13 @@ interface GalleryImagesGridProps {
   onFolderClick?: (folder: string) => void
   onDataChange?: () => void
   businessType?: 'agency' | 'restaurant' | 'hotel' | 'retail' | 'service' | 'other'
+  orgId?: string
 }
 
 const ITEMS_PER_PAGE = 6
 const RECENTS_FOLDER = "Recents"
 
-export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClick, onFolderClick, onDataChange, businessType }: GalleryImagesGridProps) {
+export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClick, onFolderClick, onDataChange, businessType, orgId }: GalleryImagesGridProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedFolder, setSelectedFolder] = useState<string>(RECENTS_FOLDER)
   const [renameDialogOpen, setRenameDialogOpen] = useState(false)
@@ -52,6 +46,56 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
   const [newFileName, setNewFileName] = useState("")
   const [isRenaming, setIsRenaming] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [productsWithImages, setProductsWithImages] = useState<Array<{ id: string; name: string; imageCount: number }>>([])
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false)
+
+  // Fetch products with images for retail businesses
+  useEffect(() => {
+    if (businessType === 'retail' && orgId) {
+      setIsLoadingProducts(true)
+      fetch(`/api/products/${orgId}`)
+        .then((res) => res.json())
+        .then((responseData) => {
+          if (responseData.products) {
+            // Count images per product from current gallery images data
+            const productCounts = new Map<string, number>()
+            data.forEach((file) => {
+              if (file.product_id) {
+                productCounts.set(file.product_id, (productCounts.get(file.product_id) || 0) + 1)
+              }
+            })
+            
+            // Create products with images array - only include products that have images
+            const productsWithCounts = responseData.products
+              .filter((product: { id: string }) => {
+                const productId = typeof product.id === 'string' ? product.id : product.id.toString()
+                return productCounts.has(productId)
+              })
+              .map((product: { id: string; name: string }) => {
+                const productId = typeof product.id === 'string' ? product.id : product.id.toString()
+                return {
+                  id: productId,
+                  name: product.name,
+                  imageCount: productCounts.get(productId) || 0,
+                }
+              })
+            
+            setProductsWithImages(productsWithCounts)
+          } else {
+            setProductsWithImages([])
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching products:", error)
+          setProductsWithImages([])
+        })
+        .finally(() => {
+          setIsLoadingProducts(false)
+        })
+    } else {
+      setProductsWithImages([])
+    }
+  }, [businessType, orgId, data])
 
   // Extract unique folders from data (using project field, or create folders)
   const folders = useMemo(() => {
@@ -63,6 +107,10 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
       folderSet.add("Events")
       folderSet.add("Menu")
       folderSet.add("All Images")
+    } else if (businessType === 'retail') {
+      // For retail businesses, add product folders
+      folderSet.add("All Images")
+      // Product folders will be added separately in the UI
     } else {
       // Extract folders from project field or create default folders
       data.forEach(file => {
@@ -98,11 +146,14 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
     } else if (selectedFolder === "Menu") {
       // Filter by image_category for Menu folder
       return data.filter(file => file.image_category === 'Menu')
+    } else if (businessType === 'retail' && productsWithImages.some(p => p.id === selectedFolder)) {
+      // Filter by product_id for retail product folders
+      return data.filter(file => file.product_id === selectedFolder)
     } else {
       // Filter by project/folder (for non-restaurant businesses)
       return data.filter(file => file.project === selectedFolder)
     }
-  }, [data, selectedFolder])
+  }, [data, selectedFolder, businessType, productsWithImages])
 
   // Reset to page 1 when folder changes
   const handleFolderChange = (folder: string) => {
@@ -230,22 +281,39 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header with action buttons */}
+      {/* Header with folder buttons and action buttons */}
       <div className="flex items-center justify-between px-4 lg:px-6">
-        <div className="flex items-center gap-2">
-          <Select value={selectedFolder} onValueChange={handleFolderChange}>
-            <SelectTrigger className="w-[180px]">
-              <IconFolder className="size-4 mr-2" />
-              <SelectValue placeholder="Select folder" />
-            </SelectTrigger>
-            <SelectContent>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Folder buttons - show for restaurant and retail businesses */}
+          {(businessType === 'restaurant' || businessType === 'retail') && folders.length > 0 && (
+            <>
               {folders.map((folder) => (
-                <SelectItem key={folder} value={folder}>
+                <Button
+                  key={folder}
+                  variant={selectedFolder === folder ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleFolderChange(folder)}
+                  className="flex items-center gap-2"
+                >
+                  <IconFolder className="size-4" />
                   {folder}
-                </SelectItem>
+                </Button>
               ))}
-            </SelectContent>
-          </Select>
+              {/* Product folders for retail businesses */}
+              {businessType === 'retail' && productsWithImages.map((product) => (
+                <Button
+                  key={product.id}
+                  variant={selectedFolder === product.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleFolderChange(product.id)}
+                  className="flex items-center gap-2"
+                >
+                  <IconFolder className="size-4" />
+                  {product.name} ({product.imageCount})
+                </Button>
+              ))}
+            </>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {onGoogleDriveImportClick && (
@@ -260,24 +328,6 @@ export function GalleryImagesGrid({ data, onUploadClick, onGoogleDriveImportClic
           </Button>
         </div>
       </div>
-
-      {/* Folder buttons - only show for restaurant businesses */}
-      {businessType === 'restaurant' && folders.length > 0 && (
-        <div className="flex items-center gap-2 px-4 lg:px-6 flex-wrap">
-          {folders.map((folder) => (
-            <Button
-              key={folder}
-              variant={selectedFolder === folder ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleFolderChange(folder)}
-              className="flex items-center gap-2"
-            >
-              <IconFolder className="size-4" />
-              {folder}
-            </Button>
-          ))}
-        </div>
-      )}
 
       {/* Image Grid */}
       {currentPageData.length === 0 ? (

@@ -132,7 +132,10 @@ export default function GalleryPage() {
 
   const handleFolderClick = (folder: string) => {
     // Navigate to folder details or filter
-    toast.info(`Viewing folder: ${folder}`)
+    toast.info(`Viewing folder: ${folder}`, {
+      duration: 3000,
+      dismissible: true,
+    })
     // In a real implementation, you could navigate to a folder detail page
     // router.push(`/client/${orgId}/restaurant/gallery/folder/${encodeURIComponent(folder)}`)
   }
@@ -152,6 +155,7 @@ export default function GalleryPage() {
             onFolderClick={handleFolderClick}
             onDataChange={handleDataChange}
             businessType={businessType}
+            orgId={orgId}
           />
         )}
       </div>

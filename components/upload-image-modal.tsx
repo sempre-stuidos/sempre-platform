@@ -21,6 +21,7 @@ import {
 } from "@/lib/files-assets"
 import { uploadGalleryImage } from "@/lib/gallery-images"
 import { getBusinessById } from "@/lib/businesses"
+import { Product } from "@/lib/products"
 import { toast } from "sonner"
 import Image from "next/image"
 
@@ -50,10 +51,13 @@ export function UploadImageModal({ isOpen, onClose, onUploadSuccess, orgId, busi
   const [overallProgress, setOverallProgress] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [businessSlug, setBusinessSlug] = useState<string | null>(null)
+  const [products, setProducts] = useState<Product[]>([])
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
     category: null as 'Event' | 'Menu' | null,
+    product_id: null as string | null,
   })
 
   // Fetch business slug when modal opens
@@ -75,6 +79,31 @@ export function UploadImageModal({ isOpen, onClose, onUploadSuccess, orgId, busi
         })
     }
   }, [isOpen, orgId])
+
+  // Fetch products for retail businesses
+  useEffect(() => {
+    if (isOpen && orgId && businessType === 'retail') {
+      setIsLoadingProducts(true)
+      fetch(`/api/products/${orgId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.products) {
+            setProducts(data.products)
+          } else {
+            setProducts([])
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching products:", error)
+          setProducts([])
+        })
+        .finally(() => {
+          setIsLoadingProducts(false)
+        })
+    } else {
+      setProducts([])
+    }
+  }, [isOpen, orgId, businessType])
 
   const handleFilesSelect = (selectedFiles: FileList | File[]) => {
     const fileArray = Array.from(selectedFiles)
@@ -216,6 +245,7 @@ export function UploadImageModal({ isOpen, onClose, onUploadSuccess, orgId, busi
             status: "Active",
             file_url: filePath,
             image_category: formData.category || null,
+            product_id: formData.product_id || undefined,
           })
 
           if (!newFileAsset) {
@@ -263,6 +293,7 @@ export function UploadImageModal({ isOpen, onClose, onUploadSuccess, orgId, busi
         setFiles([])
         setFormData({
           category: null,
+          product_id: null,
         })
         setOverallProgress(0)
         
@@ -288,6 +319,7 @@ export function UploadImageModal({ isOpen, onClose, onUploadSuccess, orgId, busi
       setFiles([])
       setFormData({
         category: null,
+        product_id: null,
       })
       setErrors({})
       setOverallProgress(0)
@@ -515,6 +547,38 @@ export function UploadImageModal({ isOpen, onClose, onUploadSuccess, orgId, busi
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   Select a category to organize all images into folders
+                </p>
+              </div>
+            )}
+
+            {/* Product field - only show for retail businesses */}
+            {businessType === 'retail' && (
+              <div className="space-y-2">
+                <Label htmlFor="product">Product (applies to all images)</Label>
+                <Select
+                  value={formData.product_id || "none"}
+                  onValueChange={(value) => {
+                    setFormData({
+                      ...formData,
+                      product_id: value === "none" ? null : value,
+                    })
+                  }}
+                  disabled={isUploading || isLoadingProducts}
+                >
+                  <SelectTrigger id="product">
+                    <SelectValue placeholder={isLoadingProducts ? "Loading products..." : "Select product"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {products.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Optionally select a product to link all images to it
                 </p>
               </div>
             )}
