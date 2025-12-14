@@ -11,6 +11,7 @@ export interface Product {
   rating?: number;
   image_url?: string;
   description?: string;
+  benefits?: string[];
   created_at?: string;
   updated_at?: string;
 }
@@ -29,6 +30,7 @@ interface ProductRecord {
   rating?: number | string | null;
   image_url?: string | null;
   description?: string | null;
+  benefits?: string[] | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -59,6 +61,7 @@ export function transformProductRecord(record: ProductRecord): Product {
       : undefined,
     image_url: record.image_url || undefined,
     description: record.description || undefined,
+    benefits: record.benefits && Array.isArray(record.benefits) ? record.benefits : undefined,
     created_at: record.created_at,
     updated_at: record.updated_at,
   };

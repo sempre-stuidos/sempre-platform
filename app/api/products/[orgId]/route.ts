@@ -101,7 +101,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { name, price, sku, status, category, stock, rating, image_url, description } = body;
+    const { name, price, sku, status, category, stock, rating, image_url, description, benefits } = body;
 
     if (!name || !name.trim()) {
       return NextResponse.json(
@@ -123,6 +123,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         rating: rating !== undefined && rating !== null ? rating : null,
         image_url: image_url || null,
         description: description || null,
+        benefits: benefits && Array.isArray(benefits) && benefits.length > 0 ? benefits : null,
       })
       .select()
       .single();

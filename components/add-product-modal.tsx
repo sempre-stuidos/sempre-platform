@@ -1,6 +1,6 @@
 "use client"
 
-import { IconX, IconUpload, IconChevronLeft, IconChevronRight, IconPhoto, IconLink } from "@tabler/icons-react"
+import { IconX, IconUpload, IconChevronLeft, IconChevronRight, IconPhoto, IconLink, IconPlus } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -31,6 +31,7 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
   const [showUrlInput, setShowUrlInput] = useState(false)
   const [imageUrlInput, setImageUrlInput] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [benefits, setBenefits] = useState<string[]>([''])
 
   const [formData, setFormData] = useState<Partial<Product>>(() => {
     if (product) {
@@ -44,6 +45,7 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
         rating: product.rating || 1,
         image_url: product.image_url || "",
         description: product.description || "",
+        benefits: product.benefits || [],
       }
     }
     return {
@@ -56,6 +58,7 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
       rating: 1,
       image_url: "",
       description: "",
+      benefits: [],
     }
   })
 
@@ -73,9 +76,16 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
         rating: product.rating || 1,
         image_url: product.image_url || "",
         description: product.description || "",
+        benefits: product.benefits || [],
       })
       if (product.image_url) {
         setImagePreview(product.image_url)
+      }
+      // Initialize benefits array - if empty, start with one empty field
+      if (product.benefits && product.benefits.length > 0) {
+        setBenefits(product.benefits)
+      } else {
+        setBenefits([''])
       }
       setStep(1) // Reset to step 1 when editing
     } else {
@@ -89,9 +99,11 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
         rating: 1,
         image_url: "",
         description: "",
+        benefits: [],
       })
       setImagePreview("")
       setImageFile(null)
+      setBenefits([''])
       setStep(1) // Reset to step 1 for new products
     }
     setErrors({})
@@ -188,11 +200,39 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
       }
 
       setStep(2)
+    } else if (step === 2) {
+      if (!validateStep2()) {
+        return
+      }
+      setStep(3)
     }
   }
 
   const handleBack = () => {
-    setStep(1)
+    if (step === 2) {
+      setStep(1)
+    } else if (step === 3) {
+      setStep(2)
+    }
+  }
+
+  const handleAddBenefit = () => {
+    setBenefits([...benefits, ''])
+  }
+
+  const handleRemoveBenefit = (index: number) => {
+    if (benefits.length > 1) {
+      setBenefits(benefits.filter((_, i) => i !== index))
+    } else {
+      // Keep at least one empty field
+      setBenefits([''])
+    }
+  }
+
+  const handleBenefitChange = (index: number, value: string) => {
+    const newBenefits = [...benefits]
+    newBenefits[index] = value
+    setBenefits(newBenefits)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -204,19 +244,31 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
       return
     }
     
-    if (!validateStep2()) {
+    // If on step 2, move to step 3
+    if (step === 2) {
+      handleNext()
       return
     }
-
-    // Upload image if not already uploaded
-    if (imageFile && orgId && !formData.image_url) {
-      const uploadedUrl = await handleUploadImage()
-      if (!uploadedUrl) {
-        return
+    
+    // Step 3: Validate and submit
+    if (step === 3) {
+      // Filter out empty benefits and update formData
+      const filteredBenefits = benefits.filter(b => b.trim() !== '')
+      const finalFormData = {
+        ...formData,
+        benefits: filteredBenefits.length > 0 ? filteredBenefits : undefined,
       }
-    }
 
-    onSave(formData)
+      // Upload image if not already uploaded
+      if (imageFile && orgId && !formData.image_url) {
+        const uploadedUrl = await handleUploadImage()
+        if (!uploadedUrl) {
+          return
+        }
+      }
+
+      onSave(finalFormData)
+    }
   }
 
   const handleRemoveImage = () => {
@@ -295,7 +347,9 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
           <DialogDescription>
             {step === 1 
               ? "Step 1: Upload image and enter basic information"
-              : "Step 2: Enter product details and pricing"}
+              : step === 2
+              ? "Step 2: Enter product details and pricing"
+              : "Step 3: Add product benefits and features"}
           </DialogDescription>
         </DialogHeader>
 
@@ -313,6 +367,13 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
               2
             </div>
             <span className="text-sm font-medium">Details</span>
+          </div>
+          <div className="w-12 h-0.5 bg-border" />
+          <div className={`flex items-center gap-2 ${step >= 3 ? 'text-primary' : 'text-muted-foreground'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+              3
+            </div>
+            <span className="text-sm font-medium">Benefits</span>
           </div>
         </div>
 
@@ -508,7 +569,7 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
                 />
               </div>
             </div>
-          ) : (
+          ) : step === 2 ? (
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
@@ -598,11 +659,54 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
                 </div>
               </div>
             </div>
-          )}
+          ) : step === 3 ? (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label>Product Benefits/Features</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enter key benefits or features that will be displayed on your product page
+                </p>
+                
+                <div className="space-y-3">
+                  {benefits.map((benefit, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={benefit}
+                        onChange={(e) => handleBenefitChange(index, e.target.value)}
+                        placeholder={`Benefit ${index + 1} (e.g., Stimulates scalp for healthier growth)`}
+                        className="flex-1"
+                      />
+                      {benefits.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveBenefit(index)}
+                          className="shrink-0"
+                        >
+                          <IconX className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddBenefit}
+                    className="w-full"
+                  >
+                    <IconPlus className="h-4 w-4 mr-2" />
+                    Add Benefit
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div className="flex justify-between gap-2">
             <div>
-              {step === 2 && (
+              {(step === 2 || step === 3) && (
                 <Button type="button" variant="outline" onClick={handleBack}>
                   <IconChevronLeft className="h-4 w-4 mr-2" />
                   Back
@@ -613,7 +717,7 @@ export function AddProductModal({ open, onOpenChange, product, onSave, orgId }: 
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              {step === 1 ? (
+              {step === 1 || step === 2 ? (
                 <Button 
                   type="button" 
                   onClick={(e) => {

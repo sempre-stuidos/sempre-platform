@@ -46,7 +46,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { name, price, sku, status, category, stock, rating, image_url, description } = body;
+    const { name, price, sku, status, category, stock, rating, image_url, description, benefits } = body;
 
     // Validate name if provided (for updates, name is optional but if provided must not be empty)
     if (name !== undefined && (!name || !name.trim())) {
@@ -78,6 +78,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (rating !== undefined) updateData.rating = rating !== null ? rating : null;
     if (image_url !== undefined) updateData.image_url = image_url || null;
     if (description !== undefined) updateData.description = description || null;
+    if (benefits !== undefined) {
+      updateData.benefits = benefits && Array.isArray(benefits) && benefits.length > 0 ? benefits : null;
+    }
 
     const { data, error } = await supabase
       .from('retail_products_table')
