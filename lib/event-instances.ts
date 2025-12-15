@@ -33,7 +33,12 @@ export async function generateEventInstances(
   
   // Generate instances for each occurrence
   while (currentDate <= end) {
-    const instanceDate = currentDate.toISOString().split('T')[0];
+    // Format as YYYY-MM-DD using local date components to avoid timezone shifts
+    // This matches how we parse dates elsewhere in the codebase
+    const year = currentDate.getFullYear()
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0')
+    const day = String(currentDate.getDate()).padStart(2, '0')
+    const instanceDate = `${year}-${month}-${day}`
     
     // Insert instance into database
     const { data: instance, error } = await supabase

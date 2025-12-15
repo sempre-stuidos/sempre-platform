@@ -164,3 +164,76 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { orgId, eventId, instanceId } = await params;
+    const cookieStore = await cookies();
+    
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Verify user has access to this business
+    const role = await getUserRoleInOrg(user.id, orgId, supabase);
+    if (!role) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Verify instance belongs to event and event belongs to org
+    const { data: instance } = await supabase
+      .from('event_instances')
+      .select(`
+        *,
+        event:events!inner(org_id)
+      `)
+      .eq('id', instanceId)
+      .eq('event_id', eventId)
+      .single();
+
+    if (!instance || (instance.event as { org_id: string }).org_id !== orgId) {
+      return NextResponse.json({ error: 'Instance not found' }, { status: 404 });
+    }
+
+    // Delete the instance
+    const { error: deleteError } = await supabase
+      .from('event_instances')
+      .delete()
+      .eq('id', instanceId);
+
+    if (deleteError) {
+      console.error('Error deleting instance:', deleteError);
+      return NextResponse.json(
+        { error: 'Failed to delete instance' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error in DELETE /api/businesses/[orgId]/events/[eventId]/instances/[instanceId]:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete instance' },
+      { status: 500 }
+    );
+  }
+}
