@@ -340,11 +340,21 @@ export async function getEventsForOrg(
 
     const events = (data || []).map(transformEventRecord);
     
-    // Compute status for each event, but preserve draft and archived status
+    // Compute status for each event
+    // For weekly events, preserve the status from the database (user explicitly set it)
+    // For other events, preserve draft and archived, otherwise recompute
     return events.map(event => {
-      const finalStatus = (event.status === 'draft' || event.status === 'archived') 
-        ? event.status 
-        : computeEventStatus(event);
+      let finalStatus: Event['status'];
+      if (event.is_weekly && (event.status === 'live' || event.status === 'scheduled')) {
+        // For weekly events, preserve live/scheduled status from database
+        finalStatus = event.status;
+      } else if (event.status === 'draft' || event.status === 'archived') {
+        // Preserve draft and archived status
+        finalStatus = event.status;
+      } else {
+        // Recompute status based on publish dates
+        finalStatus = computeEventStatus(event);
+      }
       return {
         ...event,
         status: finalStatus,
@@ -386,11 +396,20 @@ export async function getEventById(
     }
 
     const event = transformEventRecord(data);
-    // Preserve the status from the database if it was explicitly set
-    // Only recompute if status is not explicitly 'draft' or 'archived'
-    const finalStatus = (event.status === 'draft' || event.status === 'archived') 
-      ? event.status 
-      : computeEventStatus(event);
+    // Compute status for the event
+    // For weekly events, preserve the status from the database (user explicitly set it)
+    // For other events, preserve draft and archived, otherwise recompute
+    let finalStatus: Event['status'];
+    if (event.is_weekly && (event.status === 'live' || event.status === 'scheduled')) {
+      // For weekly events, preserve live/scheduled status from database
+      finalStatus = event.status;
+    } else if (event.status === 'draft' || event.status === 'archived') {
+      // Preserve draft and archived status
+      finalStatus = event.status;
+    } else {
+      // Recompute status based on publish dates
+      finalStatus = computeEventStatus(event);
+    }
     return {
       ...event,
       status: finalStatus,
@@ -494,11 +513,26 @@ export async function updateEvent(
     }
 
     const event = transformEventRecord(data);
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/b4650fe2-a582-445d-9687-1805655edfff',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'events.ts:496',message:'updateEvent after DB save',data:{eventId,statusFromDB:event.status,statusInUpdates:updates.status,isWeekly:event.is_weekly,publishStartAt:event.publish_start_at,computedStatus:computeEventStatus(event)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     // Preserve the status from the database if it was explicitly set
-    // Only recompute if status is not explicitly 'draft' or 'archived'
-    const finalStatus = (event.status === 'draft' || event.status === 'archived') 
-      ? event.status 
-      : computeEventStatus(event);
+    // For weekly events, if status was explicitly provided in updates, preserve it
+    // For other events, only preserve 'draft' or 'archived', otherwise recompute
+    let finalStatus: Event['status'];
+    if (event.is_weekly && updates.status !== undefined) {
+      // For weekly events, if status was explicitly set, preserve it
+      finalStatus = updates.status;
+    } else if (event.status === 'draft' || event.status === 'archived') {
+      // Preserve draft and archived status
+      finalStatus = event.status;
+    } else {
+      // Recompute status based on publish dates
+      finalStatus = computeEventStatus(event);
+    }
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/b4650fe2-a582-445d-9687-1805655edfff',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'events.ts:507',message:'updateEvent final status',data:{eventId,finalStatus,statusFromDB:event.status,statusInUpdates:updates.status,isWeekly:event.is_weekly},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     return {
       ...event,
       status: finalStatus,

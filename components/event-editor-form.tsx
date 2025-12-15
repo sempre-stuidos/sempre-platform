@@ -297,10 +297,9 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
     if (formData.is_weekly) {
       // For weekly events, use is_live toggle and is_indefinite option
       if (formData.is_live) {
-        // Event is live - set publish_start to now if not already set
-        publishStartAt = formData.publish_start_date && formData.publish_start_time
-          ? new Date(`${formData.publish_start_date}T${formData.publish_start_time}`).toISOString()
-          : new Date().toISOString()
+        // Event is live - always set publish_start to now when making it live
+        // Ignore any publish_start_date/publish_start_time values
+        publishStartAt = new Date().toISOString()
         status = 'live'
       } else {
         // Event is inactive
@@ -797,7 +796,14 @@ export function EventEditorForm({ orgId, event, onSave }: EventEditorFormProps) 
                         id="is_live"
                         checked={formData.is_live !== undefined ? formData.is_live : computedStatus === 'live'}
                         onCheckedChange={(checked) => {
-                          setFormData({ ...formData, is_live: checked })
+                          // When setting to live, clear publish_start_date and publish_start_time
+                          // so they don't override the current time
+                          setFormData({ 
+                            ...formData, 
+                            is_live: checked,
+                            publish_start_date: checked ? '' : formData.publish_start_date,
+                            publish_start_time: checked ? '' : formData.publish_start_time,
+                          })
                         }}
                       />
                     </div>

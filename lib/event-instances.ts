@@ -12,8 +12,12 @@ export async function generateEventInstances(
   supabase: SupabaseClient
 ): Promise<EventInstance[]> {
   const instances: EventInstance[] = [];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  // Parse dates as local time to avoid timezone issues
+  // startDate and endDate are in format YYYY-MM-DD, parse them as local midnight
+  const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+  const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+  const start = new Date(startYear, startMonth - 1, startDay);
+  const end = new Date(endYear, endMonth - 1, endDay);
   
   // Find the first occurrence of the day of week on or after start date
   let currentDate = new Date(start);

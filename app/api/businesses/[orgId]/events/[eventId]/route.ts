@@ -140,14 +140,40 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // Compute status if not explicitly provided
-    const computedStatus = status !== undefined 
-      ? status 
-      : computeEventStatus({
-          ...currentEvent,
-          publish_start_at: publish_start_at !== undefined ? publish_start_at : currentEvent.publish_start_at,
-          publish_end_at: publish_end_at !== undefined ? publish_end_at : currentEvent.publish_end_at,
-        });
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/b4650fe2-a582-445d-9687-1805655edfff',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:143',message:'PATCH route status computation',data:{eventId,statusFromBody:status,currentStatus:currentEvent.status,isWeekly:effectiveIsWeekly,publishStartAtFromBody:publish_start_at,publishStartAtCurrent:currentEvent.publish_start_at},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
+    // For weekly events set to live, always use current time for publish_start_at
+    let finalPublishStartAt = publish_start_at;
+    if (effectiveIsWeekly && status === 'live' && publish_start_at !== undefined) {
+      // Check if the provided publish_start_at is in the future
+      const providedDate = new Date(publish_start_at);
+      const now = new Date();
+      if (providedDate > now) {
+        // If it's in the future, use current time instead
+        finalPublishStartAt = now.toISOString();
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/b4650fe2-a582-445d-9687-1805655edfff',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:150',message:'PATCH route correcting future publish_start_at',data:{eventId,providedPublishStartAt:publish_start_at,finalPublishStartAt,now:now.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+      }
+    }
+    
+    // For weekly events with explicit status, preserve it; otherwise compute
+    let finalStatus: Event['status'];
+    if (effectiveIsWeekly && status !== undefined) {
+      // For weekly events, if status is explicitly provided, preserve it
+      finalStatus = status;
+    } else {
+      // Compute status if not explicitly provided or not weekly
+      finalStatus = status !== undefined 
+        ? status 
+        : computeEventStatus({
+            ...currentEvent,
+            publish_start_at: finalPublishStartAt !== undefined ? finalPublishStartAt : currentEvent.publish_start_at,
+            publish_end_at: publish_end_at !== undefined ? publish_end_at : currentEvent.publish_end_at,
+          });
+    }
 
     const updates: Partial<Event> = {};
     if (title !== undefined) updates.title = title;
@@ -157,7 +183,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (event_type !== undefined) updates.event_type = event_type;
     if (starts_at !== undefined) updates.starts_at = starts_at;
     if (ends_at !== undefined) updates.ends_at = ends_at;
-    if (publish_start_at !== undefined) updates.publish_start_at = publish_start_at;
+    if (finalPublishStartAt !== undefined) updates.publish_start_at = finalPublishStartAt;
     if (publish_end_at !== undefined) updates.publish_end_at = publish_end_at;
     if (is_featured !== undefined) updates.is_featured = is_featured;
     if (is_weekly !== undefined) updates.is_weekly = is_weekly;
@@ -168,7 +194,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
     // Clear starts_at/ends_at if switching from one-time to weekly (they'll be set with time only)
     // This is handled by the form sending the placeholder dates
-    updates.status = computedStatus;
+    updates.status = finalStatus;
 
     const event = await updateEvent(eventId, orgId, updates, supabase);
 

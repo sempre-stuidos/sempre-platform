@@ -88,10 +88,15 @@ export function EventInstancesList({ orgId, eventId, event }: EventInstancesList
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {instances.map((instance) => (
+                {instances.map((instance) => {
+                  // Parse date as local time to avoid timezone issues
+                  // instance_date is in format YYYY-MM-DD, parse it as local midnight
+                  const [year, month, day] = instance.instance_date.split('-').map(Number);
+                  const instanceDate = new Date(year, month - 1, day);
+                  return (
                   <TableRow key={instance.id}>
                     <TableCell className="font-medium">
-                      {format(new Date(instance.instance_date), "EEEE, MMMM d, yyyy")}
+                      {format(instanceDate, "EEEE, MMMM d, yyyy")}
                     </TableCell>
                     <TableCell>
                       {instance.custom_description ? (
@@ -120,7 +125,8 @@ export function EventInstancesList({ orgId, eventId, event }: EventInstancesList
                       </Link>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
