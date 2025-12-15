@@ -167,12 +167,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     } else {
       // Compute status if not explicitly provided or not weekly
       finalStatus = status !== undefined 
-        ? status 
-        : computeEventStatus({
-            ...currentEvent,
-            publish_start_at: finalPublishStartAt !== undefined ? finalPublishStartAt : currentEvent.publish_start_at,
-            publish_end_at: publish_end_at !== undefined ? publish_end_at : currentEvent.publish_end_at,
-          });
+      ? status 
+      : computeEventStatus({
+          ...currentEvent,
+          publish_start_at: finalPublishStartAt !== undefined ? finalPublishStartAt : currentEvent.publish_start_at,
+          publish_end_at: publish_end_at !== undefined ? publish_end_at : currentEvent.publish_end_at,
+        });
     }
 
     const updates: Partial<Event> = {};

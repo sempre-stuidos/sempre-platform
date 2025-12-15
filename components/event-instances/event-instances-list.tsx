@@ -47,17 +47,17 @@ export function EventInstancesList({ orgId, eventId, event }: EventInstancesList
   const [isDeleting, setIsDeleting] = useState(false)
 
   const fetchInstances = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/businesses/${orgId}/events/${eventId}/instances`)
-      if (response.ok) {
-        const data = await response.json()
-        setInstances(data.instances || [])
+      try {
+        const response = await fetch(`/api/businesses/${orgId}/events/${eventId}/instances`)
+        if (response.ok) {
+          const data = await response.json()
+          setInstances(data.instances || [])
+        }
+      } catch (error) {
+        console.error('Error fetching instances:', error)
+      } finally {
+        setIsLoading(false)
       }
-    } catch (error) {
-      console.error('Error fetching instances:', error)
-    } finally {
-      setIsLoading(false)
-    }
   }, [orgId, eventId])
 
   useEffect(() => {
@@ -278,11 +278,11 @@ export function EventInstancesList({ orgId, eventId, event }: EventInstancesList
   if (instances.length === 0) {
     return (
       <div className="space-y-4">
-        <Card>
-          <CardHeader>
+      <Card>
+        <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Event Instances</CardTitle>
+          <CardTitle>Event Instances</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   Individual occurrences of "{event.title}"
                 </p>
@@ -296,13 +296,13 @@ export function EventInstancesList({ orgId, eventId, event }: EventInstancesList
                 Generate Instances
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-center py-8">
-              No instances have been generated for this weekly event yet.
-            </p>
-          </CardContent>
-        </Card>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground text-center py-8">
+            No instances have been generated for this weekly event yet.
+          </p>
+        </CardContent>
+      </Card>
 
         <GenerateInstancesDialog
           isOpen={showGenerateDialog}
@@ -320,10 +320,10 @@ export function EventInstancesList({ orgId, eventId, event }: EventInstancesList
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Event Instances</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Individual occurrences of "{event.title}"
-              </p>
+          <CardTitle>Event Instances</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Individual occurrences of "{event.title}"
+          </p>
             </div>
             <Button
               onClick={() => setShowGenerateDialog(true)}
@@ -441,11 +441,11 @@ export function EventInstancesList({ orgId, eventId, event }: EventInstancesList
                             Publish
                           </Button>
                         )}
-                        <Link href={`/client/${orgId}/events/${eventId}/instances/${instance.id}`}>
-                          <Button variant="ghost" size="icon">
-                            <IconEdit className="h-4 w-4" />
-                          </Button>
-                        </Link>
+                      <Link href={`/client/${orgId}/events/${eventId}/instances/${instance.id}`}>
+                        <Button variant="ghost" size="icon">
+                          <IconEdit className="h-4 w-4" />
+                        </Button>
+                      </Link>
                         <Button
                           onClick={() => handleDeleteClick(instance)}
                           variant="ghost"
