@@ -81,23 +81,54 @@ export function QuickActionsModal() {
         <Button
           variant="ghost"
           size="sm"
-          className="hidden gap-1.5 sm:flex"
+          className="w-full justify-start gap-2"
         >
+          <IconLifebuoy className="h-4 w-4" />
           Help
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-xl">
-        <DialogHeader className="space-y-2">
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <IconLifebuoy className="h-5 w-5 text-primary" />
-            Need help?
-          </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
-            Request an update or ask for support without leaving your dashboard.
-          </DialogDescription>
-        </DialogHeader>
+        <QuickActionsModalContent 
+          formData={formData}
+          setFormData={setFormData}
+          isSubmitting={isSubmitting}
+          handleSubmit={handleSubmit}
+          handleFileChange={handleFileChange}
+          setOpen={setOpen}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+export function QuickActionsModalContent({
+  formData,
+  setFormData,
+  isSubmitting,
+  handleSubmit,
+  handleFileChange,
+  setOpen,
+}: {
+  formData: { category: string; description: string; file: File | null }
+  setFormData: React.Dispatch<React.SetStateAction<{ category: string; description: string; file: File | null }>>
+  isSubmitting: boolean
+  handleSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
+  handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void
+  setOpen: (open: boolean) => void
+}) {
+  return (
+    <>
+      <DialogHeader className="space-y-2">
+        <DialogTitle className="flex items-center gap-2 text-xl">
+          <IconLifebuoy className="h-5 w-5 text-primary" />
+          Need help?
+        </DialogTitle>
+        <DialogDescription className="text-sm text-muted-foreground">
+          Request an update or ask for support without leaving your dashboard.
+        </DialogDescription>
+      </DialogHeader>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
           <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
             Share what you need updated—menus, photos, events, text, or anything
             else. We’ll take it from here.
@@ -181,7 +212,6 @@ export function QuickActionsModal() {
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </>
   )
 }

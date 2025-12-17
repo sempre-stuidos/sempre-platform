@@ -15,13 +15,39 @@ import {
   IconShoppingCart,
   IconPackage,
   IconMusic,
-  IconSun,
-  IconMoon,
   IconLock,
+  IconLifebuoy,
 } from "@tabler/icons-react"
-import { useTheme } from "next-themes"
 import { useParams, usePathname } from "next/navigation"
 import { NavUser } from "@/components/nav-user"
+import { QuickActionsModalContent } from "@/components/quick-actions-modal"
+import { toast } from "sonner"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  IconCheck,
+  IconPaperclip,
+  IconLoader2,
+} from "@tabler/icons-react"
+
+const requestCategories = [
+  "Update photos",
+  "Change menu",
+  "Add event",
+  "Update business hours",
+  "Add or replace text",
+  "Fix layout on desktop or mobile",
+  "Something else",
+]
 import {
   Sidebar,
   SidebarContent,
@@ -40,6 +66,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { supabase } from "@/lib/supabase"
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js"
@@ -143,6 +170,64 @@ const getClientNavItems = (orgId: string, businessType?: string) => {
   }
 }
 
+function HelpButton() {
+  const [open, setOpen] = React.useState(false)
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [formData, setFormData] = React.useState({
+    category: "",
+    description: "",
+    file: null as File | null,
+  })
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!formData.category || !formData.description) {
+      toast.error("Please fill in all required fields")
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1200))
+      toast.success("We received your request. Our team will follow up shortly.")
+      setFormData({ category: "", description: "", file: null })
+      setOpen(false)
+    } catch (error) {
+      console.error(error)
+      toast.error("Something went wrong. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setFormData((prev) => ({ ...prev, file: event.target.files![0] }))
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <SidebarMenuButton tooltip="Help" className="hover:bg-primary hover:text-primary-foreground">
+          <IconLifebuoy className="h-4 w-4" />
+          <span>Help</span>
+        </SidebarMenuButton>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-xl">
+        <QuickActionsModalContent 
+          formData={formData}
+          setFormData={setFormData}
+          isSubmitting={isSubmitting}
+          handleSubmit={handleSubmit}
+          handleFileChange={handleFileChange}
+          setOpen={setOpen}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps) {
   const params = useParams()
   const pathname = usePathname()
@@ -201,18 +286,8 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
   const businessType = business?.type || 'restaurant'
   const navItems = orgId ? getClientNavItems(orgId, businessType) : { main: [], restaurant: [], retail: [], help: [], site: [], data: [] }
 
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = React.useState(false)
   const [lockedFeatureDialogOpen, setLockedFeatureDialogOpen] = React.useState(false)
   const [lockedFeatureName, setLockedFeatureName] = React.useState<string>("")
-
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark')
-  }
 
   const handleLockedFeatureClick = (featureName: string, e: React.MouseEvent) => {
     e.preventDefault()
@@ -241,26 +316,6 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-          {/* Theme Switcher */}
-          <div className="px-2">
-            <button
-              onClick={toggleTheme}
-              className="flex w-full items-center gap-2 rounded-md p-2 text-left text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              aria-label="Toggle theme"
-            >
-              {mounted && theme === 'dark' ? (
-                <>
-                  <IconSun className="size-4" />
-                  <span>Light Mode</span>
-                </>
-              ) : (
-                <>
-                  <IconMoon className="size-4" />
-                  <span>Dark Mode</span>
-                </>
-              )}
-            </button>
-          </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -354,7 +409,7 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
                 const isLocked = item.title === "Pages"
                 
                 return (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.title} className={isLocked ? "group-data-[collapsible=icon]:hidden" : ""}>
                     <SidebarMenuButton 
                       asChild={!isLocked}
                       tooltip={item.title}
@@ -391,7 +446,7 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
                   const isLocked = item.title === "Analytics" || item.title === "Reports"
                   
                   return (
-                    <SidebarMenuItem key={item.title}>
+                    <SidebarMenuItem key={item.title} className={isLocked ? "group-data-[collapsible=icon]:hidden" : ""}>
                       <SidebarMenuButton 
                         asChild={!isLocked}
                         tooltip={item.title}
@@ -448,6 +503,16 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+        {/* Help button at the end of sidebar content */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <HelpButton />
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>

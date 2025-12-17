@@ -1,10 +1,13 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { QuickActionsModal } from "@/components/quick-actions-modal"
-import { IconSearch, IconDashboard } from "@tabler/icons-react"
+import { IconSearch, IconDashboard, IconSun, IconMoon } from "@tabler/icons-react"
+import { useTheme } from "next-themes"
+import { useEffect, useState } from "react"
 
 interface SiteHeaderProps {
   clientName?: string
@@ -19,6 +22,17 @@ export function SiteHeader({
   hideSearch = false,
   showDashboardLink = false 
 }: SiteHeaderProps) {
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark')
+  }
+
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
@@ -51,7 +65,25 @@ export function SiteHeader({
               Go to Dashboard
             </Link>
           ) : (
-          <QuickActionsModal />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleTheme}
+            className="hidden gap-1.5 sm:flex"
+            aria-label="Toggle theme"
+          >
+            {mounted && theme === 'dark' ? (
+              <>
+                <IconSun className="h-4 w-4" />
+                Light Mode
+              </>
+            ) : (
+              <>
+                <IconMoon className="h-4 w-4" />
+                Dark Mode
+              </>
+            )}
+          </Button>
           )}
         </div>
       </div>
