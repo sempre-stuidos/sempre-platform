@@ -1032,7 +1032,8 @@ export function ReservationsList({ upcomingReservations, pastReservations }: Res
         onClick={() => setViewMode('table')}
         className="rounded-r-none"
       >
-        <IconLayoutColumns className="h-4 w-4" />
+        <IconLayoutColumns className="h-4 w-4 mr-2" />
+        Table
       </Button>
       <Button
         variant={viewMode === 'calendar' ? 'default' : 'ghost'}
@@ -1040,7 +1041,8 @@ export function ReservationsList({ upcomingReservations, pastReservations }: Res
         onClick={() => setViewMode('calendar')}
         className="rounded-l-none border-l"
       >
-        <IconCalendar className="h-4 w-4" />
+        <IconCalendar className="h-4 w-4 mr-2" />
+        Calendar
       </Button>
     </div>
   )

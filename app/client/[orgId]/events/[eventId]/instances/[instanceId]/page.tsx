@@ -73,10 +73,10 @@ export default function EventInstanceEditPage() {
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="px-4 lg:px-6">
           <div className="mb-6">
-            <Link href={`/client/${orgId}/events/${eventId}/instances`}>
+            <Link href={`/client/${orgId}/events/${eventId}/calendar`}>
               <Button variant="ghost" className="mb-4">
                 <IconArrowLeft className="mr-2 h-4 w-4" />
-                Back to Instances
+                Back to Calendar
               </Button>
             </Link>
           </div>

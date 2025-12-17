@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { IconEdit, IconCopy, IconArchive, IconDotsVertical, IconTrash } from "@tabler/icons-react"
+import { IconEdit, IconCopy, IconArchive, IconTrash } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -30,13 +30,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { EventStatusBadge } from "@/components/event-status-badge"
 import { Event, EventBand } from "@/lib/types"
 import { formatEventDateTime, formatWeeklyEventDateTime, formatVisibilityWindow } from "@/lib/events"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { IconCalendar } from "@tabler/icons-react"
 
 interface EventsTableProps {
   orgId: string
@@ -49,6 +56,10 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
   const [eventToDelete, setEventToDelete] = React.useState<Event | null>(null)
   const [eventBands, setEventBands] = React.useState<Record<string, EventBand[]>>({})
+  const [detailsModalOpen, setDetailsModalOpen] = React.useState(false)
+  const [selectedEvent, setSelectedEvent] = React.useState<Event | null>(null)
+  const [instanceCounts, setInstanceCounts] = React.useState<Record<string, number>>({})
+  const [loadingCounts, setLoadingCounts] = React.useState<Record<string, boolean>>({})
 
   // Fetch bands for all events
   React.useEffect(() => {
@@ -77,8 +88,48 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
     }
   }, [events, orgId])
 
+  // Fetch instance counts for weekly events
+  React.useEffect(() => {
+    const fetchInstanceCounts = async () => {
+      const counts: Record<string, number> = {}
+      const loading: Record<string, boolean> = {}
+      
+      for (const event of events) {
+        if (event.is_weekly) {
+          loading[event.id] = true
+          try {
+            const response = await fetch(`/api/businesses/${orgId}/events/${event.id}/instances`)
+            if (response.ok) {
+              const data = await response.json()
+              counts[event.id] = data.instances?.length || 0
+            } else {
+              counts[event.id] = 0
+            }
+          } catch (error) {
+            console.error(`Error fetching instances for event ${event.id}:`, error)
+            counts[event.id] = 0
+          } finally {
+            loading[event.id] = false
+          }
+        }
+      }
+      
+      setInstanceCounts(counts)
+      setLoadingCounts(loading)
+    }
+
+    if (events.length > 0) {
+      fetchInstanceCounts()
+    }
+  }, [events, orgId])
+
   const handleEdit = (eventId: string) => {
     router.push(`/client/${orgId}/events/${eventId}`)
+  }
+
+  const handleRowClick = (event: Event) => {
+    setSelectedEvent(event)
+    setDetailsModalOpen(true)
   }
 
   const handleDuplicate = (event: Event) => {
@@ -156,7 +207,7 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
           <TableRow>
             <TableHead className="w-[300px]">Event</TableHead>
             <TableHead>Date & Time</TableHead>
-            <TableHead>Visibility Window</TableHead>
+            <TableHead>Event Dates</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -166,7 +217,7 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
             <TableRow
               key={event.id}
               className="cursor-pointer hover:bg-muted/50"
-              onClick={() => handleEdit(event.id)}
+              onClick={() => handleRowClick(event)}
             >
               <TableCell>
                 <div className="flex items-center gap-3">
@@ -200,16 +251,6 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
                         ))}
                       </div>
                     )}
-                    {event.is_weekly && (
-                      <Link
-                        href={`/client/${orgId}/events/${event.id}/instances`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1"
-                      >
-                        <IconCalendar className="h-3 w-3" />
-                        View Instances
-                      </Link>
-                    )}
                   </div>
                 </div>
               </TableCell>
@@ -223,9 +264,23 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
                 </div>
               </TableCell>
               <TableCell>
-                <div className="text-sm text-muted-foreground">
-                  {formatVisibilityWindow(event.publish_start_at, event.publish_end_at)}
-                </div>
+                {event.is_weekly ? (
+                  <Link
+                    href={`/client/${orgId}/events/${event.id}/calendar`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-sm text-primary hover:underline font-medium"
+                  >
+                    {loadingCounts[event.id] ? (
+                      'Loading...'
+                    ) : (
+                      `${instanceCounts[event.id] || 0} date${(instanceCounts[event.id] || 0) !== 1 ? 's' : ''}`
+                    )}
+                  </Link>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    {formatVisibilityWindow(event.publish_start_at, event.publish_end_at)}
+                  </div>
+                )}
               </TableCell>
               <TableCell>
                 <EventStatusBadge status={event.status} />
@@ -240,7 +295,7 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
                         e.stopPropagation()
                       }}
                     >
-                      <IconDotsVertical className="h-4 w-4" />
+                      SEE ALL
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -294,7 +349,7 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Event</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{eventToDelete?.title}"? This action is irreversible and cannot be undone.
+              Are you sure you want to delete &quot;{eventToDelete?.title}&quot;? This action is irreversible and cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -308,6 +363,171 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Event Details Dialog */}
+      <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
+        <DialogContent className="sm:max-w-5xl max-w-[95vw]">
+          {selectedEvent && (
+            <>
+              <DialogHeader className="pb-4">
+                <DialogTitle className="text-2xl">{selectedEvent.title}</DialogTitle>
+                <DialogDescription>
+                  View event details and information
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column - Event Details */}
+                <div className="lg:col-span-2 space-y-5">
+                  {/* Descriptions Section */}
+                  {(selectedEvent.short_description || selectedEvent.description) && (
+                    <div className="space-y-3">
+                      {selectedEvent.short_description && (
+                        <div>
+                          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Short Description</div>
+                          <div className="text-sm leading-relaxed">{selectedEvent.short_description}</div>
+                        </div>
+                      )}
+                      {selectedEvent.description && (
+                        <div>
+                          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Description</div>
+                          <div className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">{selectedEvent.description}</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Event Info Grid */}
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                    {selectedEvent.event_type && (
+                      <div>
+                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Event Type</div>
+                        <div className="text-sm font-medium">{selectedEvent.event_type}</div>
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Status</div>
+                      <EventStatusBadge status={selectedEvent.status} />
+                    </div>
+                    <div className="col-span-2">
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Date & Time</div>
+                      <div className="text-sm font-medium">
+                        {selectedEvent.is_weekly && selectedEvent.day_of_week !== undefined
+                          ? formatWeeklyEventDateTime(selectedEvent.day_of_week, selectedEvent.starts_at, selectedEvent.ends_at)
+                          : selectedEvent.starts_at && selectedEvent.ends_at
+                          ? formatEventDateTime(selectedEvent.starts_at, selectedEvent.ends_at)
+                          : 'No date/time set'}
+                      </div>
+                    </div>
+                    <div className="col-span-2">
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Visibility Window</div>
+                      <div className="text-sm text-muted-foreground">
+                        {formatVisibilityWindow(selectedEvent.publish_start_at, selectedEvent.publish_end_at)}
+                      </div>
+                    </div>
+                    {selectedEvent.is_weekly && (
+                      <div className="col-span-2">
+                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Weekly Event</div>
+                        <div className="text-sm">
+                          {selectedEvent.day_of_week !== undefined && (
+                            <span className="font-medium">
+                              Repeats every {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][selectedEvent.day_of_week]}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Featured</div>
+                      <div className="text-sm font-medium">{selectedEvent.is_featured ? 'Yes' : 'No'}</div>
+                    </div>
+                  </div>
+
+                  {/* Bands Section */}
+                  {(selectedEvent.event_type === "Jazz" || selectedEvent.event_type === "Live Music") && 
+                   eventBands[selectedEvent.id] && 
+                   eventBands[selectedEvent.id].length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Bands</div>
+                      <div className="flex flex-wrap gap-2">
+                        {eventBands[selectedEvent.id].map((eb) => (
+                          <Badge key={eb.id} variant="secondary" className="text-xs py-1 px-2">
+                            {eb.band?.name || 'Unknown Band'}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Metadata Section */}
+                  <div className="pt-3 border-t">
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <div className="font-semibold text-muted-foreground uppercase tracking-wide mb-1">Created</div>
+                        <div className="text-muted-foreground">
+                          {new Date(selectedEvent.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-semibold text-muted-foreground uppercase tracking-wide mb-1">Last Updated</div>
+                        <div className="text-muted-foreground">
+                          {new Date(selectedEvent.updated_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Event Image */}
+                <div className="lg:col-span-1">
+                  {selectedEvent.image_url ? (
+                    <div className="relative w-full aspect-[4/5] rounded-lg overflow-hidden border shadow-sm">
+                      <Image
+                        src={selectedEvent.image_url}
+                        alt={selectedEvent.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full aspect-[4/5] rounded-lg bg-muted flex items-center justify-center border">
+                      <span className="text-sm text-muted-foreground">No image</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setDetailsModalOpen(false)}
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    setDetailsModalOpen(false)
+                    handleEdit(selectedEvent.id)
+                  }}
+                >
+                  <IconEdit className="h-4 w-4 mr-2" />
+                  Edit Event
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

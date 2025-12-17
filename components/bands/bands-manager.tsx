@@ -24,8 +24,15 @@ import { IconEdit, IconTrash, IconPlus, IconCalendar } from "@tabler/icons-react
 import Image from "next/image"
 import { toast } from "sonner"
 import { BandFormModal } from "./band-form-modal"
-import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { EventStatusBadge } from "@/components/event-status-badge"
+import { Event as FullEvent, EventBand, EventInstanceBand } from "@/lib/types"
+import { formatEventDateTime, formatWeeklyEventDateTime, formatVisibilityWindow } from "@/lib/events"
+import { format } from "date-fns"
+import { Badge } from "@/components/ui/badge"
+import {
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 interface BandsManagerProps {
   orgId: string
@@ -57,6 +64,10 @@ export function BandsManager({ orgId, showFormModal: externalShowFormModal, onFo
   const [showEventsModal, setShowEventsModal] = useState(false)
   const [selectedBandForEvents, setSelectedBandForEvents] = useState<Band | null>(null)
   const [loadingEvents, setLoadingEvents] = useState<string | null>(null)
+  const [eventDetailsModalOpen, setEventDetailsModalOpen] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<FullEvent | null>(null)
+  const [eventBands, setEventBands] = useState<Record<string, EventBand[]>>({})
+  const [bandInstanceDates, setBandInstanceDates] = useState<Record<string, string[]>>({})
   const prevExternalModalState = React.useRef(false)
 
   // Use external modal state if provided, otherwise use internal state
@@ -412,11 +423,81 @@ export function BandsManager({ orgId, showFormModal: externalShowFormModal, onFo
                     return dayOfWeek !== null ? days[dayOfWeek] : 'TBD'
                   }
 
+                  const handleEventClick = async () => {
+                    try {
+                      // Fetch full event data
+                      const response = await fetch(`/api/businesses/${orgId}/events/${event.id}`)
+                      if (response.ok) {
+                        const data = await response.json()
+                        setSelectedEvent(data.event as FullEvent)
+                        
+                        // Fetch bands if Jazz/Live Music event
+                        if (data.event.event_type === "Jazz" || data.event.event_type === "Live Music") {
+                          const bandsResponse = await fetch(`/api/businesses/${orgId}/events/${event.id}/bands`)
+                          if (bandsResponse.ok) {
+                            const bandsData = await bandsResponse.json()
+                            setEventBands({ [event.id]: bandsData.eventBands || [] })
+                          }
+                        }
+                        
+                        // Fetch instances to find which ones have this band
+                        if (selectedBandForEvents && data.event.is_weekly) {
+                          const instancesResponse = await fetch(`/api/businesses/${orgId}/events/${event.id}/instances`)
+                          if (instancesResponse.ok) {
+                            const instancesData = await instancesResponse.json()
+                            const instances = instancesData.instances || []
+                            
+                            // Check if band is attached to event directly (applies to all instances)
+                            const eventBandsResponse = await fetch(`/api/businesses/${orgId}/events/${event.id}/bands`)
+                            let bandAttachedToEvent = false
+                            if (eventBandsResponse.ok) {
+                              const eventBandsData = await eventBandsResponse.json()
+                              bandAttachedToEvent = (eventBandsData.eventBands || []).some(
+                                (eb: EventBand) => eb.band_id === selectedBandForEvents.id
+                              )
+                            }
+                            
+                            // Find instances where this band is attached
+                            const bandInstanceDatesList: string[] = []
+                            
+                            for (const instance of instances) {
+                              // If band is attached to event, include all instances
+                              if (bandAttachedToEvent) {
+                                bandInstanceDatesList.push(instance.instance_date)
+                              } else {
+                                // Check if band is attached to this specific instance
+                                const instanceBandsResponse = await fetch(
+                                  `/api/businesses/${orgId}/events/${event.id}/instances/${instance.id}/bands`
+                                )
+                                if (instanceBandsResponse.ok) {
+                                  const instanceBandsData = await instanceBandsResponse.json()
+                                  const hasBand = (instanceBandsData.instanceBands || []).some(
+                                    (ib: EventInstanceBand) => ib.band_id === selectedBandForEvents.id
+                                  )
+                                  if (hasBand) {
+                                    bandInstanceDatesList.push(instance.instance_date)
+                                  }
+                                }
+                              }
+                            }
+                            
+                            setBandInstanceDates({ [event.id]: bandInstanceDatesList })
+                          }
+                        }
+                        
+                        setEventDetailsModalOpen(true)
+                      }
+                    } catch (error) {
+                      console.error('Error fetching event:', error)
+                      toast.error('Failed to load event details')
+                    }
+                  }
+
                   return (
-                    <Link
+                    <div
                       key={event.id}
-                      href={`/client/${orgId}/events/${event.id}`}
-                      className="block"
+                      onClick={handleEventClick}
+                      className="block cursor-pointer"
                     >
                       <div className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                         {event.image_url && (
@@ -448,7 +529,7 @@ export function BandsManager({ orgId, showFormModal: externalShowFormModal, onFo
                         </div>
                         <IconCalendar className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       </div>
-                    </Link>
+                    </div>
                   )
                 })}
               </div>
@@ -459,6 +540,217 @@ export function BandsManager({ orgId, showFormModal: externalShowFormModal, onFo
               Close
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Event Details Dialog */}
+      <Dialog open={eventDetailsModalOpen} onOpenChange={setEventDetailsModalOpen}>
+        <DialogContent className="sm:max-w-5xl max-w-[95vw]">
+          {selectedEvent && (
+            <>
+              <DialogHeader className="pb-4">
+                <DialogTitle className="text-2xl">{selectedEvent.title}</DialogTitle>
+                <DialogDescription>
+                  View event details and information
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column - Event Details */}
+                <div className="lg:col-span-2 space-y-5">
+                  {/* Descriptions Section */}
+                  {(selectedEvent.short_description || selectedEvent.description) && (
+                    <div className="space-y-3">
+                      {selectedEvent.short_description && (
+                        <div>
+                          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Short Description</div>
+                          <div className="text-sm leading-relaxed">{selectedEvent.short_description}</div>
+                        </div>
+                      )}
+                      {selectedEvent.description && (
+                        <div>
+                          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Description</div>
+                          <div className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">{selectedEvent.description}</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Event Info Grid */}
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                    {selectedEvent.event_type && (
+                      <div>
+                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Event Type</div>
+                        <div className="text-sm font-medium">{selectedEvent.event_type}</div>
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Status</div>
+                      <EventStatusBadge status={selectedEvent.status} />
+                    </div>
+                    <div className="col-span-2">
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Date & Time</div>
+                      <div className="text-sm font-medium">
+                        {(() => {
+                          // If viewing from bands page and we have instance dates for this band, show those
+                          if (selectedBandForEvents && selectedEvent.is_weekly && bandInstanceDates[selectedEvent.id] && bandInstanceDates[selectedEvent.id].length > 0) {
+                            const dates = bandInstanceDates[selectedEvent.id]
+                              .sort()
+                              .map(dateStr => {
+                                const [year, month, day] = dateStr.split('-').map(Number)
+                                const date = new Date(year, month - 1, day)
+                                
+                                // Extract time from starts_at and ends_at
+                                let timeStr = ''
+                                if (selectedEvent.starts_at && selectedEvent.ends_at) {
+                                  try {
+                                    const startTime = new Date(selectedEvent.starts_at)
+                                    const endTime = new Date(selectedEvent.ends_at)
+                                    timeStr = format(startTime, 'h:mm a') + ' - ' + format(endTime, 'h:mm a')
+                                  } catch {
+                                    // Fallback if time parsing fails
+                                    const startMatch = selectedEvent.starts_at.match(/T(\d{2}):(\d{2})/)
+                                    const endMatch = selectedEvent.ends_at.match(/T(\d{2}):(\d{2})/)
+                                    if (startMatch && endMatch) {
+                                      const startHour = parseInt(startMatch[1], 10)
+                                      const startMin = parseInt(startMatch[2], 10)
+                                      const endHour = parseInt(endMatch[1], 10)
+                                      const endMin = parseInt(endMatch[2], 10)
+                                      const startPeriod = startHour >= 12 ? 'PM' : 'AM'
+                                      const endPeriod = endHour >= 12 ? 'PM' : 'AM'
+                                      const startHour12 = startHour > 12 ? startHour - 12 : startHour === 0 ? 12 : startHour
+                                      const endHour12 = endHour > 12 ? endHour - 12 : endHour === 0 ? 12 : endHour
+                                      timeStr = `${startHour12}:${startMin.toString().padStart(2, '0')} ${startPeriod} - ${endHour12}:${endMin.toString().padStart(2, '0')} ${endPeriod}`
+                                    }
+                                  }
+                                }
+                                
+                                return format(date, 'EEEE, MMMM d, yyyy') + (timeStr ? ` · ${timeStr}` : '')
+                              })
+                            
+                            if (dates.length <= 3) {
+                              return dates.join(', ')
+                            } else {
+                              return `${dates.slice(0, 3).join(', ')} and ${dates.length - 3} more`
+                            }
+                          }
+                          
+                          // Otherwise show the standard format
+                          return selectedEvent.is_weekly && selectedEvent.day_of_week !== undefined
+                            ? formatWeeklyEventDateTime(selectedEvent.day_of_week, selectedEvent.starts_at, selectedEvent.ends_at)
+                            : selectedEvent.starts_at && selectedEvent.ends_at
+                            ? formatEventDateTime(selectedEvent.starts_at, selectedEvent.ends_at)
+                            : 'No date/time set'
+                        })()}
+                      </div>
+                    </div>
+                    <div className="col-span-2">
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Visibility Window</div>
+                      <div className="text-sm text-muted-foreground">
+                        {formatVisibilityWindow(selectedEvent.publish_start_at, selectedEvent.publish_end_at)}
+                      </div>
+                    </div>
+                    {selectedEvent.is_weekly && (
+                      <div className="col-span-2">
+                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Weekly Event</div>
+                        <div className="text-sm">
+                          {selectedEvent.day_of_week !== undefined && (
+                            <span className="font-medium">
+                              Repeats every {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][selectedEvent.day_of_week]}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Featured</div>
+                      <div className="text-sm font-medium">{selectedEvent.is_featured ? 'Yes' : 'No'}</div>
+                    </div>
+                  </div>
+
+                  {/* Bands Section */}
+                  {(selectedEvent.event_type === "Jazz" || selectedEvent.event_type === "Live Music") && 
+                   eventBands[selectedEvent.id] && 
+                   eventBands[selectedEvent.id].length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Bands</div>
+                      <div className="flex flex-wrap gap-2">
+                        {eventBands[selectedEvent.id].map((eb) => (
+                          <Badge key={eb.id} variant="secondary" className="text-xs py-1 px-2">
+                            {eb.band?.name || 'Unknown Band'}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Metadata Section */}
+                  <div className="pt-3 border-t">
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <div className="font-semibold text-muted-foreground uppercase tracking-wide mb-1">Created</div>
+                        <div className="text-muted-foreground">
+                          {new Date(selectedEvent.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-semibold text-muted-foreground uppercase tracking-wide mb-1">Last Updated</div>
+                        <div className="text-muted-foreground">
+                          {new Date(selectedEvent.updated_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Event Image */}
+                <div className="lg:col-span-1">
+                  {selectedEvent.image_url ? (
+                    <div className="relative w-full aspect-[4/5] rounded-lg overflow-hidden border shadow-sm">
+                      <Image
+                        src={selectedEvent.image_url}
+                        alt={selectedEvent.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full aspect-[4/5] rounded-lg bg-muted flex items-center justify-center border">
+                      <span className="text-sm text-muted-foreground">No image</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setEventDetailsModalOpen(false)}
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    setEventDetailsModalOpen(false)
+                    window.location.href = `/client/${orgId}/events/${selectedEvent.id}`
+                  }}
+                >
+                  <IconEdit className="h-4 w-4 mr-2" />
+                  Edit Event
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

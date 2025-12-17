@@ -3,12 +3,12 @@
 import { useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Event } from "@/lib/types"
-import { EventInstancesList } from "@/components/event-instances/event-instances-list"
+import { EventInstancesCalendarPage } from "@/components/event-instances/event-instances-calendar-page"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { IconArrowLeft } from "@tabler/icons-react"
 
-export default function EventInstancesPage() {
+export default function EventCalendarPage() {
   const params = useParams()
   const orgId = params.orgId as string
   const eventId = params.eventId as string
@@ -48,6 +48,11 @@ export default function EventInstancesPage() {
     return (
       <div className="rounded-md border p-8 text-center">
         <p className="text-muted-foreground">Event not found</p>
+        <Link href={`/client/${orgId}/events`}>
+          <Button variant="outline" className="mt-4">
+            Back to Events
+          </Button>
+        </Link>
       </div>
     )
   }
@@ -76,15 +81,16 @@ export default function EventInstancesPage() {
                 Back to Events
               </Button>
             </Link>
-            <h1 className="text-3xl font-bold tracking-tight">Event Instances</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Event Dates</h1>
             <p className="text-muted-foreground mt-2">
-              Manage individual occurrences of "{event.title}"
+              Manage dates for &quot;{event.title}&quot;
             </p>
           </div>
 
-          <EventInstancesList orgId={orgId} eventId={eventId} event={event} />
+          <EventInstancesCalendarPage orgId={orgId} eventId={eventId} event={event} />
         </div>
       </div>
     </div>
   )
 }
+
