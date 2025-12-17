@@ -149,37 +149,8 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
     }
   }
 
-  // Generate dummy analytics data for site visits and bookings
-  const generateAnalyticsData = (): SiteAnalyticsData[] => {
-    const data: SiteAnalyticsData[] = [];
-    const today = new Date();
-    
-    // Generate data for the last 90 days
-    for (let i = 89; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      
-      // Generate realistic-looking dummy data with some variation
-      const baseVisits = 150;
-      const baseBookings = 25;
-      const dayOfWeek = date.getDay();
-      const weekendMultiplier = (dayOfWeek === 0 || dayOfWeek === 6) ? 1.3 : 1;
-      const randomVariation = 0.7 + Math.random() * 0.6; // 0.7 to 1.3
-      
-      const visits = Math.round(baseVisits * weekendMultiplier * randomVariation);
-      const bookings = Math.round(baseBookings * weekendMultiplier * randomVariation * (0.15 + Math.random() * 0.1));
-      
-      data.push({
-        date: date.toISOString(),
-        visits,
-        bookings,
-      });
-    }
-    
-    return data;
-  };
-
-  const analyticsData = generateAnalyticsData();
+  // Analytics data - empty for now (removed hardcoded data)
+  const analyticsData: SiteAnalyticsData[] = [];
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">

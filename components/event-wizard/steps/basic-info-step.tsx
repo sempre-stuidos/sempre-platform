@@ -7,8 +7,16 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { Loader2 } from "lucide-react"
+import { IconLock } from "@tabler/icons-react"
 import { BandSelector } from "@/components/bands/band-selector"
 
 type Tone = "Classic" | "Playful" | "Elegant"
@@ -50,6 +58,7 @@ export function BasicInfoStep({
   const [isGenerating, setIsGenerating] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [appliedFeedback, setAppliedFeedback] = React.useState(false)
+  const [aiHelperDialogOpen, setAiHelperDialogOpen] = React.useState(false)
 
   // Get event context from localStorage
   const getEventContextFromStorage = React.useCallback((): EventContext | undefined => {
@@ -191,8 +200,8 @@ export function BasicInfoStep({
           )}
         </div>
 
-        {/* Right Column - AI Writing Helper */}
-        <div>
+        {/* Right Column - AI Writing Helper (Commented out, replaced with lock icon) */}
+        {/* <div>
           <Card>
             <CardHeader>
               <CardTitle>AI Writing Helper</CardTitle>
@@ -201,7 +210,6 @@ export function BasicInfoStep({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Step 1 - Choose a tone */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">1. Choose a tone</Label>
                 <div className="flex flex-wrap gap-2">
@@ -226,7 +234,6 @@ export function BasicInfoStep({
                 </p>
               </div>
 
-              {/* Step 2 - Generate suggestion */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">2. Generate a suggestion</Label>
                 <Button
@@ -246,7 +253,6 @@ export function BasicInfoStep({
                 </Button>
               </div>
 
-              {/* Step 3 - Refinement controls */}
               {(title || description) && (
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Need a quick tweak?</Label>
@@ -291,7 +297,6 @@ export function BasicInfoStep({
                 </div>
               )}
 
-              {/* Error message */}
               {error && (
                 <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
                   <p className="text-sm text-destructive">{error}</p>
@@ -300,8 +305,28 @@ export function BasicInfoStep({
 
             </CardContent>
           </Card>
+        </div> */}
+        {/* Lock icon for AI Writing Helper - positioned in top right */}
+        <div className="flex items-start justify-end">
+          <button
+            onClick={() => setAiHelperDialogOpen(true)}
+            className="p-2 rounded-md hover:bg-accent transition-colors"
+            aria-label="AI Writing Helper locked"
+          >
+            <IconLock className="h-5 w-5 text-muted-foreground" />
+          </button>
         </div>
       </div>
+      <Dialog open={aiHelperDialogOpen} onOpenChange={setAiHelperDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Feature Locked</DialogTitle>
+            <DialogDescription>
+              Contact Sempre Studio team to unlock this feature.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

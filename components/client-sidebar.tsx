@@ -15,7 +15,11 @@ import {
   IconShoppingCart,
   IconPackage,
   IconMusic,
+  IconSun,
+  IconMoon,
+  IconLock,
 } from "@tabler/icons-react"
+import { useTheme } from "next-themes"
 import { useParams, usePathname } from "next/navigation"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -30,6 +34,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { supabase } from "@/lib/supabase"
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js"
 import { useBusinessContext } from "@/hooks/use-business-context"
@@ -190,26 +201,67 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
   const businessType = business?.type || 'restaurant'
   const navItems = orgId ? getClientNavItems(orgId, businessType) : { main: [], restaurant: [], retail: [], help: [], site: [], data: [] }
 
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+  const [lockedFeatureDialogOpen, setLockedFeatureDialogOpen] = React.useState(false)
+  const [lockedFeatureName, setLockedFeatureName] = React.useState<string>("")
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark')
+  }
+
+  const handleLockedFeatureClick = (featureName: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    setLockedFeatureName(featureName)
+    setLockedFeatureDialogOpen(true)
+  }
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="border-b border-sidebar-border">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a href={orgId ? `/client/${orgId}/dashboard` : '#'}>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <IconBuilding className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">
-                    {orgLoading ? 'Loading...' : business?.name || 'Business'}
-                  </span>
-                  <span className="truncate text-xs">Client Portal</span>
-                </div>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <div className="flex flex-col gap-2 p-2">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild>
+                <a href={orgId ? `/client/${orgId}/dashboard` : '#'}>
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    <IconBuilding className="size-4" />
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">
+                      {orgLoading ? 'Loading...' : business?.name || 'Business'}
+                    </span>
+                    <span className="truncate text-xs">Client Portal</span>
+                  </div>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+          {/* Theme Switcher */}
+          <div className="px-2">
+            <button
+              onClick={toggleTheme}
+              className="flex w-full items-center gap-2 rounded-md p-2 text-left text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              aria-label="Toggle theme"
+            >
+              {mounted && theme === 'dark' ? (
+                <>
+                  <IconSun className="size-4" />
+                  <span>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <IconMoon className="size-4" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -299,19 +351,29 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
             <SidebarMenu>
               {navItems.site.map((item) => {
                 const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
+                const isLocked = item.title === "Pages"
                 
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton 
-                      asChild 
+                      asChild={!isLocked}
                       tooltip={item.title}
                       className="hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
                       data-active={isActive}
+                      onClick={isLocked ? (e) => handleLockedFeatureClick(item.title, e) : undefined}
                     >
-                      <a href={item.url}>
-                        {item.icon && <item.icon />}
-                        <span>{item.title}</span>
-                      </a>
+                      {isLocked ? (
+                        <button className="flex w-full items-center gap-2">
+                          {item.icon && <item.icon className="size-3" />}
+                          <span>{item.title}</span>
+                          <IconLock className="ml-auto size-3 opacity-50" />
+                        </button>
+                      ) : (
+                        <a href={item.url}>
+                          {item.icon && <item.icon />}
+                          <span>{item.title}</span>
+                        </a>
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )
@@ -326,19 +388,29 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
               <SidebarMenu>
                 {navItems.data.map((item) => {
                   const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
+                  const isLocked = item.title === "Analytics" || item.title === "Reports"
                   
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton 
-                        asChild 
+                        asChild={!isLocked}
                         tooltip={item.title}
                         className="hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
                         data-active={isActive}
+                        onClick={isLocked ? (e) => handleLockedFeatureClick(item.title, e) : undefined}
                       >
-                        <a href={item.url}>
-                          {item.icon && <item.icon />}
-                          <span>{item.title}</span>
-                        </a>
+                        {isLocked ? (
+                          <button className="flex w-full items-center gap-2">
+                            {item.icon && <item.icon className="size-3" />}
+                            <span>{item.title}</span>
+                            <IconLock className="ml-auto size-3 opacity-50" />
+                          </button>
+                        ) : (
+                          <a href={item.url}>
+                            {item.icon && <item.icon />}
+                            <span>{item.title}</span>
+                          </a>
+                        )}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )
@@ -384,6 +456,16 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+      <Dialog open={lockedFeatureDialogOpen} onOpenChange={setLockedFeatureDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Feature Locked</DialogTitle>
+            <DialogDescription>
+              Contact Sempre Studio team to unlock this feature.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </Sidebar>
   )
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import * as React from "react"
 import {
   IconDotsVertical,
   IconLogout,
@@ -23,6 +24,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -41,6 +49,7 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = React.useState(false)
 
   // Generate user initials from name
   const getInitials = (name: string) => {
@@ -110,6 +119,11 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => setSubscriptionDialogOpen(true)}>
+                <span className="flex items-center gap-2">
+                  <span className="text-xs font-medium">Basic</span>
+                </span>
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/account" className="flex items-center gap-2">
                 <IconUserCircle />
@@ -128,6 +142,16 @@ export function NavUser({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <Dialog open={subscriptionDialogOpen} onOpenChange={setSubscriptionDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Subscription</DialogTitle>
+              <DialogDescription>
+                You are currently using the basic subscription.
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
       </SidebarMenuItem>
     </SidebarMenu>
   )
