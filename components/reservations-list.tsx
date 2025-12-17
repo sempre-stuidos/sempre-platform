@@ -957,7 +957,7 @@ function ReservationsCalendar({
                       </div>
                       <div className="font-medium truncate">{reservation.customer_name}</div>
                       <div className="text-muted-foreground">{formatTime(reservation.reservation_time)}</div>
-                      <div className="text-muted-foreground text-[10px]">{reservation.party_size} {reservation.party_size === 1 ? 'guest' : 'guests'}</div>
+                      <div className="text-muted-foreground text-[16px]">{reservation.party_size} {reservation.party_size === 1 ? 'guest' : 'guests'}</div>
                     </div>
                   ))}
                   {dayReservations.length === 0 && (

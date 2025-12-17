@@ -85,7 +85,7 @@ export function AccountSidebar() {
             className="relative h-10 w-10"
           >
             <IconMail className="h-5 w-5" />
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px]">
+            <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-destructive text-destructive-foreground text-[16px]">
               5
             </Badge>
           </Button>

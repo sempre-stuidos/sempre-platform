@@ -332,7 +332,7 @@ export function EventInstancesCalendarPage({ orgId, eventId, event }: EventInsta
                         onMouseLeave={() => setHoveredInstanceId(null)}
                         onClick={() => handleDateClick(date)}
                       >
-                        <Badge variant={getInstanceStatusVariant(instance.status)} className="text-[10px] mb-1">
+                        <Badge variant={getInstanceStatusVariant(instance.status)} className="text-[16px] mb-1">
                           {instance.status}
                         </Badge>
                         {instance.custom_description && (

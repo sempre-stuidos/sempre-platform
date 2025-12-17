@@ -74,20 +74,20 @@ export function SectionListPanel({
   const getStatusBadge = (section: PageSectionV2) => {
     if (section.status === 'dirty') {
       return (
-        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-[10px] px-1.5 py-0 h-4">
+        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-[16px] px-1.5 py-0 h-4">
           Draft
         </Badge>
       )
     }
     if (section.status === 'published') {
       return (
-        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] px-1.5 py-0 h-4">
+        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[16px] px-1.5 py-0 h-4">
           Pub
         </Badge>
       )
     }
     return (
-      <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-[10px] px-1.5 py-0 h-4">
+      <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-[16px] px-1.5 py-0 h-4">
         Draft
       </Badge>
     )
@@ -106,13 +106,13 @@ export function SectionListPanel({
   const getComponentStatusBadge = (section: PageSectionV2, componentKey: string) => {
     if (isComponentDraft(section, componentKey)) {
       return (
-        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-[10px] px-1.5 py-0 h-4">
+        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-[16px] px-1.5 py-0 h-4">
           Draft
         </Badge>
       )
     }
     return (
-      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] px-1.5 py-0 h-4">
+      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[16px] px-1.5 py-0 h-4">
         Pub
       </Badge>
     )
@@ -200,7 +200,7 @@ export function SectionListPanel({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-5 px-1.5 text-[10px] hover:bg-accent/50"
+                              className="h-5 px-1.5 text-[16px] hover:bg-accent/50"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 onPublishSection(section.id)
@@ -210,7 +210,7 @@ export function SectionListPanel({
                             </Button>
                           )}
                         </div>
-                        <span className="text-[10px] text-muted-foreground truncate block mt-0.5">
+                        <span className="text-[16px] text-muted-foreground truncate block mt-0.5">
                           {section.component}
                         </span>
                       </div>
@@ -225,7 +225,7 @@ export function SectionListPanel({
                         <Button
                           key={componentKey}
                           variant={isComponentSelected ? 'secondary' : 'ghost'}
-                          className="w-full justify-start h-auto py-1 px-2 text-left hover:bg-accent/50 text-[10px]"
+                          className="w-full justify-start h-auto py-1 px-2 text-left hover:bg-accent/50 text-[16px]"
                           onClick={(e) => {
                             e.stopPropagation()
                             if (onSelectComponent) {
@@ -250,7 +250,7 @@ export function SectionListPanel({
         </div>
       </ScrollArea>
       <div className="p-3 border-t bg-muted/50">
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-[16px] text-muted-foreground">
           <IconLock className="h-3 w-3" />
           <span>Layout is locked</span>
         </div>

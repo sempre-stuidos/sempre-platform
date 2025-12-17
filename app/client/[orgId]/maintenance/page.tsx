@@ -141,7 +141,7 @@ export default function MaintenancePage() {
                     Annually
                     <Badge 
                       variant="outline" 
-                      className="absolute -top-2 -right-2 z-10 text-[10px] border-primary/20 bg-background data-[state=on]:border-primary-foreground/30 data-[state=on]:text-primary-foreground data-[state=on]:bg-primary"
+                      className="absolute -top-2 -right-2 z-10 text-[16px] border-primary/20 bg-background data-[state=on]:border-primary-foreground/30 data-[state=on]:text-primary-foreground data-[state=on]:bg-primary"
                     >
                       Save 20%
                     </Badge>
@@ -187,7 +187,7 @@ export default function MaintenancePage() {
                           <CardTitle className="text-2xl">{plan.name}</CardTitle>
                         </div>
                         {plan.badge && (
-                          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                          <Badge variant="outline" className="text-[16px] uppercase tracking-wide">
                             {plan.badge}
                           </Badge>
                         )}

@@ -184,9 +184,23 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    font-size: 16px; /* Ensure base font size is 16px */
+  }
   body {
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
+    font-size: 16px; /* Ensure body font size is at least 16px */
+  }
+}
+
+@layer utilities {
+  /* Override Tailwind's small text classes to enforce 16px minimum */
+  .text-xs {
+    font-size: 1rem !important; /* 16px instead of 12px */
+  }
+  .text-sm {
+    font-size: 1rem !important; /* 16px instead of 14px */
   }
 }
 
@@ -305,7 +319,7 @@
 
 .driver-popover-description {
   margin-bottom: 0;
-  font: 14px/normal sans-serif;
+  font: 16px/normal sans-serif;
   line-height: 1.5;
   font-weight: 400;
   zoom: 1;
@@ -321,7 +335,7 @@
 }
 
 .driver-popover-progress-text {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 400;
   color: #727272;
   zoom: 1;
@@ -336,7 +350,7 @@
   text-shadow: 1px 1px 0 #fff;
   background-color: #fff;
   color: #2d2d2d;
-  font: 12px/normal sans-serif;
+  font: 16px/normal sans-serif;
   cursor: pointer;
   outline: 0;
   zoom: 1;
@@ -493,11 +507,11 @@
   --driver-popover-progress-bar-border-radius: 2px;
   --driver-popover-button-border-radius: var(--radius);
   --driver-popover-button-padding: 0.5rem 1rem;
-  --driver-popover-button-font-size: 0.875rem;
+  --driver-popover-button-font-size: 1rem;
   --driver-popover-button-font-weight: 500;
   --driver-popover-title-font-size: 1.125rem;
   --driver-popover-title-font-weight: 600;
-  --driver-popover-description-font-size: 0.875rem;
+  --driver-popover-description-font-size: 1rem;
   --driver-popover-description-line-height: 1.5;
   --driver-popover-z-index: 10000;
 }
@@ -521,7 +535,7 @@
 
 .driverjs-theme .driver-popover-description {
   color: hsl(var(--muted-foreground));
-  font-size: 0.875rem;
+  font-size: 1rem;
   line-height: 1.5;
   margin-bottom: 1rem;
 }
@@ -536,7 +550,7 @@
 
 .driverjs-theme .driver-popover-progress-text {
   color: hsl(var(--muted-foreground));
-  font-size: 0.75rem;
+  font-size: 1rem;
   margin-right: auto;
 }
 
@@ -551,7 +565,7 @@
   border: none;
   border-radius: var(--radius);
   padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
