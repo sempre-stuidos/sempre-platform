@@ -14,6 +14,7 @@ import {
   IconReport,
   IconShoppingCart,
   IconPackage,
+  IconMusic,
 } from "@tabler/icons-react"
 import { useParams, usePathname } from "next/navigation"
 import { NavUser } from "@/components/nav-user"
@@ -73,6 +74,11 @@ const getClientNavItems = (orgId: string, businessType?: string) => {
         title: "Events",
         url: `/client/${orgId}/events`,
         icon: IconCalendar,
+      },
+      {
+        title: "Bands",
+        url: `/client/${orgId}/bands`,
+        icon: IconMusic,
       },
     ] : [],
     data: isRestaurant ? [

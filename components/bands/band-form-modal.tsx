@@ -1,13 +1,12 @@
 "use client"
 
+import * as React from "react"
 import { useState, useEffect } from "react"
 import { Band } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -16,6 +15,9 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import Image from "next/image"
+import { Upload, X } from "lucide-react"
+import { ProgressIndicator } from "@/components/event-wizard/progress-indicator"
+import { cn } from "@/lib/utils"
 
 interface BandFormModalProps {
   orgId: string
@@ -25,6 +27,11 @@ interface BandFormModalProps {
   onSuccess: () => void
 }
 
+const STEP_LABELS = [
+  "Basic Info",
+  "Image",
+]
+
 export function BandFormModal({
   orgId,
   band,
@@ -32,12 +39,15 @@ export function BandFormModal({
   onOpenChange,
   onSuccess,
 }: BandFormModalProps) {
+  const [currentStep, setCurrentStep] = useState(1)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [imageUrl, setImageUrl] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const fileInputRef = useState<HTMLInputElement | null>(null)[0]
+  const [isDragging, setIsDragging] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     if (band) {
@@ -48,6 +58,11 @@ export function BandFormModal({
       setName("")
       setDescription("")
       setImageUrl("")
+    }
+    // Reset to step 1 when modal opens
+    if (open) {
+      setCurrentStep(1)
+      setErrors({})
     }
   }, [band, open])
 
@@ -93,14 +108,67 @@ export function BandFormModal({
       toast.error(error instanceof Error ? error.message : "Failed to upload image")
     } finally {
       setIsUploading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
+    setIsDragging(true)
+  }
 
-    if (!name.trim()) {
-      toast.error("Band name is required")
+  const handleDragLeave = () => {
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file) {
+      handleImageFileSelect(file)
+    }
+  }
+
+  const handleRemove = () => {
+    setImageUrl("")
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  const validateStep = (step: number): boolean => {
+    const newErrors: Record<string, string> = {}
+    
+    if (step === 1) {
+      if (!name.trim()) {
+        newErrors.name = "Band name is required"
+      }
+    }
+    
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleNext = () => {
+    if (currentStep === 1) {
+      if (!validateStep(1)) {
+        return
+      }
+      setCurrentStep(2)
+    }
+  }
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1)
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!validateStep(1)) {
       return
     }
 
@@ -136,6 +204,7 @@ export function BandFormModal({
 
       toast.success(band ? "Band updated successfully" : "Band created successfully")
       onSuccess()
+      onOpenChange(false)
     } catch (error) {
       console.error("Error saving band:", error)
       toast.error(
@@ -146,105 +215,207 @@ export function BandFormModal({
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>{band ? "Edit Band" : "Add New Band"}</DialogTitle>
-          <DialogDescription>
-            {band
-              ? "Update the band information below."
-              : "Add a new band to your collection."}
-          </DialogDescription>
-        </DialogHeader>
+  const handleCancel = () => {
+    onOpenChange(false)
+  }
 
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Band Name *</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter band name"
-                required
-              />
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold mb-2">Band Details</h2>
+              <p className="text-muted-foreground">
+                Give your band a name and description
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter band description"
-                rows={4}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Band Image</Label>
+            <div className="space-y-4">
               <div className="space-y-2">
-                {imageUrl && (
-                  <div className="relative h-32 w-32 overflow-hidden rounded-md border">
-                    <Image
-                      src={imageUrl}
-                      alt="Band image"
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) {
-                        handleImageFileSelect(file)
-                      }
-                    }}
-                    disabled={isUploading}
-                    className="cursor-pointer"
-                  />
-                  {imageUrl && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setImageUrl("")}
-                    >
-                      Remove
-                    </Button>
+                <Label htmlFor="name">
+                  Band Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., The Blue Notes"
+                  className={cn(
+                    errors?.name ? "border-red-500" : ""
                   )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Upload an image for this band (max 5MB)
-                </p>
+                />
+                {errors?.name && (
+                  <p className="text-sm text-red-500">{errors.name}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description (Optional)</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Full band description..."
+                  rows={6}
+                />
               </div>
             </div>
           </div>
+        )
+      case 2:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold mb-2">Band Image</h2>
+              <p className="text-muted-foreground">
+                Upload an image for your band (optional - you can skip this step)
+              </p>
+            </div>
 
-          <DialogFooter>
+            <div className="max-w-2xl mx-auto space-y-4">
+              <div
+                className={cn(
+                  "border-2 border-dashed rounded-lg text-center transition-colors relative",
+                  isDragging
+                    ? "border-primary bg-primary/5"
+                    : "border-muted-foreground/25"
+                )}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                {imageUrl ? (
+                  <div className="relative aspect-video w-full overflow-hidden">
+                    <Image
+                      src={imageUrl}
+                      alt="Band preview"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      unoptimized
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemove}
+                      className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-2 hover:bg-destructive/90 z-10"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4 p-8">
+                    <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium mb-1">
+                        Drag and drop an image here
+                      </p>
+                      <p className="text-xs text-muted-foreground mb-4">or</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                      >
+                        {isUploading ? "Uploading..." : "Choose File"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) =>
+                  handleImageFileSelect(e.target.files?.[0] || null)
+                }
+              />
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setImageUrl("")}
+                  className="text-sm text-muted-foreground hover:text-foreground underline"
+                >
+                  Skip this step
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      default:
+        return null
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <DialogTitle className="text-xl font-bold tracking-tight">
+              {band ? `Edit Band – ${band.name}` : "New Band"}
+            </DialogTitle>
+            <ProgressIndicator
+              currentStep={currentStep}
+              totalSteps={STEP_LABELS.length}
+              stepLabels={STEP_LABELS}
+            />
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {renderStep()}
+
+          <div className="flex justify-between gap-3">
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={handleCancel}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || isUploading}>
-              {isSubmitting
-                ? band
-                  ? "Updating..."
-                  : "Creating..."
-                : band
-                ? "Update Band"
-                : "Create Band"}
-            </Button>
-          </DialogFooter>
-        </form>
+
+            <div className="flex gap-3">
+              {currentStep > 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={isSubmitting}
+                >
+                  Back
+                </Button>
+              )}
+
+              {currentStep < STEP_LABELS.length ? (
+                <Button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={isSubmitting || isUploading}
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || isUploading}
+                >
+                  {isSubmitting
+                    ? "Saving..."
+                    : band
+                    ? "Save Changes"
+                    : "Create Band"}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )
