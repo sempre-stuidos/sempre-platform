@@ -44,6 +44,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
+import { ReservationSettingsDialog } from "@/components/reservation-settings-dialog"
+import { IconSettings } from "@tabler/icons-react"
 
 interface Reservation {
   id: string // UUID
@@ -62,6 +64,7 @@ interface Reservation {
 interface ReservationsListProps {
   upcomingReservations: Reservation[]
   pastReservations: Reservation[]
+  orgId: string
 }
 
 type SortOption = 'date-asc' | 'date-desc' | 'party-asc' | 'party-desc'
@@ -784,13 +787,13 @@ function ReservationsCalendar({
   reservations, 
   statusFilter,
   viewModeToggle,
-  statusFilterSelect,
+  reservationSettingsButton,
   onReservationClick
 }: { 
   reservations: Reservation[]
   statusFilter: StatusFilter
   viewModeToggle: React.ReactNode
-  statusFilterSelect: React.ReactNode
+  reservationSettingsButton: React.ReactNode
   onReservationClick: (reservation: Reservation) => void
 }) {
   // Filter by status
@@ -923,7 +926,7 @@ function ReservationsCalendar({
           </div>
           <div className="flex items-center gap-2">
             {viewModeToggle}
-            {statusFilterSelect}
+            {reservationSettingsButton}
           </div>
         </div>
       </div>
@@ -975,10 +978,11 @@ function ReservationsCalendar({
   )
 }
 
-export function ReservationsList({ upcomingReservations, pastReservations }: ReservationsListProps) {
+export function ReservationsList({ upcomingReservations, pastReservations, orgId }: ReservationsListProps) {
   const allReservations = [...upcomingReservations, ...pastReservations]
-  const [statusFilter, setStatusFilter] = React.useState<StatusFilter>('all')
-  const [sortBy, setSortBy] = React.useState<SortOption>('date-asc')
+  // Keep filter and sort state for internal use, but set to defaults (no UI controls)
+  const [statusFilter] = React.useState<StatusFilter>('all')
+  const [sortBy] = React.useState<SortOption>('date-asc')
   const [activeTab, setActiveTab] = React.useState('upcoming')
   const [viewMode, setViewMode] = React.useState<'table' | 'calendar'>('table')
   const [selectedReservation, setSelectedReservation] = React.useState<Reservation | null>(null)
@@ -1047,19 +1051,13 @@ export function ReservationsList({ upcomingReservations, pastReservations }: Res
     </div>
   )
 
-  const statusFilterSelect = (
-    <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
-      <SelectTrigger className="w-[140px]">
-        <SelectValue placeholder="Filter by status" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All Status</SelectItem>
-        <SelectItem value="pending">Pending</SelectItem>
-        <SelectItem value="approved">Approved</SelectItem>
-        <SelectItem value="completed">Completed</SelectItem>
-        <SelectItem value="cancelled">Cancelled</SelectItem>
-      </SelectContent>
-    </Select>
+  const reservationSettingsButton = (
+    <ReservationSettingsDialog orgId={orgId}>
+      <Button variant="outline" size="sm" className="gap-2">
+        <IconSettings className="h-4 w-4" />
+        Reservation Settings
+      </Button>
+    </ReservationSettingsDialog>
   )
 
   return (
@@ -1070,18 +1068,7 @@ export function ReservationsList({ upcomingReservations, pastReservations }: Res
           {tabsList}
           <div className="flex items-center gap-2">
             {viewModeToggle}
-            {statusFilterSelect}
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date-asc">Date & Time ↑</SelectItem>
-                <SelectItem value="date-desc">Date & Time ↓</SelectItem>
-                <SelectItem value="party-asc">Party Size ↑</SelectItem>
-                <SelectItem value="party-desc">Party Size ↓</SelectItem>
-              </SelectContent>
-            </Select>
+            {reservationSettingsButton}
           </div>
         </div>
       ) : (
@@ -1104,7 +1091,7 @@ export function ReservationsList({ upcomingReservations, pastReservations }: Res
             reservations={upcomingReservations} 
             statusFilter={statusFilter}
             viewModeToggle={viewModeToggle}
-            statusFilterSelect={statusFilterSelect}
+            reservationSettingsButton={reservationSettingsButton}
             onReservationClick={handleReservationClick}
           />
         )}
@@ -1123,7 +1110,7 @@ export function ReservationsList({ upcomingReservations, pastReservations }: Res
             reservations={pastReservations} 
             statusFilter={statusFilter}
             viewModeToggle={viewModeToggle}
-            statusFilterSelect={statusFilterSelect}
+            reservationSettingsButton={reservationSettingsButton}
             onReservationClick={handleReservationClick}
           />
         )}
@@ -1142,7 +1129,7 @@ export function ReservationsList({ upcomingReservations, pastReservations }: Res
             reservations={allReservations} 
             statusFilter={statusFilter}
             viewModeToggle={viewModeToggle}
-            statusFilterSelect={statusFilterSelect}
+            reservationSettingsButton={reservationSettingsButton}
             onReservationClick={handleReservationClick}
           />
         )}

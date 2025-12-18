@@ -4,6 +4,7 @@
  */
 
 import { TransactionalEmailsApi, SendSmtpEmail } from '@getbrevo/brevo'
+import { getReservationSettings } from './reservation-settings'
 
 type EmailType = 'welcome' | 'password_reset'
 
@@ -413,6 +414,29 @@ export function getLoginCodeEmailTemplates(params: SendLoginCodeEmailParams) {
     subject: 'Your Sempre Studios Login Code',
     html: generateLoginCodeEmailHTML(params),
     text: generateLoginCodeEmailText(params)
+  }
+}
+
+/**
+ * Get email recipients for reservation notifications
+ * Fetches from reservation_settings table, falls back to empty array if not configured
+ * 
+ * Note: This function should be used when sending reservation request notifications.
+ * The johnny-cafe-welcome-page reservation API should be updated to use this function
+ * by fetching the orgId from the reservation and calling this helper.
+ */
+export async function getReservationNotificationRecipients(orgId: string): Promise<string[]> {
+  try {
+    const settings = await getReservationSettings(orgId)
+    if (settings && settings.email_recipients && settings.email_recipients.length > 0) {
+      return settings.email_recipients
+    }
+    // Fall back to empty array if no settings configured
+    // In production, you might want to return a default email address
+    return []
+  } catch (error) {
+    console.error('Error fetching reservation notification recipients:', error)
+    return []
   }
 }
 

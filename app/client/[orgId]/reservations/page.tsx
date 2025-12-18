@@ -87,6 +87,7 @@ export default async function ReservationsPage({ params }: ReservationsPageProps
         <ReservationsList
           upcomingReservations={upcomingReservations || []}
           pastReservations={pastReservations || []}
+          orgId={orgId}
         />
       </div>
     </div>
