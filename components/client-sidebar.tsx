@@ -406,7 +406,7 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
             <SidebarMenu>
               {navItems.site.map((item) => {
                 const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
-                const isLocked = item.title === "Pages"
+                const isLocked = false
                 
                 return (
                   <SidebarMenuItem key={item.title} className={isLocked ? "group-data-[collapsible=icon]:hidden" : ""}>

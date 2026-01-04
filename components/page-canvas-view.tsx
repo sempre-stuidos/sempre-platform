@@ -48,6 +48,29 @@ export function PageCanvasView({
   const containerRef = React.useRef<HTMLDivElement>(null)
   const highlightOverlayRef = React.useRef<HTMLDivElement>(null)
 
+  // Normalize URLs for comparison (extract just the host, remove www prefix)
+  // This handles www vs non-www domains (www.luxivie.ca === luxivie.ca)
+  const normalizeUrl = (url: string) => {
+    try {
+      const urlObj = new URL(url)
+      let host = urlObj.host.toLowerCase()
+      // Remove www. prefix for comparison
+      if (host.startsWith('www.')) {
+        host = host.substring(4)
+      }
+      return host
+    } catch {
+      // If URL parsing fails, try to extract host manually
+      const match = url.match(/\/\/([^\/]+)/)
+      let host = match ? match[1].toLowerCase() : url.toLowerCase().replace(/\/$/, '')
+      // Remove www. prefix for comparison
+      if (host.startsWith('www.')) {
+        host = host.substring(4)
+      }
+      return host
+    }
+  }
+
   const getStatusBadge = (section: PageSectionV2) => {
     if (section.status === 'dirty') {
       return (
@@ -154,18 +177,6 @@ export function PageCanvasView({
       // So we need to accept messages from the iframe's domain
       const publicSiteUrl = pageBaseUrl || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
       
-      // Normalize URLs for comparison (extract just the host)
-      const normalizeUrl = (url: string) => {
-        try {
-          const urlObj = new URL(url)
-          return urlObj.host.toLowerCase()
-        } catch {
-          // If URL parsing fails, try to extract host manually
-          const match = url.match(/\/\/([^\/]+)/)
-          return match ? match[1].toLowerCase() : url.toLowerCase().replace(/\/$/, '')
-        }
-      }
-      
       const normalizedPublicUrl = normalizeUrl(publicSiteUrl)
       const normalizedOrigin = normalizeUrl(event.origin)
       
@@ -244,7 +255,11 @@ export function PageCanvasView({
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'section-positions' && event.data?.positions) {
         const publicSiteUrl = pageBaseUrl || process.env.NEXT_PUBLIC_RESTAURANT_SITE_URL || 'http://localhost:3001'
-        const isValidOrigin = event.origin === publicSiteUrl || 
+        
+        const normalizedPublicUrl = normalizeUrl(publicSiteUrl)
+        const normalizedOrigin = normalizeUrl(event.origin)
+        
+        const isValidOrigin = normalizedOrigin === normalizedPublicUrl || 
                              event.origin.includes('localhost') || 
                              event.origin.includes('127.0.0.1')
         
