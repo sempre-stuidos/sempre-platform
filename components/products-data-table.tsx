@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import {
   IconDotsVertical,
   IconEdit,
@@ -57,8 +58,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { AddProductModal } from "@/components/add-product-modal"
-
 const createColumns = (
   onEditProduct?: (product: Product) => void,
   onDeleteProduct?: (product: Product) => void
@@ -259,6 +258,7 @@ export function ProductsDataTable({
   onProductUpdated?: (product: Product) => void
   onProductDeleted?: (productId: string) => void
 }) {
+  const router = useRouter()
   const [data, setData] = React.useState(() => initialData)
 
   // Update data when initialData changes (from server refresh)
@@ -276,72 +276,10 @@ export function ProductsDataTable({
     pageIndex: 0,
     pageSize: 100, // Show all products by default, no pagination
   })
-  const [isAddProductModalOpen, setIsAddProductModalOpen] = React.useState(false)
-  const [editingProduct, setEditingProduct] = React.useState<Product | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
   const [productToDelete, setProductToDelete] = React.useState<Product | null>(null)
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false)
 
-  const handleAddProduct = async (productData: Partial<Product>) => {
-    try {
-      const response = await fetch(`/api/products/${orgId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...productData,
-          org_id: orgId,
-        }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create product')
-      }
-
-      const { product: newProduct } = await response.json()
-      setData(prev => [...prev, newProduct])
-      toast.success('Product created successfully')
-      setIsAddProductModalOpen(false)
-    } catch (error) {
-      console.error('Error creating product:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create product'
-      toast.error(`Failed to create product: ${errorMessage}`)
-    }
-  }
-
-  const handleUpdateProduct = async (productData: Partial<Product>) => {
-    if (!editingProduct) return
-    
-    try {
-      const response = await fetch(`/api/products/${orgId}/${editingProduct.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(productData),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to update product')
-      }
-
-      const { product: updatedProduct } = await response.json()
-      setData(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p))
-      // Notify parent component
-      if (onProductUpdated) {
-        onProductUpdated(updatedProduct)
-      }
-      toast.success('Product updated successfully')
-      setEditingProduct(null)
-      setIsAddProductModalOpen(false)
-    } catch (error) {
-      console.error('Error updating product:', error)
-      toast.error('Failed to update product')
-    }
-  }
 
   const handleDeleteProduct = async (productId: string) => {
     try {
@@ -374,8 +312,7 @@ export function ProductsDataTable({
   }
 
   const handleEditProduct = (product: Product) => {
-    setEditingProduct(product)
-    setIsAddProductModalOpen(true)
+    router.push(`/client/${orgId}/retail/products/${product.id}`)
   }
 
   const handleBulkDelete = async () => {
@@ -413,7 +350,7 @@ export function ProductsDataTable({
     }
   }
 
-  const columns = React.useMemo(() => createColumns(handleEditProduct, openDeleteDialog), [])
+  const columns = React.useMemo(() => createColumns(handleEditProduct, openDeleteDialog), [orgId])
 
   const table = useReactTable({
     data,
@@ -444,18 +381,9 @@ export function ProductsDataTable({
 
   if (data.length === 0) {
     return (
-      <>
-        <div className="rounded-md border p-8 text-center">
-          <p className="text-muted-foreground">No products found. Products will appear here once created.</p>
-        </div>
-        <AddProductModal
-          open={isAddProductModalOpen}
-          onOpenChange={setIsAddProductModalOpen}
-          product={editingProduct}
-          onSave={editingProduct ? handleUpdateProduct : handleAddProduct}
-          orgId={orgId}
-        />
-      </>
+      <div className="rounded-md border p-8 text-center">
+        <p className="text-muted-foreground">No products found. Products will appear here once created.</p>
+      </div>
     )
   }
 
@@ -513,14 +441,6 @@ export function ProductsDataTable({
               </Table>
             </div>
           </div>
-
-      <AddProductModal
-        open={isAddProductModalOpen}
-        onOpenChange={setIsAddProductModalOpen}
-        product={editingProduct}
-        onSave={editingProduct ? handleUpdateProduct : handleAddProduct}
-        orgId={orgId}
-      />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

@@ -4,6 +4,7 @@ export interface Product {
   org_id: string; // Keep org_id for compatibility, but map from business_id
   name: string;
   price?: number;
+  original_price?: number;
   sku?: string;
   status: 'active' | 'out of stock' | 'closed for sale';
   category?: string;
@@ -12,6 +13,11 @@ export interface Product {
   image_url?: string;
   description?: string;
   benefits?: string[];
+  ingredients?: string[];
+  how_to_use?: string;
+  sizes?: string[];
+  badges?: string[];
+  review_count?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -23,6 +29,7 @@ interface ProductRecord {
   org_id?: string;
   name: string;
   price?: number | string | null;
+  original_price?: number | string | null;
   sku?: string | null;
   status?: 'active' | 'out of stock' | 'closed for sale';
   category?: string | null;
@@ -31,6 +38,11 @@ interface ProductRecord {
   image_url?: string | null;
   description?: string | null;
   benefits?: string[] | null;
+  ingredients?: string[] | null;
+  how_to_use?: string | null;
+  sizes?: string[] | null;
+  badges?: string[] | null;
+  review_count?: number | string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -50,6 +62,9 @@ export function transformProductRecord(record: ProductRecord): Product {
     price: record.price !== null && record.price !== undefined 
       ? (typeof record.price === 'number' ? record.price : parseFloat(String(record.price)))
       : undefined,
+    original_price: record.original_price !== null && record.original_price !== undefined 
+      ? (typeof record.original_price === 'number' ? record.original_price : parseFloat(String(record.original_price)))
+      : undefined,
     sku: record.sku || undefined,
     status: record.status || 'active',
     category: record.category || undefined,
@@ -62,6 +77,13 @@ export function transformProductRecord(record: ProductRecord): Product {
     image_url: record.image_url || undefined,
     description: record.description || undefined,
     benefits: record.benefits && Array.isArray(record.benefits) ? record.benefits : undefined,
+    ingredients: record.ingredients && Array.isArray(record.ingredients) ? record.ingredients : undefined,
+    how_to_use: record.how_to_use || undefined,
+    sizes: record.sizes && Array.isArray(record.sizes) ? record.sizes : undefined,
+    badges: record.badges && Array.isArray(record.badges) ? record.badges : undefined,
+    review_count: record.review_count !== null && record.review_count !== undefined 
+      ? (typeof record.review_count === 'number' ? record.review_count : parseInt(String(record.review_count), 10))
+      : undefined,
     created_at: record.created_at,
     updated_at: record.updated_at,
   };

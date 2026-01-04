@@ -101,7 +101,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { name, price, sku, status, category, stock, rating, image_url, description, benefits } = body;
+    const { 
+      name, price, original_price, sku, status, category, stock, rating, 
+      image_url, description, benefits, ingredients, how_to_use, 
+      sizes, badges, review_count 
+    } = body;
 
     if (!name || !name.trim()) {
       return NextResponse.json(
@@ -116,6 +120,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         business_id: orgId,
         name: name.trim(),
         price: price !== undefined && price !== null ? price : null,
+        original_price: original_price !== undefined && original_price !== null ? original_price : null,
         sku: sku || null,
         status: status || 'active',
         category: category || null,
@@ -124,6 +129,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         image_url: image_url || null,
         description: description || null,
         benefits: benefits && Array.isArray(benefits) && benefits.length > 0 ? benefits : null,
+        ingredients: ingredients && Array.isArray(ingredients) && ingredients.length > 0 ? ingredients : null,
+        how_to_use: how_to_use || null,
+        sizes: sizes && Array.isArray(sizes) && sizes.length > 0 ? sizes : null,
+        badges: badges && Array.isArray(badges) && badges.length > 0 ? badges : null,
+        review_count: review_count !== undefined && review_count !== null ? review_count : null,
       })
       .select()
       .single();
