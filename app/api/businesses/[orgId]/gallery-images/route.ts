@@ -53,7 +53,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Use the new gallery images function that works with files_assets table
-    const galleryImages = await getGalleryImagesForBusiness(business.slug || undefined);
+    // Pass the authenticated supabase client for server-side access
+    const galleryImages = await getGalleryImagesForBusiness(business.slug || undefined, supabase);
 
     // Transform to the format expected by the image picker
     const images = galleryImages.map((img) => {
@@ -61,9 +62,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       if (img.file_url) {
         // Check if it's a gallery image
         if (img.file_url.includes('/gallery/') || img.project === 'Gallery') {
-          imageUrl = getGalleryImagePublicUrl(img.file_url);
+          imageUrl = getGalleryImagePublicUrl(img.file_url, supabase);
         } else {
-          imageUrl = getFilePublicUrl(img.file_url);
+          imageUrl = getFilePublicUrl(img.file_url, supabase);
         }
       } else if (img.google_drive_web_view_link) {
         imageUrl = img.google_drive_web_view_link;

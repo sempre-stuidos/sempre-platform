@@ -18,6 +18,7 @@ export interface Product {
   sizes?: string[];
   badges?: string[];
   review_count?: number;
+  is_bestseller?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -43,6 +44,7 @@ interface ProductRecord {
   sizes?: string[] | null;
   badges?: string[] | null;
   review_count?: number | string | null;
+  is_bestseller?: boolean | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -83,6 +85,9 @@ export function transformProductRecord(record: ProductRecord): Product {
     badges: record.badges && Array.isArray(record.badges) ? record.badges : undefined,
     review_count: record.review_count !== null && record.review_count !== undefined 
       ? (typeof record.review_count === 'number' ? record.review_count : parseInt(String(record.review_count), 10))
+      : undefined,
+    is_bestseller: record.is_bestseller !== null && record.is_bestseller !== undefined 
+      ? Boolean(record.is_bestseller)
       : undefined,
     created_at: record.created_at,
     updated_at: record.updated_at,

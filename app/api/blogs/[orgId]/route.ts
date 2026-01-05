@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserRoleInOrg } from '@/lib/businesses';
-import { Product, transformProductRecord } from '@/lib/products';
+import { Blog, transformBlogRecord, generateSlug, calculateReadTime } from '@/lib/blogs';
 
 interface RouteParams {
   params: Promise<{
@@ -44,23 +44,33 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { data, error } = await supabase
-      .from('retail_products_table')
+    // Get status filter from query params if provided
+    const { searchParams } = new URL(request.url);
+    const statusFilter = searchParams.get('status');
+
+    let query = supabase
+      .from('blogs')
       .select('*')
       .eq('business_id', orgId)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching products:', error);
-      return NextResponse.json({ products: [] });
+    if (statusFilter && ['draft', 'published', 'archived'].includes(statusFilter)) {
+      query = query.eq('status', statusFilter);
     }
 
-    const products = data ? data.map(transformProductRecord) : [];
-    return NextResponse.json({ products });
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching blogs:', error);
+      return NextResponse.json({ blogs: [] });
+    }
+
+    const blogs = data ? data.map(transformBlogRecord) : [];
+    return NextResponse.json({ blogs });
   } catch (error) {
-    console.error('Error in GET /api/products/[orgId]:', error);
+    console.error('Error in GET /api/blogs/[orgId]:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch products' },
+      { error: 'Failed to fetch blogs' },
       { status: 500 }
     );
   }
@@ -102,56 +112,86 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const body = await request.json();
     const { 
-      name, price, original_price, sku, status, category, stock, rating, 
-      image_url, description, benefits, ingredients, how_to_use, 
-      sizes, badges, review_count, is_bestseller 
+      title, excerpt, content, image_url, author, category, tags,
+      status, seo_title, seo_description, slug: providedSlug
     } = body;
 
-    if (!name || !name.trim()) {
+    if (!title || !title.trim()) {
       return NextResponse.json(
-        { error: 'Product name is required' },
+        { error: 'Blog title is required' },
         { status: 400 }
       );
     }
 
+    if (!content || !content.trim()) {
+      return NextResponse.json(
+        { error: 'Blog content is required' },
+        { status: 400 }
+      );
+    }
+
+    // Generate slug from title if not provided
+    let blogSlug = providedSlug || generateSlug(title);
+    
+    // Ensure slug is unique for this business
+    let uniqueSlug = blogSlug;
+    let counter = 1;
+    while (true) {
+      const { data: existing } = await supabase
+        .from('blogs')
+        .select('id')
+        .eq('business_id', orgId)
+        .eq('slug', uniqueSlug)
+        .single();
+      
+      if (!existing) {
+        break; // Slug is unique
+      }
+      
+      uniqueSlug = `${blogSlug}-${counter}`;
+      counter++;
+    }
+
+    // Calculate read time
+    const readTime = calculateReadTime(content);
+
+    // Determine published_at timestamp
+    const publishedAt = status === 'published' ? new Date().toISOString() : null;
+
     const { data, error } = await supabase
-      .from('retail_products_table')
+      .from('blogs')
       .insert({
         business_id: orgId,
-        name: name.trim(),
-        price: price !== undefined && price !== null ? price : null,
-        original_price: original_price !== undefined && original_price !== null ? original_price : null,
-        sku: sku || null,
-        status: status || 'active',
-        category: category || null,
-        stock: stock !== undefined && stock !== null ? stock : null,
-        rating: rating !== undefined && rating !== null ? rating : null,
+        title: title.trim(),
+        slug: uniqueSlug,
+        excerpt: excerpt || null,
+        content: content.trim(),
         image_url: image_url || null,
-        description: description || null,
-        benefits: benefits && Array.isArray(benefits) && benefits.length > 0 ? benefits : null,
-        ingredients: ingredients && Array.isArray(ingredients) && ingredients.length > 0 ? ingredients : null,
-        how_to_use: how_to_use || null,
-        sizes: sizes && Array.isArray(sizes) && sizes.length > 0 ? sizes : null,
-        badges: badges && Array.isArray(badges) && badges.length > 0 ? badges : null,
-        review_count: review_count !== undefined && review_count !== null ? review_count : null,
-        is_bestseller: is_bestseller !== undefined && is_bestseller !== null ? is_bestseller : false,
+        author: author || null,
+        category: category || null,
+        tags: tags && Array.isArray(tags) && tags.length > 0 ? tags : null,
+        status: status || 'draft',
+        published_at: publishedAt,
+        read_time: readTime,
+        seo_title: seo_title || null,
+        seo_description: seo_description || null,
       })
       .select()
       .single();
 
     if (error) {
-      console.error('Error creating product:', error);
+      console.error('Error creating blog:', error);
       return NextResponse.json(
-        { error: 'Failed to create product' },
+        { error: 'Failed to create blog' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ product: transformProductRecord(data) }, { status: 201 });
+    return NextResponse.json({ blog: transformBlogRecord(data) }, { status: 201 });
   } catch (error) {
-    console.error('Error in POST /api/products/[orgId]:', error);
+    console.error('Error in POST /api/blogs/[orgId]:', error);
     return NextResponse.json(
-      { error: 'Failed to create product' },
+      { error: 'Failed to create blog' },
       { status: 500 }
     );
   }

@@ -4,6 +4,7 @@ import * as React from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 
 interface PricingInventoryStepProps {
@@ -14,6 +15,7 @@ interface PricingInventoryStepProps {
   category: string
   stock?: number
   rating?: number
+  isBestseller?: boolean
   onPriceChange: (price?: number) => void
   onOriginalPriceChange: (originalPrice?: number) => void
   onSkuChange: (sku: string) => void
@@ -21,6 +23,7 @@ interface PricingInventoryStepProps {
   onCategoryChange: (category: string) => void
   onStockChange: (stock?: number) => void
   onRatingChange: (rating?: number) => void
+  onBestsellerChange: (isBestseller: boolean) => void
   errors?: Record<string, string>
 }
 
@@ -32,6 +35,7 @@ export function PricingInventoryStep({
   category,
   stock,
   rating,
+  isBestseller,
   onPriceChange,
   onOriginalPriceChange,
   onSkuChange,
@@ -39,6 +43,7 @@ export function PricingInventoryStep({
   onCategoryChange,
   onStockChange,
   onRatingChange,
+  onBestsellerChange,
   errors,
 }: PricingInventoryStepProps) {
   return (
@@ -163,6 +168,24 @@ export function PricingInventoryStep({
             <span>1</span>
             <span>5</span>
           </div>
+        </div>
+
+        {/* Bestseller */}
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="is_bestseller"
+            checked={isBestseller || false}
+            onCheckedChange={(checked) => onBestsellerChange(checked === true)}
+          />
+          <Label
+            htmlFor="is_bestseller"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+          >
+            Mark as Bestseller
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Bestseller products will be prioritized in featured displays
+          </p>
         </div>
       </div>
     </div>

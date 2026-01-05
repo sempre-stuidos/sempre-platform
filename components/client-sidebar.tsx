@@ -142,6 +142,11 @@ const getClientNavItems = (orgId: string, businessType?: string) => {
         url: `/client/${orgId}/retail/products`,
         icon: IconPackage,
       },
+      {
+        title: "Blog",
+        url: `/client/${orgId}/retail/blogs`,
+        icon: IconFileText,
+      },
     ] : [],
     help: [
       {

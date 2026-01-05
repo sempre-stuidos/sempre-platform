@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { FilesAssets } from './types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Transform database record to match frontend interface
 function transformFilesAssetsRecord(record: Record<string, unknown>): FilesAssets {
@@ -327,12 +328,16 @@ export async function getFilesAssetsByProject(project: string): Promise<FilesAss
 /**
  * Get gallery images for a business
  * Filters by type="Images" and project="Gallery", and optionally by business slug in file path
+ * @param businessSlug Optional business slug to filter images
+ * @param supabaseClient Optional Supabase client (for server-side use with authentication)
  */
 export async function getGalleryImagesForBusiness(
-  businessSlug?: string
+  businessSlug?: string,
+  supabaseClient?: SupabaseClient
 ): Promise<FilesAssets[]> {
   try {
-    const query = supabase
+    const client = supabaseClient || supabase;
+    const query = client
       .from('files_assets')
       .select('*')
       .eq('type', 'Images')
@@ -369,7 +374,7 @@ export async function getGalleryImagesForBusiness(
 
 /**
  * Get gallery images for a specific product
- * Filters by type="Images", project="Gallery", and product_id
+ * Filters by type="Images" and product_id (project can be product name or "Gallery")
  */
 export async function getGalleryImagesByProduct(
   productId: string,
@@ -380,7 +385,6 @@ export async function getGalleryImagesByProduct(
       .from('files_assets')
       .select('*')
       .eq('type', 'Images')
-      .eq('project', 'Gallery')
       .eq('product_id', productId)
       .order('uploaded', { ascending: false });
 
@@ -458,10 +462,12 @@ export async function uploadFileToStorage(
 /**
  * Get public URL for a file in storage
  * @param filePath The storage path of the file
+ * @param supabaseClient Optional Supabase client (for server-side use)
  * @returns The public URL of the file
  */
-export function getFilePublicUrl(filePath: string): string {
-  const { data } = supabase.storage
+export function getFilePublicUrl(filePath: string, supabaseClient?: SupabaseClient): string {
+  const client = supabaseClient || supabase;
+  const { data } = client.storage
     .from('files-assets')
     .getPublicUrl(filePath);
   

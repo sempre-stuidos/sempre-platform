@@ -104,7 +104,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { 
       name, price, original_price, sku, status, category, stock, rating, 
       image_url, description, benefits, ingredients, how_to_use, 
-      sizes, badges, review_count 
+      sizes, badges, review_count, is_bestseller 
     } = body;
 
     // Validate name if provided (for updates, name is optional but if provided must not be empty)
@@ -152,6 +152,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       updateData.badges = badges && Array.isArray(badges) && badges.length > 0 ? badges : null;
     }
     if (review_count !== undefined) updateData.review_count = review_count !== null ? review_count : null;
+    if (is_bestseller !== undefined) updateData.is_bestseller = is_bestseller !== null ? is_bestseller : false;
 
     const { data, error } = await supabase
       .from('retail_products_table')
