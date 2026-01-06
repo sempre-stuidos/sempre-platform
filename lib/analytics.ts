@@ -46,7 +46,7 @@ export async function getSiteAnalyticsData(
 
     // Transform to SiteAnalyticsData format
     // The data is already grouped by date from the database
-    const analyticsData: SiteAnalyticsData[] = analyticsRecords.map((record) => ({
+    const analyticsData: SiteAnalyticsData[] = analyticsRecords.map((record: { visit_date: string; visit_count: number | null }) => ({
       date: record.visit_date, // Already in YYYY-MM-DD format
       visits: record.visit_count || 0,
       // bookings and sales can be added later from other tables
