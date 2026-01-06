@@ -17,6 +17,7 @@ import {
   IconMusic,
   IconLock,
   IconLifebuoy,
+  IconLayoutGrid,
 } from "@tabler/icons-react"
 import { useParams, usePathname } from "next/navigation"
 import { NavUser } from "@/components/nav-user"
@@ -117,6 +118,11 @@ const getClientNavItems = (orgId: string, businessType?: string) => {
         title: "Bands",
         url: `/client/${orgId}/bands`,
         icon: IconMusic,
+      },
+      {
+        title: "Floor Plan",
+        url: `/client/${orgId}/restaurant/floor-plan`,
+        icon: IconLayoutGrid,
       },
     ] : [],
     data: isRestaurant ? [
@@ -356,19 +362,29 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
               <SidebarMenu>
                 {navItems.restaurant.map((item) => {
                   const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
+                  const isLocked = item.title === "Floor Plan"
                   
                   return (
-                    <SidebarMenuItem key={item.title}>
+                    <SidebarMenuItem key={item.title} className={isLocked ? "group-data-[collapsible=icon]:hidden" : ""}>
                       <SidebarMenuButton 
-                        asChild 
+                        asChild={!isLocked}
                         tooltip={item.title}
                         className="hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
                         data-active={isActive}
+                        onClick={isLocked ? (e) => handleLockedFeatureClick(item.title, e) : undefined}
                       >
-                        <a href={item.url}>
-                          {item.icon && <item.icon />}
-                          <span>{item.title}</span>
-                        </a>
+                        {isLocked ? (
+                          <button className="flex w-full items-center gap-2">
+                            {item.icon && <item.icon className="size-3" />}
+                            <span>{item.title}</span>
+                            <IconLock className="ml-auto size-3 opacity-50" />
+                          </button>
+                        ) : (
+                          <a href={item.url}>
+                            {item.icon && <item.icon />}
+                            <span>{item.title}</span>
+                          </a>
+                        )}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )
@@ -411,7 +427,7 @@ export function ClientSidebar({ initialBusiness, ...props }: ClientSidebarProps)
             <SidebarMenu>
               {navItems.site.map((item) => {
                 const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
-                const isLocked = false
+                const isLocked = item.title === "Pages"
                 
                 return (
                   <SidebarMenuItem key={item.title} className={isLocked ? "group-data-[collapsible=icon]:hidden" : ""}>
