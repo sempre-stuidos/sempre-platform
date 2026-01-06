@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction, 
 import { IconMenu2, IconTrendingUp, IconShoppingCart, IconPackage, IconUsers, IconCalendar } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { ChartSiteAnalytics, SiteAnalyticsData } from '@/components/chart-site-analytics';
+import { getSiteAnalyticsData } from '@/lib/analytics';
 
 interface DashboardPageProps {
   params: Promise<{
@@ -149,8 +150,15 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
     }
   }
 
-  // Analytics data - empty for now (removed hardcoded data)
-  const analyticsData: SiteAnalyticsData[] = [];
+  // Fetch analytics data
+  let analyticsData: SiteAnalyticsData[] = [];
+  try {
+    analyticsData = await getSiteAnalyticsData(orgId, supabaseServer);
+  } catch (error) {
+    console.error('Error fetching analytics data:', error);
+    // Fallback to empty array if fetch fails
+    analyticsData = [];
+  }
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
@@ -308,7 +316,7 @@ export default async function ClientDashboardPage({ params }: DashboardPageProps
         </div>
 
         <div className="px-4 lg:px-6">
-          <ChartSiteAnalytics data={analyticsData} />
+          <ChartSiteAnalytics data={analyticsData} businessType={businessType} />
         </div>
       </div>
     </div>
