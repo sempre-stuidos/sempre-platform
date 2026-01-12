@@ -997,10 +997,10 @@ export function EventWizard({ orgId, event, onSave }: EventWizardProps) {
       })()}
 
       <Card>
-        <CardContent className="p-6 md:p-8">{renderStep()}</CardContent>
+        <CardContent className="p-6 md:p-8 pb-24 md:pb-8">{renderStep()}</CardContent>
       </Card>
 
-      <div className="flex justify-between gap-3">
+      <div className="sticky bottom-0 left-0 right-0 flex justify-between gap-3 bg-background border-t p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:relative md:border-t-0 md:bg-transparent md:p-0 md:pb-0 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-none">
         <Button
           type="button"
           variant="outline"

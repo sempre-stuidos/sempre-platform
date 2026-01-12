@@ -43,6 +43,8 @@ import { Event, EventBand } from "@/lib/types"
 import { formatEventDateTime, formatWeeklyEventDateTime, formatVisibilityWindow } from "@/lib/events"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
+import { IconChevronDown } from "@tabler/icons-react"
 import Link from "next/link"
 
 interface EventsTableProps {
@@ -58,6 +60,7 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
   const [eventBands, setEventBands] = React.useState<Record<string, EventBand[]>>({})
   const [detailsModalOpen, setDetailsModalOpen] = React.useState(false)
   const [selectedEvent, setSelectedEvent] = React.useState<Event | null>(null)
+  const [expandedEvent, setExpandedEvent] = React.useState<Event | null>(null)
   const [instanceCounts, setInstanceCounts] = React.useState<Record<string, number>>({})
   const [loadingCounts, setLoadingCounts] = React.useState<Record<string, boolean>>({})
 
@@ -201,28 +204,200 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[300px]">Event</TableHead>
-            <TableHead>Date & Time</TableHead>
-            <TableHead>Event Dates</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {events.map((event) => (
-            <TableRow
-              key={event.id}
-              className="cursor-pointer hover:bg-muted/50"
-              onClick={() => handleRowClick(event)}
-            >
-              <TableCell>
-                <div className="flex items-center gap-3">
-                  {event.image_url ? (
-                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md">
+    <>
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {events.map((event) => (
+          <Card key={event.id} className="overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-base mb-2 truncate">{event.title}</div>
+                  <div className="flex items-center gap-2">
+                    <EventStatusBadge status={event.status} />
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setExpandedEvent(event)}
+                  className="flex-shrink-0"
+                >
+                  <span className="hidden xs:inline">View</span>
+                  <span className="xs:hidden">Expand</span>
+                  <IconChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block rounded-md border">
+        <div className="overflow-x-auto">
+          <div className="min-w-[800px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[300px]">Event</TableHead>
+                  <TableHead>Date & Time</TableHead>
+                  <TableHead>Event Dates</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {events.map((event) => (
+                  <TableRow
+                    key={event.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleRowClick(event)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        {event.image_url ? (
+                          <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md">
+                            <Image
+                              src={event.image_url}
+                              alt={event.title}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="h-16 w-16 flex-shrink-0 rounded-md bg-muted flex items-center justify-center">
+                            <span className="text-xs text-muted-foreground">No image</span>
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium truncate">{event.title}</div>
+                          {event.short_description && (
+                            <div className="text-sm text-muted-foreground line-clamp-1">
+                              {event.short_description}
+                            </div>
+                          )}
+                          {(event.event_type === "Jazz" || event.event_type === "Live Music") && eventBands[event.id] && eventBands[event.id].length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {eventBands[event.id].map((eb) => (
+                                <Badge key={eb.id} variant="secondary" className="text-xs">
+                                  {eb.band?.name || 'Unknown Band'}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {event.is_weekly && event.day_of_week !== undefined
+                          ? formatWeeklyEventDateTime(event.day_of_week, event.starts_at, event.ends_at)
+                          : event.starts_at && event.ends_at
+                          ? formatEventDateTime(event.starts_at, event.ends_at)
+                          : 'No date/time set'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {event.is_weekly ? (
+                        <Link
+                          href={`/client/${orgId}/events/${event.id}/calendar`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-sm text-primary hover:underline font-medium"
+                        >
+                          {loadingCounts[event.id] ? (
+                            'Loading...'
+                          ) : (
+                            `${instanceCounts[event.id] || 0} date${(instanceCounts[event.id] || 0) !== 1 ? 's' : ''}`
+                          )}
+                        </Link>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">
+                          {formatVisibilityWindow(event.publish_start_at, event.publish_end_at)}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <EventStatusBadge status={event.status} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu onOpenChange={(open) => open}>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                            }}
+                          >
+                            SEE ALL
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEdit(event.id)
+                            }}
+                          >
+                            <IconEdit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDuplicate(event)
+                            }}
+                          >
+                            <IconCopy className="h-4 w-4 mr-2" />
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleArchive(event.id)
+                            }}
+                            className="text-red-600"
+                          >
+                            <IconArchive className="h-4 w-4 mr-2" />
+                            Archive
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={(e) => handleDeleteClick(event, e)}
+                            className="text-red-600"
+                          >
+                            <IconTrash className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Expanded Event Dialog */}
+      {expandedEvent && (() => {
+        const event = expandedEvent
+        return (
+          <Dialog open={!!expandedEvent} onOpenChange={(open) => !open && setExpandedEvent(null)}>
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{event.title}</DialogTitle>
+                <DialogDescription>
+                  Event details
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                {/* Image */}
+                {event.image_url && (
+                  <div className="flex justify-center">
+                    <div className="relative w-full h-48 rounded-lg overflow-hidden">
                       <Image
                         src={event.image_url}
                         alt={event.title}
@@ -230,118 +405,134 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
                         className="object-cover"
                       />
                     </div>
-                  ) : (
-                    <div className="h-16 w-16 flex-shrink-0 rounded-md bg-muted flex items-center justify-center">
-                      <span className="text-xs text-muted-foreground">No image</span>
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium truncate">{event.title}</div>
-                    {event.short_description && (
-                      <div className="text-sm text-muted-foreground line-clamp-1">
-                        {event.short_description}
-                      </div>
-                    )}
-                    {(event.event_type === "Jazz" || event.event_type === "Live Music") && eventBands[event.id] && eventBands[event.id].length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {eventBands[event.id].map((eb) => (
-                          <Badge key={eb.id} variant="secondary" className="text-xs">
-                            {eb.band?.name || 'Unknown Band'}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="text-sm">
-                  {event.is_weekly && event.day_of_week !== undefined
-                    ? formatWeeklyEventDateTime(event.day_of_week, event.starts_at, event.ends_at)
-                    : event.starts_at && event.ends_at
-                    ? formatEventDateTime(event.starts_at, event.ends_at)
-                    : 'No date/time set'}
-                </div>
-              </TableCell>
-              <TableCell>
-                {event.is_weekly ? (
-                  <Link
-                    href={`/client/${orgId}/events/${event.id}/calendar`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-sm text-primary hover:underline font-medium"
-                  >
-                    {loadingCounts[event.id] ? (
-                      'Loading...'
-                    ) : (
-                      `${instanceCounts[event.id] || 0} date${(instanceCounts[event.id] || 0) !== 1 ? 's' : ''}`
-                    )}
-                  </Link>
-                ) : (
-                  <div className="text-sm text-muted-foreground">
-                    {formatVisibilityWindow(event.publish_start_at, event.publish_end_at)}
                   </div>
                 )}
-              </TableCell>
-              <TableCell>
-                <EventStatusBadge status={event.status} />
-              </TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu onOpenChange={(open) => open}>
-                  <DropdownMenuTrigger asChild>
+                
+                {/* Status */}
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Status</div>
+                  <EventStatusBadge status={event.status} />
+                </div>
+                
+                {/* Description */}
+                {event.short_description && (
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-1">Description</div>
+                    <div className="text-sm">{event.short_description}</div>
+                  </div>
+                )}
+                
+                {/* Date & Time */}
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Date & Time</div>
+                  <div className="text-sm font-medium">
+                    {event.is_weekly && event.day_of_week !== undefined
+                      ? formatWeeklyEventDateTime(event.day_of_week, event.starts_at, event.ends_at)
+                      : event.starts_at && event.ends_at
+                      ? formatEventDateTime(event.starts_at, event.ends_at)
+                      : 'No date/time set'}
+                  </div>
+                </div>
+                
+                {/* Event Dates */}
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Event Dates</div>
+                  {event.is_weekly ? (
+                    <Link
+                      href={`/client/${orgId}/events/${event.id}/calendar`}
+                      className="text-sm text-primary hover:underline font-medium"
+                    >
+                      {loadingCounts[event.id] ? (
+                        'Loading...'
+                      ) : (
+                        `${instanceCounts[event.id] || 0} date${(instanceCounts[event.id] || 0) !== 1 ? 's' : ''}`
+                      )}
+                    </Link>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">
+                      {formatVisibilityWindow(event.publish_start_at, event.publish_end_at)}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Bands */}
+                {(event.event_type === "Jazz" || event.event_type === "Live Music") && eventBands[event.id] && eventBands[event.id].length > 0 && (
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-2">Bands</div>
+                    <div className="flex flex-wrap gap-2">
+                      {eventBands[event.id].map((eb) => (
+                        <Badge key={eb.id} variant="secondary" className="text-xs">
+                          {eb.band?.name || 'Unknown Band'}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Actions */}
+                <div className="flex flex-col gap-2 pt-4 border-t">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      setExpandedEvent(null)
+                      handleEdit(event.id)
+                    }}
+                    className="w-full"
+                  >
+                    <IconEdit className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                      }}
-                    >
-                      SEE ALL
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleEdit(event.id)
-                      }}
-                    >
-                      <IconEdit className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation()
+                      onClick={() => {
+                        setExpandedEvent(null)
                         handleDuplicate(event)
                       }}
                     >
-                      <IconCopy className="h-4 w-4 mr-2" />
+                      <IconCopy className="mr-2 h-4 w-4" />
                       Duplicate
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleArchive(event.id)
-                      }}
-                      className="text-red-600"
-                    >
-                      <IconArchive className="h-4 w-4 mr-2" />
-                      Archive
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      onClick={(e) => handleDeleteClick(event, e)}
-                      className="text-red-600"
-                    >
-                      <IconTrash className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full">
+                          <IconArchive className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            handleArchive(event.id)
+                            setExpandedEvent(null)
+                          }}
+                          className="text-red-600"
+                        >
+                          <IconArchive className="h-4 w-4 mr-2" />
+                          Archive
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteClick(event, e)
+                            setExpandedEvent(null)
+                          }}
+                          className="text-red-600"
+                        >
+                          <IconTrash className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )
+      })()}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -528,7 +719,7 @@ export function EventsTable({ orgId, events, onEventDeleted }: EventsTableProps)
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }
 

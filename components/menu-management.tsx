@@ -22,12 +22,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { IconPlus, IconEdit, IconArchive, IconEye, IconEyeOff, IconSearch, IconX, IconDotsVertical, IconTrash, IconChevronLeft, IconChevronRight } from "@tabler/icons-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { IconPlus, IconEdit, IconArchive, IconEye, IconEyeOff, IconSearch, IconX, IconDotsVertical, IconTrash, IconChevronLeft, IconChevronRight, IconChevronDown } from "@tabler/icons-react"
 import { MenuItem, MenuCategory, MenuType, Menu } from "@/lib/types"
 import { MenuItemForm } from "./menu-item-form"
 import { ManageCategoriesModal } from "./manage-categories-modal"
 import { ManageMenusModal } from "./manage-menus-modal"
 import { toast } from "sonner"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 
 interface MenuManagementProps {
   orgId: string
@@ -50,6 +58,8 @@ export function MenuManagement({
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false)
   const [isManageMenusOpen, setIsManageMenusOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
+  const [expandedItem, setExpandedItem] = useState<MenuItem | null>(null)
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   // Filters
@@ -329,34 +339,44 @@ export function MenuManagement({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-2xl font-bold">Menu Management</h2>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">
             Manage your restaurant menu items and categories
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button 
             variant="outline"
+            size="sm"
             onClick={() => {
               setIsManageMenusOpen(true)
             }}
+            className="flex-1 md:flex-initial"
           >
-            Manage Menus
+            <span className="hidden sm:inline">Manage Menus</span>
+            <span className="sm:hidden">Menus</span>
           </Button>
           <Button 
             variant="outline"
+            size="sm"
             onClick={() => {
               setIsManageCategoriesOpen(true)
             }}
+            className="flex-1 md:flex-initial"
           >
-            Manage Categories
+            <span className="hidden sm:inline">Manage Categories</span>
+            <span className="sm:hidden">Categories</span>
           </Button>
-          <Button onClick={() => {
+          <Button 
+            onClick={() => {
             setEditingItem(null)
             setIsFormOpen(true)
-          }}>
+            }}
+            size="sm"
+            className="hidden md:flex"
+          >
             <IconPlus className="mr-2 h-4 w-4" />
             Add Menu Item
           </Button>
@@ -364,7 +384,101 @@ export function MenuManagement({
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 p-4 border rounded-lg bg-card">
+      <div className="border rounded-lg bg-card">
+        {/* Mobile: Collapsible Filters Dropdown */}
+        <div className="md:hidden">
+          <Button
+            variant="outline"
+            className="w-full justify-between"
+            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+          >
+            <span className="flex items-center gap-2">
+              <IconSearch className="h-4 w-4" />
+              Filters
+            </span>
+            <IconChevronDown className={`h-4 w-4 transition-transform ${isFiltersOpen ? 'rotate-180' : ''}`} />
+          </Button>
+          {isFiltersOpen && (
+            <div className="p-3 space-y-3 border-t">
+              <div className="relative">
+                <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search items..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+                  >
+                    <IconX className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              <Select value={menuFilter} onValueChange={setMenuFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Menu" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Menus</SelectItem>
+                  {menus.map((menu) => (
+                    <SelectItem key={menu.id} value={menu.id.toString()}>
+                      {menu.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories
+                    .filter(cat => {
+                      if (menuFilter === "all") return true;
+                      // Menu IDs are now UUIDs (strings)
+                      return String(cat.menuId) === menuFilter;
+                    })
+                    .map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="visibleOnly-mobile"
+                  checked={visibleOnly}
+                  onCheckedChange={(checked) => setVisibleOnly(checked as boolean)}
+                />
+                <Label htmlFor="visibleOnly-mobile" className="cursor-pointer text-sm">
+                  Visible Only
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="showArchived-mobile"
+                  checked={showArchived}
+                  onCheckedChange={(checked) => setShowArchived(checked as boolean)}
+                />
+                <Label htmlFor="showArchived-mobile" className="cursor-pointer text-sm">
+                  Show Archived
+                </Label>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop: Always Visible Filters */}
+        <div className="hidden md:flex md:flex-wrap md:items-center md:gap-4 md:p-4">
         <div className="flex-1 min-w-[200px]">
           <div className="relative">
             <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -439,6 +553,7 @@ export function MenuManagement({
           <Label htmlFor="showArchived" className="cursor-pointer text-sm">
             Show Archived
           </Label>
+          </div>
         </div>
       </div>
 
@@ -456,7 +571,275 @@ export function MenuManagement({
           </p>
         </div>
       ) : (
-        <div className="rounded-md border">
+        <>
+          {/* Mobile Card View - Simplified */}
+          <div className="md:hidden space-y-3">
+            {paginatedItems.map((item) => {
+              return (
+                <Card key={item.id} className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-base mb-2 truncate">{item.name}</div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant={item.isVisible ? "default" : "secondary"} className="text-xs">
+                            {item.isVisible ? (
+                              <>
+                                <IconEye className="mr-1 h-3 w-3" />
+                                Visible
+                              </>
+                            ) : (
+                              <>
+                                <IconEyeOff className="mr-1 h-3 w-3" />
+                                Hidden
+                              </>
+                            )}
+                          </Badge>
+                          {item.isArchived && (
+                            <Badge variant="outline" className="text-xs">
+                              Archived
+                            </Badge>
+                          )}
+                          {item.isFeatured && (
+                            <Badge variant="outline" className="text-xs">
+                              Featured
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setExpandedItem(item)}
+                        className="flex-shrink-0"
+                      >
+                        <span className="hidden xs:inline">View</span>
+                        <span className="xs:hidden">Expand</span>
+                        <IconChevronDown className="ml-1 h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+            
+            {/* Mobile Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col gap-3 border-t pt-4">
+                <div className="text-sm text-muted-foreground text-center">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredItems.length)} of {filteredItems.length} items
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <IconChevronLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline">Previous</span>
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                      // Show first page, last page, current page, and pages around current
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(page)}
+                            className="min-w-[2.5rem]"
+                          >
+                            {page}
+                          </Button>
+                        )
+                      } else if (
+                        page === currentPage - 2 ||
+                        page === currentPage + 2
+                      ) {
+                        return <span key={page} className="px-2">...</span>
+                      }
+                      return null
+                    })}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <span className="hidden sm:inline">Next</span>
+                    <IconChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Mobile Expanded Item Dialog */}
+          {expandedItem && (() => {
+            const menu = menus.find(m => String(m.id) === String(expandedItem.menuId))
+            const category = categories.find(c => c.id === expandedItem.menuCategoryId)
+            return (
+              <Dialog open={!!expandedItem} onOpenChange={(open) => !open && setExpandedItem(null)}>
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>{expandedItem.name}</DialogTitle>
+                    <DialogDescription>
+                      Menu item details
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    {/* Image */}
+                    <div className="flex justify-center">
+                      {expandedItem.imageUrl ? (
+                        <img
+                          src={expandedItem.imageUrl}
+                          alt={expandedItem.name}
+                          className="w-32 h-32 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-32 h-32 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
+                          No Image
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Description */}
+                    {expandedItem.description && (
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Description</div>
+                        <div className="text-sm">{expandedItem.description}</div>
+                      </div>
+                    )}
+                    
+                    {/* Menu and Category */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Menu</div>
+                        <div>{menu ? menu.name : 'No Menu'}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Category</div>
+                        <div>{category ? category.name : 'No Category'}</div>
+                      </div>
+                    </div>
+                    
+                    {/* Price */}
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Price</div>
+                      <div className="font-semibold text-lg">{formatPrice(expandedItem)}</div>
+                    </div>
+                    
+                    {/* Status Badges */}
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-2">Status</div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={expandedItem.isVisible ? "default" : "secondary"} className="text-xs">
+                          {expandedItem.isVisible ? (
+                            <>
+                              <IconEye className="mr-1 h-3 w-3" />
+                              Visible
+                            </>
+                          ) : (
+                            <>
+                              <IconEyeOff className="mr-1 h-3 w-3" />
+                              Hidden
+                            </>
+                          )}
+                        </Badge>
+                        {expandedItem.isArchived && (
+                          <Badge variant="outline" className="text-xs">
+                            Archived
+                          </Badge>
+                        )}
+                        {expandedItem.isFeatured && (
+                          <Badge variant="outline" className="text-xs">
+                            Featured
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Actions */}
+                    <div className="flex flex-col gap-2 pt-4 border-t">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => {
+                          setExpandedItem(null)
+                          handleEdit(expandedItem)
+                        }}
+                        className="w-full"
+                      >
+                        <IconEdit className="mr-2 h-4 w-4" />
+                        Edit
+                      </Button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            handleToggleVisibility(expandedItem)
+                            setExpandedItem(null)
+                          }}
+                        >
+                          {expandedItem.isVisible ? (
+                            <>
+                              <IconEyeOff className="mr-2 h-4 w-4" />
+                              Hide
+                            </>
+                          ) : (
+                            <>
+                              <IconEye className="mr-2 h-4 w-4" />
+                              Show
+                            </>
+                          )}
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="w-full">
+                              <IconDotsVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => {
+                              handleArchive(expandedItem)
+                              setExpandedItem(null)
+                            }}>
+                              <IconArchive className="mr-2 h-4 w-4" />
+                              {expandedItem.isArchived ? 'Unarchive' : 'Archive'}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                handleDelete(expandedItem)
+                                setExpandedItem(null)
+                              }}
+                              variant="destructive"
+                            >
+                              <IconTrash className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )
+          })()}
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block rounded-md border">
+            <div className="overflow-x-auto">
+              <div className="min-w-[800px]">
           <Table>
             <TableHeader>
               <TableRow>
@@ -585,14 +968,16 @@ export function MenuManagement({
               })}
             </TableBody>
           </Table>
+              </div>
+            </div>
           
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t px-4 py-3">
-              <div className="text-sm text-muted-foreground">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-t px-4 py-3">
+                <div className="text-sm text-muted-foreground text-center md:text-left">
                 Showing {startIndex + 1} to {Math.min(endIndex, filteredItems.length)} of {filteredItems.length} items
               </div>
-              <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -600,7 +985,7 @@ export function MenuManagement({
                   disabled={currentPage === 1}
                 >
                   <IconChevronLeft className="h-4 w-4" />
-                  Previous
+                    <span className="hidden sm:inline">Previous</span>
                 </Button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
@@ -636,13 +1021,14 @@ export function MenuManagement({
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
                 >
-                  Next
+                    <span className="hidden sm:inline">Next</span>
                   <IconChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           )}
         </div>
+        </>
       )}
 
       {/* Menu Item Form Dialog */}
@@ -683,6 +1069,19 @@ export function MenuManagement({
         orgId={orgId}
         onMenusChange={handleMenusChange}
       />
+
+      {/* Floating Action Button - Mobile Only */}
+      <Button
+        onClick={() => {
+          setEditingItem(null)
+          setIsFormOpen(true)
+        }}
+        size="icon"
+        className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg md:hidden z-50"
+        aria-label="Add Menu Item"
+      >
+        <IconPlus className="h-6 w-6" />
+      </Button>
     </div>
   )
 }

@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, VariantProps } from "class-variance-authority"
-import { PanelLeftIcon, PanelRightIcon } from "lucide-react"
+import { PanelLeftIcon, PanelRightIcon, Menu } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -177,6 +177,8 @@ function Sidebar({
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  // On mobile, always open from the right
+  const mobileSide = isMobile ? "right" : side
 
   if (collapsible === "none") {
     return (
@@ -206,7 +208,7 @@ function Sidebar({
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
             } as React.CSSProperties
           }
-          side={side}
+          side={mobileSide}
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Sidebar</SheetTitle>
@@ -271,7 +273,7 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar, state } = useSidebar()
+  const { toggleSidebar, state, isMobile } = useSidebar()
 
   return (
     <Button
@@ -279,14 +281,21 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon"
-      className={cn("size-7", className)}
+      className={cn(
+        isMobile ? "h-10 w-10 ml-auto" : "size-7",
+        className
+      )}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
       }}
       {...props}
     >
-      {state === "expanded" ? <PanelLeftIcon /> : <PanelRightIcon />}
+      {isMobile ? (
+        <Menu className="h-6 w-6" />
+      ) : (
+        state === "expanded" ? <PanelLeftIcon /> : <PanelRightIcon />
+      )}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )

@@ -5,6 +5,8 @@ import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 import { IconPlus, IconSearch, IconMusic } from "@tabler/icons-react"
 import Link from "next/link"
 import { EventsTable } from "@/components/events-table"
@@ -119,18 +121,19 @@ export default function EventsPage() {
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="px-4 lg:px-6">
           {/* Header */}
-          <div className="mb-6 flex items-start justify-between">
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Events</h1>
-              <p className="text-muted-foreground mt-2">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Events</h1>
+              <p className="text-muted-foreground mt-2 text-sm md:text-base">
                 Manage jazz nights and monthly events.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Link href={`/client/${orgId}/bands`}>
-                <Button variant="outline">
+                <Button variant="outline" size="sm" className="flex-1 md:flex-initial">
                   <IconMusic className="mr-2 h-4 w-4" />
-                  Manage Bands
+                  <span className="hidden sm:inline">Manage Bands</span>
+                  <span className="sm:hidden">Bands</span>
                 </Button>
               </Link>
               <Link 
@@ -142,7 +145,7 @@ export default function EventsPage() {
                   }
                 }}
               >
-                <Button data-tour="new-event-button">
+                <Button data-tour="new-event-button" size="sm" className="hidden md:flex">
                   <IconPlus className="mr-2 h-4 w-4" />
                   New Event
                 </Button>
@@ -156,16 +159,35 @@ export default function EventsPage() {
           {/* Tabs and Search */}
           <div className="mb-6 space-y-4">
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
-              <div className="flex items-center justify-between">
-                <TabsList>
-                  <TabsTrigger value="weekly">Weekly</TabsTrigger>
-                  <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                  <TabsTrigger value="past">Past</TabsTrigger>
-                  <TabsTrigger value="drafts">Drafts</TabsTrigger>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                </TabsList>
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="event-view-selector" className="sr-only">
+                    View
+                  </Label>
+                  {/* Mobile Dropdown */}
+                  <Select value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
+                    <SelectTrigger className="flex w-fit @4xl/main:hidden" size="sm" id="event-view-selector">
+                      <SelectValue placeholder="Select view" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="upcoming">Upcoming</SelectItem>
+                      <SelectItem value="past">Past</SelectItem>
+                      <SelectItem value="drafts">Drafts</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {/* Desktop Tabs */}
+                  <TabsList className="hidden @4xl/main:flex">
+                    <TabsTrigger value="weekly">Weekly</TabsTrigger>
+                    <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                    <TabsTrigger value="past">Past</TabsTrigger>
+                    <TabsTrigger value="drafts">Drafts</TabsTrigger>
+                    <TabsTrigger value="all">All</TabsTrigger>
+                  </TabsList>
+                </div>
                 
-                <div className="relative w-64">
+                <div className="relative w-full md:w-64">
                   <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Search events..."
@@ -195,6 +217,26 @@ export default function EventsPage() {
           </div>
         </div>
       </div>
+
+      {/* Floating Action Button - Mobile Only */}
+      <Link 
+        href={`/client/${orgId}/events/new`}
+        onClick={() => {
+          // If tour is active, mark to continue after navigation
+          if (typeof window !== 'undefined' && sessionStorage.getItem('event-creation-tour-active') === 'true') {
+            sessionStorage.setItem('event-creation-tour-continue', '2')
+          }
+        }}
+      >
+        <Button
+          data-tour="new-event-button"
+          size="icon"
+          className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg md:hidden z-50"
+          aria-label="New Event"
+        >
+          <IconPlus className="h-6 w-6" />
+        </Button>
+      </Link>
     </div>
   )
 }

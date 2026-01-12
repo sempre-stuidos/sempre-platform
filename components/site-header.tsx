@@ -36,10 +36,10 @@ export function SiteHeader({
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
+        <SidebarTrigger className="-ml-1 hidden md:flex" />
         <Separator
           orientation="vertical"
-          className="mx-2 data-[orientation=vertical]:h-4"
+          className="mx-2 data-[orientation=vertical]:h-4 hidden md:flex"
         />
         {breadcrumb ? (
           <h1 className="text-base font-medium">{breadcrumb}</h1>
@@ -47,6 +47,7 @@ export function SiteHeader({
           <h1 className="text-base font-medium">{clientName || "Dashboard"}</h1>
         )}
         <div className="ml-auto flex items-center gap-2">
+          <SidebarTrigger className="md:hidden" />
           {!hideSearch && (
           <div className="relative hidden sm:flex">
             <IconSearch className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

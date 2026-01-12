@@ -46,6 +46,8 @@ import {
 import { toast } from "sonner"
 import { ReservationSettingsDialog } from "@/components/reservation-settings-dialog"
 import { IconSettings } from "@tabler/icons-react"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
 
 interface Reservation {
   id: string // UUID
@@ -587,119 +589,247 @@ function ReservationsTable({
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-lg border">
-        <Table>
-          <TableHeader className="bg-muted sticky top-0 z-10">
-            <TableRow>
-              <TableHead>Customer</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Party Size</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedReservations.map((reservation) => (
-            <TableRow 
-              key={reservation.id}
-              className="cursor-pointer hover:bg-muted/50"
-              onClick={() => onReservationClick(reservation)}
-            >
-              <TableCell>
-                <span className="font-medium text-foreground">{reservation.customer_name}</span>
-              </TableCell>
-              <TableCell>
-                <span className="text-sm font-medium">{formatDate(reservation.reservation_date)}</span>
-              </TableCell>
-              <TableCell>
-                <span className="text-sm text-muted-foreground">{formatTime(reservation.reservation_time)}</span>
-              </TableCell>
-              <TableCell>
-                <div className="text-sm">
-                  {reservation.party_size} {reservation.party_size === 1 ? 'guest' : 'guests'}
-                </div>
-              </TableCell>
-              <TableCell>{getStatusBadge(reservation.status)}</TableCell>
-              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                {reservation.status === 'pending' && (
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={() => approveReservation(reservation.id)}
-                      className="gap-1.5"
-                    >
-                      <IconCheck className="size-4" />
-                      Approve
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onRejectClick(reservation)
-                      }}
-                      className="gap-1.5 text-destructive hover:text-destructive"
-                    >
-                      <IconX className="size-4" />
-                      Reject
-                    </Button>
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto rounded-lg border">
+        <div className="min-w-[600px]">
+          <Table>
+            <TableHeader className="bg-muted sticky top-0 z-10">
+              <TableRow>
+                <TableHead>Customer</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Time</TableHead>
+                <TableHead>Party Size</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedReservations.map((reservation) => (
+              <TableRow 
+                key={reservation.id}
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => onReservationClick(reservation)}
+              >
+                <TableCell>
+                  <span className="font-medium text-foreground">{reservation.customer_name}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm font-medium">{formatDate(reservation.reservation_date)}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-muted-foreground">{formatTime(reservation.reservation_time)}</span>
+                </TableCell>
+                <TableCell>
+                  <div className="text-sm">
+                    {reservation.party_size} {reservation.party_size === 1 ? 'guest' : 'guests'}
                   </div>
-                )}
-                {reservation.status === 'approved' && (
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={() => markAsCompleted(reservation.id)}
-                      className="gap-1.5"
-                    >
-                      <IconCircleCheckFilled className="size-4" />
-                      Complete
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => cancelReservation(reservation.id)}
-                      className="gap-1.5 text-destructive hover:text-destructive"
-                    >
-                      <IconX className="size-4" />
-                      Cancel
-                    </Button>
+                </TableCell>
+                <TableCell>{getStatusBadge(reservation.status)}</TableCell>
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  {reservation.status === 'pending' && (
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => approveReservation(reservation.id)}
+                        className="gap-1.5"
+                      >
+                        <IconCheck className="size-4" />
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onRejectClick(reservation)
+                        }}
+                        className="gap-1.5 text-destructive hover:text-destructive"
+                      >
+                        <IconX className="size-4" />
+                        Reject
+                      </Button>
+                    </div>
+                  )}
+                  {reservation.status === 'approved' && (
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => markAsCompleted(reservation.id)}
+                        className="gap-1.5"
+                      >
+                        <IconCircleCheckFilled className="size-4" />
+                        Complete
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => cancelReservation(reservation.id)}
+                        className="gap-1.5 text-destructive hover:text-destructive"
+                      >
+                        <IconX className="size-4" />
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                  {reservation.status === 'completed' && (
+                    <div className="flex items-center justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => archiveReservation(reservation.id)}
+                        className="gap-1.5"
+                      >
+                        <IconArchive className="size-4" />
+                        Archive
+                      </Button>
+                    </div>
+                  )}
+                  {reservation.status === 'cancelled' && (
+                    <div className="flex items-center justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => archiveReservation(reservation.id)}
+                        className="gap-1.5"
+                      >
+                        <IconArchive className="size-4" />
+                        Archive
+                      </Button>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        </div>
+      </div>
+      
+      {/* Mobile Table View - Simplified */}
+      <div className="md:hidden overflow-x-auto rounded-lg border">
+        <div className="min-w-[500px]">
+          <Table>
+            <TableHeader className="bg-muted">
+              <TableRow>
+                <TableHead>Customer</TableHead>
+                <TableHead className="hidden sm:table-cell">Date</TableHead>
+                <TableHead className="sm:hidden">Date/Time</TableHead>
+                <TableHead className="hidden sm:table-cell">Time</TableHead>
+                <TableHead>Party</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedReservations.map((reservation) => (
+              <TableRow 
+                key={reservation.id}
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => onReservationClick(reservation)}
+              >
+                <TableCell className="py-3">
+                  <span className="font-medium text-foreground text-sm">{reservation.customer_name}</span>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell py-3">
+                  <span className="text-xs font-medium">{formatDate(reservation.reservation_date)}</span>
+                </TableCell>
+                <TableCell className="sm:hidden py-3">
+                  <div className="text-xs">
+                    <div className="font-medium">{formatDate(reservation.reservation_date)}</div>
+                    <div className="text-muted-foreground">{formatTime(reservation.reservation_time)}</div>
                   </div>
-                )}
-                {reservation.status === 'completed' && (
-                  <div className="flex items-center justify-end">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => archiveReservation(reservation.id)}
-                      className="gap-1.5"
-                    >
-                      <IconArchive className="size-4" />
-                      Archive
-                    </Button>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell py-3">
+                  <span className="text-xs text-muted-foreground">{formatTime(reservation.reservation_time)}</span>
+                </TableCell>
+                <TableCell className="py-3">
+                  <div className="text-xs">
+                    {reservation.party_size} {reservation.party_size === 1 ? 'guest' : 'guests'}
                   </div>
-                )}
-                {reservation.status === 'cancelled' && (
-                  <div className="flex items-center justify-end">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => archiveReservation(reservation.id)}
-                      className="gap-1.5"
-                    >
-                      <IconArchive className="size-4" />
-                      Archive
-                    </Button>
-                  </div>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                </TableCell>
+                <TableCell className="py-3">{getStatusBadge(reservation.status)}</TableCell>
+                <TableCell className="text-right py-3" onClick={(e) => e.stopPropagation()}>
+                  {reservation.status === 'pending' && (
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => approveReservation(reservation.id)}
+                        className="gap-1 h-8 px-2 text-xs"
+                      >
+                        <IconCheck className="size-3" />
+                        <span className="hidden sm:inline">Approve</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onRejectClick(reservation)
+                        }}
+                        className="gap-1 h-8 px-2 text-xs text-destructive hover:text-destructive"
+                      >
+                        <IconX className="size-3" />
+                        <span className="hidden sm:inline">Reject</span>
+                      </Button>
+                    </div>
+                  )}
+                  {reservation.status === 'approved' && (
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => markAsCompleted(reservation.id)}
+                        className="gap-1 h-8 px-2 text-xs"
+                      >
+                        <IconCircleCheckFilled className="size-3" />
+                        <span className="hidden sm:inline">Complete</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => cancelReservation(reservation.id)}
+                        className="gap-1 h-8 px-2 text-xs text-destructive hover:text-destructive"
+                      >
+                        <IconX className="size-3" />
+                        <span className="hidden sm:inline">Cancel</span>
+                      </Button>
+                    </div>
+                  )}
+                  {reservation.status === 'completed' && (
+                    <div className="flex items-center justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => archiveReservation(reservation.id)}
+                        className="gap-1 h-8 px-2 text-xs"
+                      >
+                        <IconArchive className="size-3" />
+                        <span className="hidden sm:inline">Archive</span>
+                      </Button>
+                    </div>
+                  )}
+                  {reservation.status === 'cancelled' && (
+                    <div className="flex items-center justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => archiveReservation(reservation.id)}
+                        className="gap-1 h-8 px-2 text-xs"
+                      >
+                        <IconArchive className="size-3" />
+                        <span className="hidden sm:inline">Archive</span>
+                      </Button>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        </div>
       </div>
       
       {/* Pagination */}
@@ -774,6 +904,272 @@ function ReservationsTable({
               disabled={currentPage === totalPages}
             >
               Next
+              <IconChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ReservationsCardView({ 
+  reservations, 
+  statusFilter,
+  sortBy,
+  onReservationClick,
+  onRejectClick
+}: { 
+  reservations: Reservation[]
+  statusFilter: StatusFilter
+  sortBy: SortOption
+  onReservationClick: (reservation: Reservation) => void
+  onRejectClick: (reservation: Reservation) => void
+}) {
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 7
+
+  // Filter by status
+  let filteredReservations = reservations
+  if (statusFilter !== 'all') {
+    filteredReservations = reservations.filter(r => r.status === statusFilter)
+  }
+
+  // Sort reservations
+  const sortedReservations = [...filteredReservations].sort((a, b) => {
+    if (sortBy === 'date-asc' || sortBy === 'date-desc') {
+      const dateA = new Date(`${a.reservation_date}T${a.reservation_time}`)
+      const dateB = new Date(`${b.reservation_date}T${b.reservation_time}`)
+      return sortBy === 'date-asc' 
+        ? dateA.getTime() - dateB.getTime()
+        : dateB.getTime() - dateA.getTime()
+    } else if (sortBy === 'party-asc' || sortBy === 'party-desc') {
+      return sortBy === 'party-asc'
+        ? a.party_size - b.party_size
+        : b.party_size - a.party_size
+    }
+    return 0
+  })
+
+  // Reset to page 1 when filters or sort change
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [statusFilter, sortBy])
+
+  // Calculate pagination
+  const totalPages = Math.ceil(sortedReservations.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedReservations = sortedReservations.slice(startIndex, endIndex)
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)))
+  }
+
+  if (sortedReservations.length === 0) {
+    return (
+      <div className="rounded-lg border p-8 text-center">
+        <p className="text-muted-foreground">No reservations found.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-4">
+        {paginatedReservations.map((reservation) => (
+          <Card
+            key={reservation.id}
+            className="cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => onReservationClick(reservation)}
+          >
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-base mb-1 truncate">{reservation.customer_name}</div>
+                  <div className="text-sm text-muted-foreground">{reservation.customer_email}</div>
+                  {reservation.customer_phone && (
+                    <div className="text-sm text-muted-foreground">{reservation.customer_phone}</div>
+                  )}
+                </div>
+                <div className="flex-shrink-0">{getStatusBadge(reservation.status)}</div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-1">Date</div>
+                    <div className="font-medium">{formatDate(reservation.reservation_date)}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-1">Time</div>
+                    <div className="font-medium">{formatTime(reservation.reservation_time)}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-1">Party Size</div>
+                    <div>
+                      {reservation.party_size} {reservation.party_size === 1 ? 'guest' : 'guests'}
+                    </div>
+                  </div>
+                </div>
+                {reservation.special_requests && (
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-1">Special Requests</div>
+                    <div className="text-sm bg-muted p-2 rounded-md line-clamp-2">{reservation.special_requests}</div>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 pt-2 border-t" onClick={(e) => e.stopPropagation()}>
+                  {reservation.status === 'pending' && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => approveReservation(reservation.id)}
+                        className="gap-1.5 flex-1"
+                      >
+                        <IconCheck className="size-4" />
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onRejectClick(reservation)
+                        }}
+                        className="gap-1.5 text-destructive hover:text-destructive flex-1"
+                      >
+                        <IconX className="size-4" />
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                  {reservation.status === 'approved' && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => markAsCompleted(reservation.id)}
+                        className="gap-1.5 flex-1"
+                      >
+                        <IconCircleCheckFilled className="size-4" />
+                        Complete
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => cancelReservation(reservation.id)}
+                        className="gap-1.5 text-destructive hover:text-destructive flex-1"
+                      >
+                        <IconX className="size-4" />
+                        Cancel
+                      </Button>
+                    </>
+                  )}
+                  {reservation.status === 'completed' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => archiveReservation(reservation.id)}
+                      className="gap-1.5 w-full"
+                    >
+                      <IconArchive className="size-4" />
+                      Archive
+                    </Button>
+                  )}
+                  {reservation.status === 'cancelled' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => archiveReservation(reservation.id)}
+                      className="gap-1.5 w-full"
+                    >
+                      <IconArchive className="size-4" />
+                      Archive
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between rounded-lg border px-4 py-3 bg-card">
+          <div className="text-sm text-muted-foreground">
+            Showing {startIndex + 1} to {Math.min(endIndex, sortedReservations.length)} of {sortedReservations.length} reservations
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <IconChevronLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Previous</span>
+            </Button>
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages: (number | string)[] = []
+                
+                // Always show first page
+                if (currentPage > 3) {
+                  pages.push(1)
+                  if (currentPage > 4) {
+                    pages.push('...')
+                  }
+                }
+                
+                // Show pages around current
+                const start = Math.max(1, currentPage - 1)
+                const end = Math.min(totalPages, currentPage + 1)
+                for (let i = start; i <= end; i++) {
+                  pages.push(i)
+                }
+                
+                // Always show last page
+                if (currentPage < totalPages - 2) {
+                  if (currentPage < totalPages - 3) {
+                    pages.push('...')
+                  }
+                  pages.push(totalPages)
+                }
+                
+                return pages.map((page, index) => {
+                  if (page === '...') {
+                    return (
+                      <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
+                        ...
+                      </span>
+                    )
+                  }
+                  return (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => goToPage(page as number)}
+                      className="min-w-[2.5rem]"
+                    >
+                      {page}
+                    </Button>
+                  )
+                })
+              })()}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              <span className="hidden sm:inline">Next</span>
               <IconChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -907,31 +1303,32 @@ function ReservationsCalendar({
   }
 
   return (
-    <div className="rounded-lg border bg-card flex flex-col" style={{ height: '700px' }}>
-      <div className="border-b p-4 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={goToPreviousWeek}>
+    <div className="rounded-lg border bg-card flex flex-col md:h-[700px] h-[600px]">
+      <div className="border-b p-3 md:p-4 flex-shrink-0">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={goToPreviousWeek} className="h-8">
               <IconChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={goToToday}>
+            <Button variant="outline" size="sm" onClick={goToToday} className="h-8 text-xs md:text-sm">
               Today
             </Button>
-            <Button variant="outline" size="sm" onClick={goToNextWeek}>
+            <Button variant="outline" size="sm" onClick={goToNextWeek} className="h-8">
               <IconChevronRight className="h-4 w-4" />
             </Button>
-            <h2 className="ml-4 text-lg font-semibold">
+            <h2 className="ml-2 md:ml-4 text-sm md:text-lg font-semibold truncate">
               {weekRange}
             </h2>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {viewModeToggle}
             {reservationSettingsButton}
           </div>
         </div>
       </div>
       <div className="p-1 flex-1 overflow-hidden min-h-0">
-        <div className="grid grid-cols-7 gap-2 h-full">
+        {/* Desktop: 7-column grid */}
+        <div className="hidden md:grid md:grid-cols-7 gap-2 h-full">
           {dayNames.map((day, index) => {
             const date = weekDates[index]
             const dayReservations = getReservationsForDate(date)
@@ -972,6 +1369,52 @@ function ReservationsCalendar({
               </div>
             )
           })}
+        </div>
+        
+        {/* Mobile: Horizontal scrollable week view */}
+        <div className="md:hidden overflow-x-auto h-full">
+          <div className="grid grid-cols-7 gap-1.5 min-w-[560px] h-full">
+            {dayNames.map((day, index) => {
+              const date = weekDates[index]
+              const dayReservations = getReservationsForDate(date)
+              const isTodayDate = isToday(date)
+              const dayNumber = date.getDate()
+              const isCurrentMonth = date.getMonth() === new Date().getMonth()
+              
+              return (
+                <div key={index} className="flex flex-col min-h-0 min-w-[80px]">
+                  <div className={`p-1.5 text-center border-b flex-shrink-0 ${isTodayDate ? 'bg-primary/10 border-primary' : 'border-border'}`}>
+                    <div className="text-[10px] font-medium text-muted-foreground mb-0.5">{day}</div>
+                    <div className={`text-sm md:text-lg font-semibold ${isTodayDate ? 'text-primary' : isCurrentMonth ? '' : 'text-muted-foreground'}`}>
+                      {dayNumber}
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-1 p-1 overflow-y-auto min-h-0">
+                    {dayReservations.map(reservation => (
+                      <div
+                        key={reservation.id}
+                        className="text-[10px] p-1.5 rounded bg-muted cursor-pointer active:bg-muted/80 border border-border touch-manipulation"
+                        title={`${reservation.customer_name} - ${formatTime(reservation.reservation_time)} - ${reservation.party_size} guests`}
+                        onClick={() => onReservationClick(reservation)}
+                      >
+                        <div className="flex items-center gap-0.5 mb-0.5">
+                          {getStatusBadge(reservation.status)}
+                        </div>
+                        <div className="font-medium truncate text-[11px]">{reservation.customer_name}</div>
+                        <div className="text-muted-foreground text-[10px]">{formatTime(reservation.reservation_time)}</div>
+                        <div className="text-muted-foreground text-[10px]">{reservation.party_size} {reservation.party_size === 1 ? 'guest' : 'guests'}</div>
+                      </div>
+                    ))}
+                    {dayReservations.length === 0 && (
+                      <div className="text-[10px] text-muted-foreground text-center py-2">
+                        No reservations
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -1015,17 +1458,31 @@ export function ReservationsList({ upcomingReservations, pastReservations, orgId
 
   // Create reusable control components
   const tabsList = (
-    <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1">
-      <TabsTrigger value="upcoming">
-        Upcoming <Badge variant="secondary">{upcomingReservations.length}</Badge>
-      </TabsTrigger>
-      <TabsTrigger value="past">
-        Past <Badge variant="secondary">{pastReservations.length}</Badge>
-      </TabsTrigger>
-      <TabsTrigger value="all">
-        All <Badge variant="secondary">{allReservations.length}</Badge>
-      </TabsTrigger>
-    </TabsList>
+    <>
+      {/* Mobile Dropdown */}
+      <Select value={activeTab} onValueChange={setActiveTab}>
+        <SelectTrigger className="flex w-fit @4xl/main:hidden" size="sm" id="reservation-view-selector">
+          <SelectValue placeholder="Select view" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="upcoming">Upcoming ({upcomingReservations.length})</SelectItem>
+          <SelectItem value="past">Past ({pastReservations.length})</SelectItem>
+          <SelectItem value="all">All ({allReservations.length})</SelectItem>
+        </SelectContent>
+      </Select>
+      {/* Desktop Tabs */}
+      <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 hidden @4xl/main:flex">
+        <TabsTrigger value="upcoming">
+          Upcoming <Badge variant="secondary">{upcomingReservations.length}</Badge>
+        </TabsTrigger>
+        <TabsTrigger value="past">
+          Past <Badge variant="secondary">{pastReservations.length}</Badge>
+        </TabsTrigger>
+        <TabsTrigger value="all">
+          All <Badge variant="secondary">{allReservations.length}</Badge>
+        </TabsTrigger>
+      </TabsList>
+    </>
   )
 
   const viewModeToggle = (
@@ -1062,11 +1519,16 @@ export function ReservationsList({ upcomingReservations, pastReservations, orgId
 
   return (
     <Tabs defaultValue="upcoming" value={activeTab} onValueChange={setActiveTab} className="w-full flex-col justify-start gap-6">
-      {/* TabsList must be a direct child of Tabs - conditionally render controls based on view mode */}
+      {/* Header with tabs/dropdown and controls */}
       {viewMode === 'table' ? (
-        <div className="flex items-center justify-between px-4 lg:px-6">
-          {tabsList}
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 px-4 lg:px-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center">
+            <Label htmlFor="reservation-view-selector" className="sr-only">
+              View
+            </Label>
+            {tabsList}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
             {viewModeToggle}
             {reservationSettingsButton}
           </div>
@@ -1079,13 +1541,28 @@ export function ReservationsList({ upcomingReservations, pastReservations, orgId
       )}
       <TabsContent value="upcoming" className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
         {viewMode === 'table' ? (
-          <ReservationsTable 
-            reservations={upcomingReservations} 
-            statusFilter={statusFilter}
-            sortBy={sortBy}
-            onReservationClick={handleReservationClick}
-            onRejectClick={handleRejectClick}
-          />
+          <>
+            {/* Mobile Card View */}
+            <div className="md:hidden">
+              <ReservationsCardView 
+                reservations={upcomingReservations} 
+                statusFilter={statusFilter}
+                sortBy={sortBy}
+                onReservationClick={handleReservationClick}
+                onRejectClick={handleRejectClick}
+              />
+            </div>
+            {/* Desktop Table View */}
+            <div className="hidden md:block">
+              <ReservationsTable 
+                reservations={upcomingReservations} 
+                statusFilter={statusFilter}
+                sortBy={sortBy}
+                onReservationClick={handleReservationClick}
+                onRejectClick={handleRejectClick}
+              />
+            </div>
+          </>
         ) : (
           <ReservationsCalendar 
             reservations={upcomingReservations} 
@@ -1098,13 +1575,28 @@ export function ReservationsList({ upcomingReservations, pastReservations, orgId
       </TabsContent>
       <TabsContent value="past" className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
         {viewMode === 'table' ? (
-          <ReservationsTable 
-            reservations={pastReservations} 
-            statusFilter={statusFilter}
-            sortBy={sortBy}
-            onReservationClick={handleReservationClick}
-            onRejectClick={handleRejectClick}
-          />
+          <>
+            {/* Mobile Card View */}
+            <div className="md:hidden">
+              <ReservationsCardView 
+                reservations={pastReservations} 
+                statusFilter={statusFilter}
+                sortBy={sortBy}
+                onReservationClick={handleReservationClick}
+                onRejectClick={handleRejectClick}
+              />
+            </div>
+            {/* Desktop Table View */}
+            <div className="hidden md:block">
+              <ReservationsTable 
+                reservations={pastReservations} 
+                statusFilter={statusFilter}
+                sortBy={sortBy}
+                onReservationClick={handleReservationClick}
+                onRejectClick={handleRejectClick}
+              />
+            </div>
+          </>
         ) : (
           <ReservationsCalendar 
             reservations={pastReservations} 
@@ -1117,13 +1609,28 @@ export function ReservationsList({ upcomingReservations, pastReservations, orgId
       </TabsContent>
       <TabsContent value="all" className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
         {viewMode === 'table' ? (
-          <ReservationsTable 
-            reservations={allReservations} 
-            statusFilter={statusFilter}
-            sortBy={sortBy}
-            onReservationClick={handleReservationClick}
-            onRejectClick={handleRejectClick}
-          />
+          <>
+            {/* Mobile Card View */}
+            <div className="md:hidden">
+              <ReservationsCardView 
+                reservations={allReservations} 
+                statusFilter={statusFilter}
+                sortBy={sortBy}
+                onReservationClick={handleReservationClick}
+                onRejectClick={handleRejectClick}
+              />
+            </div>
+            {/* Desktop Table View */}
+            <div className="hidden md:block">
+              <ReservationsTable 
+                reservations={allReservations} 
+                statusFilter={statusFilter}
+                sortBy={sortBy}
+                onReservationClick={handleReservationClick}
+                onRejectClick={handleRejectClick}
+              />
+            </div>
+          </>
         ) : (
           <ReservationsCalendar 
             reservations={allReservations} 

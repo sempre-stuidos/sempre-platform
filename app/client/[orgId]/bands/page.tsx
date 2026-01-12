@@ -17,15 +17,15 @@ export default function BandsPage() {
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="px-4 lg:px-6">
           {/* Header */}
-          <div className="mb-6 flex items-start justify-between">
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Bands</h1>
-              <p className="text-muted-foreground mt-2">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Bands</h1>
+              <p className="text-muted-foreground mt-2 text-sm md:text-base">
                 Manage bands that perform at your events
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button onClick={() => setShowFormModal(true)}>
+              <Button onClick={() => setShowFormModal(true)} size="sm" className="hidden md:flex">
                 <IconPlus className="mr-2 h-4 w-4" />
                 Add Band
               </Button>
@@ -39,6 +39,16 @@ export default function BandsPage() {
           <BandsManager orgId={orgId} showFormModal={showFormModal} onFormModalChange={setShowFormModal} />
         </div>
       </div>
+
+      {/* Floating Action Button - Mobile Only */}
+      <Button
+        onClick={() => setShowFormModal(true)}
+        size="icon"
+        className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg md:hidden z-50"
+        aria-label="Add Band"
+      >
+        <IconPlus className="h-6 w-6" />
+      </Button>
     </div>
   )
 }

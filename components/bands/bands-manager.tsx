@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { IconEdit, IconTrash, IconPlus, IconCalendar } from "@tabler/icons-react"
+import { IconEdit, IconTrash, IconPlus, IconCalendar, IconChevronDown } from "@tabler/icons-react"
 import Image from "next/image"
 import { toast } from "sonner"
 import { BandFormModal } from "./band-form-modal"
@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   DialogFooter,
 } from "@/components/ui/dialog"
+import { CardContent } from "@/components/ui/card"
 
 interface BandsManagerProps {
   orgId: string
@@ -69,6 +70,9 @@ export function BandsManager({ orgId, showFormModal: externalShowFormModal, onFo
   const [eventBands, setEventBands] = useState<Record<string, EventBand[]>>({})
   const [bandInstanceDates, setBandInstanceDates] = useState<Record<string, string[]>>({})
   const prevExternalModalState = React.useRef(false)
+  const [expandedBand, setExpandedBand] = useState<Band | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   // Use external modal state if provided, otherwise use internal state
   const showFormModal = externalShowFormModal !== undefined ? externalShowFormModal : internalShowFormModal
@@ -224,6 +228,12 @@ export function BandsManager({ orgId, showFormModal: externalShowFormModal, onFo
     )
   }
 
+  // Pagination logic
+  const totalPages = Math.ceil(bands.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedBands = bands.slice(startIndex, endIndex)
+
   return (
     <div className="space-y-4">
       {bands.length === 0 ? (
@@ -242,90 +252,250 @@ export function BandsManager({ orgId, showFormModal: externalShowFormModal, onFo
           </div>
         </Card>
       ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Image</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Events</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {bands.map((band) => (
-                <TableRow 
-                  key={band.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleRowClick(band)}
-                >
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    {band.image_url ? (
-                      <div className="relative h-12 w-12 overflow-hidden rounded-md">
-                        <Image
-                          src={band.image_url}
-                          alt={band.name}
-                          fill
-                          className="object-cover"
-                        />
+        <>
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
+            {paginatedBands.map((band) => (
+              <Card key={band.id} className="overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-base mb-2 truncate">{band.name}</div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {eventCounts[band.id] || 0} event{eventCounts[band.id] !== 1 ? 's' : ''}
+                        </Badge>
                       </div>
-                    ) : (
-                      <div className="h-12 w-12 rounded-md bg-muted flex items-center justify-center">
-                        <span className="text-xs text-muted-foreground">No image</span>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{band.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {band.description ? (
-                      truncateDescription(band.description)
-                    ) : (
-                      <span className="italic">No description</span>
-                    )}
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={(e) => handleEventsClick(e, band)}
-                      disabled={loadingEvents === band.id}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 text-sm font-medium transition-colors",
-                        "hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed",
-                        eventCounts[band.id] > 0 ? "text-primary cursor-pointer" : "text-muted-foreground"
-                      )}
-                    >
-                      <IconCalendar className="h-4 w-4" />
-                      {loadingEvents === band.id ? (
-                        "Loading..."
-                      ) : (
-                        `${eventCounts[band.id] || 0} event${eventCounts[band.id] !== 1 ? 's' : ''}`
-                      )}
-                    </button>
-                  </TableCell>
-                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(band)}
-                      >
-                        <IconEdit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(band.id)}
-                        disabled={isDeleting === band.id}
-                      >
-                        <IconTrash className="h-4 w-4 text-destructive" />
-                      </Button>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setExpandedBand(band)}
+                      className="flex-shrink-0"
+                    >
+                      <span className="hidden xs:inline">View</span>
+                      <span className="xs:hidden">Expand</span>
+                      <IconChevronDown className="ml-1 h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block rounded-md border">
+            <div className="overflow-x-auto">
+              <div className="min-w-[800px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Image</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Events</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedBands.map((band) => (
+                      <TableRow 
+                        key={band.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleRowClick(band)}
+                      >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          {band.image_url ? (
+                            <div className="relative h-12 w-12 overflow-hidden rounded-md">
+                              <Image
+                                src={band.image_url}
+                                alt={band.name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-12 w-12 rounded-md bg-muted flex items-center justify-center">
+                              <span className="text-xs text-muted-foreground">No image</span>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium">{band.name}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {band.description ? (
+                            truncateDescription(band.description)
+                          ) : (
+                            <span className="italic">No description</span>
+                          )}
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => handleEventsClick(e, band)}
+                            disabled={loadingEvents === band.id}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 text-sm font-medium transition-colors",
+                              "hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed",
+                              eventCounts[band.id] > 0 ? "text-primary cursor-pointer" : "text-muted-foreground"
+                            )}
+                          >
+                            <IconCalendar className="h-4 w-4" />
+                            {loadingEvents === band.id ? (
+                              "Loading..."
+                            ) : (
+                              `${eventCounts[band.id] || 0} event${eventCounts[band.id] !== 1 ? 's' : ''}`
+                            )}
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(band)}
+                            >
+                              <IconEdit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(band.id)}
+                              disabled={isDeleting === band.id}
+                            >
+                              <IconTrash className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t">
+              <div className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(endIndex, bands.length)} of {bands.length} bands
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden">Prev</span>
+                </Button>
+                <div className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <span className="sm:hidden">Next</span>
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Mobile Expanded Band Dialog */}
+      {expandedBand && (
+        <Dialog open={!!expandedBand} onOpenChange={(open) => !open && setExpandedBand(null)}>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{expandedBand.name}</DialogTitle>
+              <DialogDescription>
+                Band details
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {/* Image */}
+              {expandedBand.image_url && (
+                <div className="flex justify-center">
+                  <div className="relative w-full h-48 rounded-lg overflow-hidden">
+                    <Image
+                      src={expandedBand.image_url}
+                      alt={expandedBand.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Description */}
+              {expandedBand.description && (
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Description</div>
+                  <div className="text-sm">{expandedBand.description}</div>
+                </div>
+              )}
+              
+              {/* Events Count */}
+              <div>
+                <div className="text-xs font-medium text-muted-foreground mb-1">Events</div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setExpandedBand(null)
+                    fetchBandEvents(expandedBand.id)
+                  }}
+                  disabled={loadingEvents === expandedBand.id}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 text-sm font-medium transition-colors",
+                    "hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed",
+                    eventCounts[expandedBand.id] > 0 ? "text-primary cursor-pointer" : "text-muted-foreground"
+                  )}
+                >
+                  <IconCalendar className="h-4 w-4" />
+                  {loadingEvents === expandedBand.id ? (
+                    "Loading..."
+                  ) : (
+                    `${eventCounts[expandedBand.id] || 0} event${eventCounts[expandedBand.id] !== 1 ? 's' : ''}`
+                  )}
+                </button>
+              </div>
+              
+              {/* Actions */}
+              <div className="flex flex-col gap-2 pt-4 border-t">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    setExpandedBand(null)
+                    handleEdit(expandedBand)
+                  }}
+                  className="w-full"
+                >
+                  <IconEdit className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setExpandedBand(null)
+                    handleDelete(expandedBand.id)
+                  }}
+                  disabled={isDeleting === expandedBand.id}
+                  className="w-full text-destructive"
+                >
+                  <IconTrash className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {showFormModal && (
